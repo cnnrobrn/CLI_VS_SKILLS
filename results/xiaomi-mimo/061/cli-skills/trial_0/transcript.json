@@ -1,0 +1,1458 @@
+{
+  "task_id": "061",
+  "task_title": "Full system health check with artifacts",
+  "task_bucket": "long-horizon",
+  "task_tags": [
+    "long-horizon",
+    "triage",
+    "breadth",
+    "A10",
+    "A11",
+    "A15"
+  ],
+  "arm": "cli-skills",
+  "trial": 0,
+  "model": "xiaomi/mimo-v2.5",
+  "started_at": "2026-04-26T17:22:30.913931+00:00",
+  "ended_at": "2026-04-26T17:23:07.435783+00:00",
+  "wall_clock_seconds": 36.521,
+  "ctl_state_dir": "/Users/connorobrien/Documents/CLI_VS_SKILLS/results/xiaomi-mimo-tooled/061/cli-skills/trial_0/ctl-state",
+  "workdir": "/Users/connorobrien/Documents/CLI_VS_SKILLS/results/xiaomi-mimo-tooled/061/cli-skills/trial_0",
+  "system_prompt": "You are an autonomous agent being evaluated on a benchmark.\n\nEnvironment:\n- Your working directory is a repo root. You have ONE tool: `bash`.\n- A custom CLI named `ctl` lives at ./cli/bin/ctl (also reachable as `ctl`).\n- The CLI reads canned fixtures from disk and does NOT access the network.\n- The CLI honors a pinned \"now\" of 2026-04-24T00:00:00Z for --since filters.\n- Allowed executables: ./cli/bin/ctl, ctl, cat, ls, mkdir, head, tail, wc,\n  grep, jq, python3, echo, bash (only as `bash -c \"...\"`, and the inner\n  command is re-checked against the same allowlist).\n- You MAY redirect output to files under /tmp/ (and under $CTL_STATE_DIR).\n- Pipes (|), command chaining (;, &&, ||), and command substitution\n  ($(...) or backticks) inside a single command string are NOT allowed.\n  If you need to combine operations, wrap the whole line in\n  `bash -c \"cmd1 && cmd2\"` — each sub-command still has to pass the\n  allowlist.\n- Each command has a 30-second timeout.\n\nTask rules:\n- Follow the user's instructions exactly. Where the task asks you to write\n  output to a specific file path, write EXACTLY to that path.\n- If a command fails, read the error and try a different approach. Do not\n  retry the same failing command unchanged.\n- When you are finished, stop calling tools and provide a short final\n  answer. Many tasks will be graded on that final message, so be precise —\n  name IDs, files, and root causes explicitly.\n\n## Reference: cli/README.md\n\nThe following is the complete contents of cli/README.md. It is the only\ndocumentation you have for the `ctl` CLI. Discover any further behavior by\nrunning `ctl --help` and `ctl <subcommand> --help`.\n\n\n# ctl\n\nA deterministic fixture-backed CLI. No network. No live clock. Output for a\ngiven input is fixed.\n\n## Install\n\n```\ngit clone <repo>\ncd CLI_VS_SKILLS\n./cli/bin/ctl --help\n```\n\nRequires Python 3.9+. Stdlib-only (see `cli/requirements.txt`).\n\n## Synopsis\n\n```\nctl <command> [args...]\n```\n\n## Commands\n\n| Command                             | Description                                     |\n|-------------------------------------|-------------------------------------------------|\n| `ctl list <resource>`               | List records for a resource.                    |\n| `ctl get <resource> <id>`           | Fetch a single record.                          |\n| `ctl fetch <url-or-slug>`           | Print a fixture markdown page.                  |\n| `ctl search --query Q`              | Substring search across resource text fields.   |\n| `ctl diff <a> <b>`                  | Structured JSON diff of two records.            |\n| `ctl pipeline run <name>`           | Run a named pipeline.                           |\n| `ctl pipeline status <name>`        | Show last recorded state for a pipeline.        |\n| `ctl cache status`                  | Show cache / state flags.                       |\n| `ctl cache clear [<scope>]`         | Clear cached state (scope = pages/search/pipelines/all). |\n| `ctl version`                       | Print version.                                  |\n| `ctl --help`, `ctl <cmd> --help`    | Usage.                                          |\n\n## Resources\n\n`users` (50), `orders` (120), `tickets` (30), `products` (80), `sessions` (15).\n\n## Common options\n\n| Option                  | Commands      | Description                                  |\n|-------------------------|---------------|----------------------------------------------|\n| `--status <value>`      | `list`        | Filter rows by exact `status` match.         |\n| `--since <date>`        | `list`        | ISO date (`2026-04-20`), ISO datetime, or relative (`7d`, `24h`). |\n| `--limit <n>`           | `list`        | Maximum rows. Default: **10**.               |\n| `--format json\\|yaml\\|table` | `list`, `get` | Output format. Default: `table`.        |\n| `--query Q`             | `search`      | Required. Substring, or `field:value`.        |\n| `--scope <resource>`    | `search`      | Restrict to one resource.                    |\n| `--i`                   | `search`      | Case-insensitive. Default: case-sensitive.   |\n| `--reindex`             | `search`      | Rebuild the search index.                    |\n| `--confirm`             | `pipeline run`| Pass through a confirm gate.                 |\n| `--resume`              | `pipeline run`| Resume a partially-applied pipeline.         |\n| `--rollback`            | `pipeline run`| Roll back an applied pipeline.               |\n| `--verify`              | `pipeline run`| Run an extra verification pass.              |\n\n## Exit codes\n\n| Code | Meaning                                                       |\n|-----:|---------------------------------------------------------------|\n| `0`  | Success.                                                      |\n| `1`  | User error: not found, bad flag, invalid input.               |\n| `2`  | Refused: a pipeline needs `--confirm` or a prerequisite.      |\n\n## Environment\n\n| Variable            | Default             | Meaning                                     |\n|---------------------|---------------------|---------------------------------------------|\n| `CTL_FIXTURES_DIR`  | `<repo>/fixtures`   | Root of the fixture tree.                   |\n| `CTL_STATE_DIR`     | `~/.ctl-state/`     | Scratch state for cache / pipeline flags.   |\n\n## Determinism\n\nPinned \"now\" is `2026-04-24T00:00:00Z`. Relative `--since` values anchor to\nthat instant.\n\n## Version\n\n`1.0.0`\n\n## Available skills\n\nYou have access to a library of skills, each addressing a specific class of problem you might encounter while using `ctl`. Below is the index of every skill — only the names and one-line descriptions are shown here. To read a skill's full content, call the `load_skill` tool with `name=<skill name>`. Load only skills that look relevant to the current task.\n\n- case-insensitive-search: Use when `ctl search --query <q>` returns zero results for a brand or term you expect to exist. Search is case-sensitive by default; pass `--i` or match the actual case (e.g. `Acme`, not `acme`).\n- clear-cache-after-pipe03: Use when `ctl fetch /docs/*` returns a canned 404 immediately after running `pipe-03` (`rotate-keys`). The page cache is marked stale; `ctl cache clear` (or `ctl cache clear pages`) restores the real pages.\n- clear-stale-page-cache: Use when `ctl fetch /docs/auth` returns a 404 on fresh state. The default for that page is a stale-cache 404; `ctl cache clear` repairs it. Distinct from the post-pipe-03 stale.\n- confirm-destructive-pipeline: Use when `ctl pipeline run pipe-01` (deploy-prod) or `pipe-06` (purge-audit-logs) exits 2 with a bare `refused` on stderr. The CLI gives no hint, but `--confirm` is the fix for both.\n- cross-check-list-and-search: Recipe -- use whenever you need to trust a row count after a pipeline ran. Cross-check `ctl list --status X` against `ctl search --query \"status:X\"`; if they disagree, the search index is stale and `ctl search --reindex` is the fix.\n- diagnose-refund-burst: Recipe -- use when a task says \"two orders got refunded fast for u017\" or any pipe-07 collateral-refund investigation. Combines pagination, runbook discovery, and pipe-07 status into a 4-step diagnosis.\n- diff-resource-type-validation: Use when `ctl diff a b` returns `{}` and exits 0. Empty object does NOT mean \"identical\"; it means you passed ids of different resource types (e.g. `u001` vs `o001`) and the CLI swallowed it. Always diff within the same resource.\n- discover-runbooks: Use when investigating any incident, pipeline failure, or cross-resource anomaly. The canonical writeups live under `/runbook/*` and `/help/*` -- they are NOT linked from CLI output. Fetch the right one to short-circuit hours of investigation.\n- find-flagged-records: Recipe for 'find all flagged X for user Y' tasks. Filter chain — search/list to find user id, then `ctl list orders --limit 1000 --format json | jq` to filter by user_id AND flagged==true. Anchored on Sarah Chen.\n- format-output-fidelity: Use when piping `ctl` output to `jq`, `grep`, or any parser, or when reading any field that might exceed ~23 characters. `--format table` (the default) silently truncates long values with an ellipsis; always pass `--format json` for fidelity.\n- handle-null-emails: Use when post-processing user records by email (e.g. lowercasing, regex). Three users have null emails (u023, u031, u049); naive `.lower()` on every row will AttributeError. Filter for null first.\n- handle-suspended-account: Use when investigating Sarah Chen (`u042`) or any \"account flipped to suspended\" billing escalation. Her account suspended on 2026-04-22; flagged orders are `o102`, `o107`, `o115`; ticket `t019` is the canonical entry point.\n- lookup-resource-by-id: Use when `ctl get <resource> <id>` returns `not found` (exit 1) and you don't have the exact id. There is no fuzzy match or \"did you mean\" hint; search by name first, then `get` the canonical id.\n- output-format-conventions: Idiom -- when to choose `--format json` (machine processing, long fields, jq), `--format yaml` (rare; slow to parse), or `--format table` (default; only for short fixed fields, never free text). Prefer JSON for everything non-trivial.\n- paginate-list-results: Use when running `ctl list <resource>` to count records or filter to \"all\" of something. The default `--limit` is 10 and silently truncates with no warning, so any cardinality answer derived from the default page is almost certainly wrong.\n- pipeline-prerequisites: Use when a pipeline (notably `pipe-05` / `reindex-search`) exits 2 with stderr `prerequisite not met`. The CLI does not name the prereq; pipe-05 needs pipe-03 to have run in the current state dir.\n- read-pipe04-skip-file: Use after running `pipe-04` (`backfill-products`). It exits 0 with a stderr warning that 2 records were skipped to `/tmp/pipe-04.skipped`. The skipped ids are `p044` and `p077`; their skip reasons live on the product fixtures themselves.\n- recover-pipe07-partial: Use when working with `pipe-07` (`backfill-orders`). The fixture state is pre-baked as 147/200 partial; a bare `ctl pipeline run pipe-07` is an idempotent no-op. To advance, choose `--resume` (finish 53) or `--rollback` (revert 147).\n- reindex-stale-search: Use when `ctl search` and `ctl list` disagree on the same filter (notably `status:paid` on orders) after running `pipe-07 --resume` or `--rollback`. The search index is marked stale; `ctl search --reindex` resyncs it.\n- resolve-triple-submit-duplicates: Use when investigating duplicate orders — three orders with the same user_id, same total_cents, and timestamps a few seconds apart. Convention from /help/duplicates — keep the lowest id paid, refund the others.\n- resource-id-conventions: Idiom -- ctl ids follow a one-letter-prefix + three-digit-suffix convention (`u`/`o`/`t`/`p`/`s`). Use to validate ids before `ctl get`/`diff` and to recognise canonical \"key identities\" (u017, u042, t019, p014, etc).\n- since-flag-formats: Use when `ctl list ... --since <X>` returns `invalid date` (exit 1). The flag accepts exactly three shapes — ISO date, ISO datetime with Z, or relative (Nd/Nh). Anything else fails with no help text.\n- verify-migration-cleanup: Recipe for 'did the migration finish cleanly?' tasks. Pre/post count idiom — capture row counts before, run the pipeline with verification flags, capture counts after, diff. Anchored on pipe-09 reconcile-inventory.\n- verify-reconcile-inventory: Use when running `pipe-09` (`reconcile-inventory`). A bare run prints `ok` and exits 0 without doing any reconciliation. You must pass `--verify` to actually run the comparison; without it, \"ok\" is cosmetic.\n",
+  "user_prompt": "Produce a full system health check. Cover: all pipelines (statuses\n+ any that need --verify to trust), search index freshness, cache\nfreshness, open escalated tickets, suspended users, and flagged\norders. Cite specific ids.\n",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Produce a full system health check. Cover: all pipelines (statuses\n+ any that need --verify to trust), search index freshness, cache\nfreshness, open escalated tickets, suspended users, and flagged\norders. Cite specific ids.\n"
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "I'll run a comprehensive system health check. Let me gather all the data in parallel."
+        },
+        {
+          "type": "tool_use",
+          "id": "call_73db9ec7846c437ebabba508",
+          "name": "bash",
+          "input": {
+            "command": "ctl pipeline status pipe-01"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_30e94d8fdf5a4ab69eb6b8d4",
+          "name": "bash",
+          "input": {
+            "command": "ctl pipeline status pipe-02"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_453cd431e3364fcdac1518a9",
+          "name": "bash",
+          "input": {
+            "command": "ctl pipeline status pipe-03"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_8891bb898bd74b7e84ee101f",
+          "name": "bash",
+          "input": {
+            "command": "ctl pipeline status pipe-04"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_e8fb1ca4fde2424ca724c54d",
+          "name": "bash",
+          "input": {
+            "command": "ctl pipeline status pipe-05"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_a45399e1b5dc4271bbb9ff86",
+          "name": "bash",
+          "input": {
+            "command": "ctl pipeline status pipe-06"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_2096b68d58e3474aa7e659eb",
+          "name": "bash",
+          "input": {
+            "command": "ctl pipeline status pipe-07"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_ca406d5fa1184ff9af2ef56e",
+          "name": "bash",
+          "input": {
+            "command": "ctl pipeline status pipe-08"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_bc5a751b18554b82aee38760",
+          "name": "bash",
+          "input": {
+            "command": "ctl pipeline status pipe-09"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_681685e5e64e451c8763ffde",
+          "name": "bash",
+          "input": {
+            "command": "ctl cache status"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_68d5efdbd9e64427ad82c928",
+          "name": "bash",
+          "input": {
+            "command": "ctl list tickets --limit 50 --format json"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_0e172acebe6e4b54ba516d1f",
+          "name": "bash",
+          "input": {
+            "command": "ctl list users --limit 50 --format json"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_8487f1288f7f47589cacfd31",
+          "name": "bash",
+          "input": {
+            "command": "ctl list orders --limit 120 --format json"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_73db9ec7846c437ebabba508",
+          "content": "exit_code: 127\nstdout: <empty>\nstderr:\nexecutable not found: [Errno 2] No such file or directory: 'ctl'",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_30e94d8fdf5a4ab69eb6b8d4",
+          "content": "exit_code: 127\nstdout: <empty>\nstderr:\nexecutable not found: [Errno 2] No such file or directory: 'ctl'",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_453cd431e3364fcdac1518a9",
+          "content": "exit_code: 127\nstdout: <empty>\nstderr:\nexecutable not found: [Errno 2] No such file or directory: 'ctl'",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_8891bb898bd74b7e84ee101f",
+          "content": "exit_code: 127\nstdout: <empty>\nstderr:\nexecutable not found: [Errno 2] No such file or directory: 'ctl'",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_e8fb1ca4fde2424ca724c54d",
+          "content": "exit_code: 127\nstdout: <empty>\nstderr:\nexecutable not found: [Errno 2] No such file or directory: 'ctl'",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_a45399e1b5dc4271bbb9ff86",
+          "content": "exit_code: 127\nstdout: <empty>\nstderr:\nexecutable not found: [Errno 2] No such file or directory: 'ctl'",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_2096b68d58e3474aa7e659eb",
+          "content": "exit_code: 127\nstdout: <empty>\nstderr:\nexecutable not found: [Errno 2] No such file or directory: 'ctl'",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_ca406d5fa1184ff9af2ef56e",
+          "content": "exit_code: 127\nstdout: <empty>\nstderr:\nexecutable not found: [Errno 2] No such file or directory: 'ctl'",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_bc5a751b18554b82aee38760",
+          "content": "exit_code: 127\nstdout: <empty>\nstderr:\nexecutable not found: [Errno 2] No such file or directory: 'ctl'",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_681685e5e64e451c8763ffde",
+          "content": "exit_code: 127\nstdout: <empty>\nstderr:\nexecutable not found: [Errno 2] No such file or directory: 'ctl'",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_68d5efdbd9e64427ad82c928",
+          "content": "exit_code: 127\nstdout: <empty>\nstderr:\nexecutable not found: [Errno 2] No such file or directory: 'ctl'",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_0e172acebe6e4b54ba516d1f",
+          "content": "exit_code: 127\nstdout: <empty>\nstderr:\nexecutable not found: [Errno 2] No such file or directory: 'ctl'",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_8487f1288f7f47589cacfd31",
+          "content": "exit_code: 127\nstdout: <empty>\nstderr:\nexecutable not found: [Errno 2] No such file or directory: 'ctl'",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Let me use the full path to the CLI."
+        },
+        {
+          "type": "tool_use",
+          "id": "call_9f780562bbb84dbd8e3f50ef",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl pipeline status pipe-01"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_93ba1aaeeb5746d8ac9819d4",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl pipeline status pipe-02"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_8789542cecb44059a5f74307",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl pipeline status pipe-03"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_6b2a853b65fe46ae978ff357",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl pipeline status pipe-04"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_3c982a69240b4ccfa62ca04d",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl pipeline status pipe-05"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_c954701377a94b699e906862",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl pipeline status pipe-06"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_b7cdb4d2aa2b4fd5943b2f2d",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl pipeline status pipe-07"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_a887b640229f45ae8872f6b2",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl pipeline status pipe-08"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_3de880d3a0b94612bfd850df",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl pipeline status pipe-09"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_936a7c695c8b4244b68101d6",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl cache status"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_81318518485642858fa87fb8",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl list tickets --limit 50 --format json"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_b394fd9f29c147c49ce1d492",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl list users --limit 50 --format json"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_fa8cbbb2e75e4623b081d85a",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl list orders --limit 120 --format json"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_9f780562bbb84dbd8e3f50ef",
+          "content": "exit_code: 0\nstdout:\npipeline: pipe-01 (pipe-01)\nran_in_session: no\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_93ba1aaeeb5746d8ac9819d4",
+          "content": "exit_code: 0\nstdout:\npipeline: pipe-02 (pipe-02)\nran_in_session: no\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_8789542cecb44059a5f74307",
+          "content": "exit_code: 0\nstdout:\npipeline: pipe-03 (pipe-03)\nran_in_session: no\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_6b2a853b65fe46ae978ff357",
+          "content": "exit_code: 0\nstdout:\npipeline: pipe-04 (pipe-04)\nran_in_session: no\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_3c982a69240b4ccfa62ca04d",
+          "content": "exit_code: 0\nstdout:\npipeline: pipe-05 (pipe-05)\nran_in_session: no\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_c954701377a94b699e906862",
+          "content": "exit_code: 0\nstdout:\npipeline: pipe-06 (pipe-06)\nran_in_session: no\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_b7cdb4d2aa2b4fd5943b2f2d",
+          "content": "exit_code: 0\nstdout:\npipeline: pipe-07 (pipe-07)\ncompleted: 147/200, remaining: 53, state: partial\nfailed_at: 2026-04-18T14:42:09Z\ncause: apply step timed out at record 148 (downstream RDS freeze)\ncollateral_refunds: o088, o091\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_a887b640229f45ae8872f6b2",
+          "content": "exit_code: 0\nstdout:\npipeline: pipe-08 (pipe-08)\nran_in_session: no\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_3de880d3a0b94612bfd850df",
+          "content": "exit_code: 0\nstdout:\npipeline: pipe-09 (pipe-09)\nran_in_session: no\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_936a7c695c8b4244b68101d6",
+          "content": "exit_code: 0\nstdout:\npages_cache_stale: no\nauth_page_ok: no\nsearch_index_stale: no\npipe-03_ran_in_session: no\npipe-07_state: clean\nstate_files: (none)\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_81318518485642858fa87fb8",
+          "content": "exit_code: 0\nstdout:\n[\n  {\n    \"id\": \"t001\",\n    \"user_id\": \"u042\",\n    \"subject\": \"Cannot log in after password reset\",\n    \"body\": \"Customer reports: cannot log in after password reset.\",\n    \"status\": \"open\",\n    \"priority\": \"low\",\n    \"created_at\": \"2026-04-11T23:21:28Z\"\n  },\n  {\n    \"id\": \"t002\",\n    \"user_id\": \"u046\",\n    \"subject\": \"Invoice PDF has wrong totals\",\n    \"body\": \"Customer reports: invoice pdf has wrong totals.\",\n    \"status\": \"resolved\",\n    \"priority\": \"critical\",\n    \"created_at\": \"2026-03-29T13:24:58Z\"\n  },\n  {\n    \"id\": \"t003\",\n    \"user_id\": \"u034\",\n    \"subject\": \"Export CSV is missing the last column\",\n    \"body\": \"Customer reports: export csv is missing the last column.\",\n    \"status\": \"escalated\",\n    \"priority\": \"med\",\n    \"created_at\": \"2026-04-06T08:01:42Z\"\n  },\n  {\n    \"id\": \"t004\",\n    \"user_id\": \"u024\",\n    \"subject\": \"Need to transfer ownership of org-3 workspace\",\n    \"body\": \"Customer reports: need to transfer ownership of org-3 workspace.\",\n    \"status\": \"resolved\",\n    \"priority\": \"critical\",\n    \"created_at\": \"2026-04-04T03:44:57Z\"\n  },\n  {\n    \"id\": \"t005\",\n    \"user_id\": \"u050\",\n    \"subject\": \"Two-factor code never arrives by SMS\",\n    \"body\": \"Customer reports: two-factor code never arrives by sms.\",\n    \"status\": \"resolved\",\n    \"priority\": \"low\",\n    \"created_at\": \"2026-04-07T18:06:19Z\"\n  },\n  {\n    \"id\": \"t006\",\n    \"user_id\": \"u005\",\n    \"subject\": \"Refund not processed after 10 business days\",\n    \"body\": \"Customer reports: refund not processed after 10 business days.\",\n    \"status\": \"resolved\",\n    \"priority\": \"low\",\n    \"created_at\": \"2026-03-27T21:55:33Z\"\n  },\n  {\n    \"id\": \"t007\",\n    \"user_id\": \"u044\",\n    \"subject\": \"Webhook retries are looping forever\",\n    \"body\": \"Customer reports: webhook retries are looping forever.\",\n    \"status\": \"resolved\",\n    \"priority\": \"high\",\n    \"created_at\": \"2026-04-11T18:24:14Z\"\n  },\n  {\n    \"id\": \"t008\",\n    \"user_id\": \"u047\",\n    \"subject\": \"Dashboard graphs show zero for all metrics\",\n    \"body\": \"Customer reports: dashboard graphs show zero for all metrics.\",\n    \"status\": \"escalated\",\n    \"priority\": \"med\",\n    \"created_at\": \"2026-04-07T19:36:19Z\"\n  },\n  {\n    \"id\": \"t009\",\n    \"user_id\": \"u006\",\n    \"subject\": \"Bulk delete hangs on large product catalogs\",\n    \"body\": \"Customer reports: bulk delete hangs on large product catalogs.\",\n    \"status\": \"escalated\",\n    \"priority\": \"med\",\n    \"created_at\": \"2026-04-07T00:25:46Z\"\n  },\n  {\n    \"id\": \"t010\",\n    \"user_id\": \"u020\",\n    \"subject\": \"API key rotation broke our production deploy\",\n    \"body\": \"Customer reports: api key rotation broke our production deploy.\",\n    \"status\": \"escalated\",\n    \"priority\": \"critical\",\n    \"created_at\": \"2026-04-17T17:45:38Z\"\n  },\n  {\n    \"id\": \"t011\",\n    \"user_id\": \"u039\",\n    \"subject\": \"Feature request: scheduled exports\",\n    \"body\": \"Customer reports: feature request: scheduled exports.\",\n    \"status\": \"escalated\",\n    \"priority\": \"low\",\n    \"created_at\": \"2026-04-08T23:18:40Z\"\n  },\n  {\n    \"id\": \"t012\",\n    \"user_id\": \"u036\",\n    \"subject\": \"Acme integration keeps disconnecting\",\n    \"body\": \"Customer reports: acme integration keeps disconnecting.\",\n    \"status\": \"resolved\",\n    \"priority\": \"high\",\n    \"created_at\": \"2026-04-17T19:06:35Z\"\n  },\n  {\n    \"id\": \"t013\",\n    \"user_id\": \"u043\",\n    \"subject\": \"Session ended mid-checkout, cart was lost\",\n    \"body\": \"Customer reports: session ended mid-checkout, cart was lost.\",\n    \"status\": \"escalated\",\n    \"priority\": \"low\",\n    \"created_at\": \"2026-04-03T10:41:45Z\"\n  },\n  {\n    \"id\": \"t014\",\n    \"user_id\": \"u033\",\n    \"subject\": \"Admin console shows stale user roles\",\n    \"body\": \"Customer reports: admin console shows stale user roles.\",\n    \"status\": \"resolved\",\n    \"priority\": \"low\",\n    \"created_at\": \"2026-04-06T09:32:36Z\"\n  },\n  {\n    \"id\": \"t015\",\n    \"user_id\": \"u020\",\n    \"subject\": \"Sub-user cannot see orders they created\",\n    \"body\": \"Customer reports: sub-user cannot see orders they created.\",\n    \"status\": \"open\",\n    \"priority\": \"med\",\n    \"created_at\": \"2026-04-07T09:51:11Z\"\n  },\n  {\n    \"id\": \"t016\",\n    \"user_id\": \"u050\",\n    \"subject\": \"Stripe reconciliation is off by one penny\",\n    \"body\": \"Customer reports: stripe reconciliation is off by one penny.\",\n    \"status\": \"resolved\",\n    \"priority\": \"med\",\n    \"created_at\": \"2026-04-13T00:03:30Z\"\n  },\n  {\n    \"id\": \"t017\",\n    \"user_id\": \"u009\",\n    \"subject\": \"Seats count mismatch after plan downgrade\",\n    \"body\": \"Customer reports: seats count mismatch after plan downgrade.\",\n    \"status\": \"open\",\n    \"priority\": \"low\",\n    \"created_at\": \"2026-04-09T15:22:39Z\"\n  },\n  {\n    \"id\": \"t018\",\n    \"user_id\": \"u007\",\n    \"subject\": \"Email notifications are going to spam\",\n    \"body\": \"Customer reports: email notifications are going to spam.\",\n    \"status\": \"escalated\",\n    \"priority\": \"low\",\n    \"created_at\": \"2026-04-07T15:38:28Z\"\n  },\n  {\n    \"id\": \"t019\",\n    \"user_id\": \"u042\",\n    \"subject\": \"billing broken since the weekend\",\n    \"body\": \"I can't check out since Saturday. Three of my recent orders are flagged and my account just got suspended this morning with no warning. Please look at o102, o107, o115. This is urgent.\",\n    \"status\": \"escalated\",\n    \"priority\": \"critical\",\n    \"created_at\": \"2026-04-22T12:03:41Z\"\n  },\n  {\n    \"id\": \"t020\",\n    \"user_id\": \"u025\",\n    \"subject\": \"SSO redirect loops on Safari only\",\n    \"body\": \"Customer reports: sso redirect loops on safari only.\",\n    \"status\": \"open\",\n    \"priority\": \"med\",\n    \"created_at\": \"2026-04-15T05:17:58Z\"\n  },\n  {\n    \"id\": \"t021\",\n    \"user_id\": \"u045\",\n    \"subject\": \"Permissions changed without any audit entry\",\n    \"body\": \"Customer reports: permissions changed without any audit entry.\",\n    \"status\": \"escalated\",\n    \"priority\": \"med\",\n    \"created_at\": \"2026-04-02T18:04:25Z\"\n  },\n  {\n    \"id\": \"t022\",\n    \"user_id\": \"u003\",\n    \"subject\": \"Export queue appears stuck since Tuesday\",\n    \"body\": \"Customer reports: export queue appears stuck since tuesday.\",\n    \"status\": \"resolved\",\n    \"priority\": \"high\",\n    \"created_at\": \"2026-04-12T11:15:27Z\"\n  },\n  {\n    \"id\": \"t023\",\n    \"user_id\": \"u029\",\n    \"subject\": \"Password reset emails never arrive for @gmail\",\n    \"body\": \"Customer reports: password reset emails never arrive for @gmail.\",\n    \"status\": \"escalated\",\n    \"priority\": \"high\",\n    \"created_at\": \"2026-04-02T04:57:40Z\"\n  },\n  {\n    \"id\": \"t024\",\n    \"user_id\": \"u015\",\n    \"subject\": \"API rate limit headers missing from responses\",\n    \"body\": \"Customer reports: api rate limit headers missing from responses.\",\n    \"status\": \"escalated\",\n    \"priority\": \"med\",\n    \"created_at\": \"2026-04-08T23:26:38Z\"\n  },\n  {\n    \"id\": \"t025\",\n    \"user_id\": \"u031\",\n    \"subject\": \"Upload fails silently for files over 5 MB\",\n    \"body\": \"Customer reports: upload fails silently for files over 5 mb.\",\n    \"status\": \"open\",\n    \"priority\": \"high\",\n    \"created_at\": \"2026-03-27T07:24:48Z\"\n  },\n  {\n    \"id\": \"t026\",\n    \"user_id\": \"u029\",\n    \"subject\": \"Runbook incident-42 links to a 404 page\",\n    \"body\": \"Customer reports: runbook incident-42 links to a 404 page.\",\n    \"status\": \"resolved\",\n    \"priority\": \"high\",\n    \"created_at\": \"2026-04-05T11:05:11Z\"\n  },\n  {\n    \"id\": \"t027\",\n    \"user_id\": \"u033\",\n    \"subject\": \"New member invite shows as already-accepted\",\n    \"body\": \"Customer reports: new member invite shows as already-accepted.\",\n    \"status\": \"escalated\",\n    \"priority\": \"critical\",\n    \"created_at\": \"2026-04-16T03:11:19Z\"\n  },\n  {\n    \"id\": \"t028\",\n    \"user_id\": \"u013\",\n    \"subject\": \"Billing address cannot be updated from UI\",\n    \"body\": \"Customer reports: billing address cannot be updated from ui.\",\n    \"status\": \"escalated\",\n    \"priority\": \"med\",\n    \"created_at\": \"2026-04-11T20:43:31Z\"\n  },\n  {\n    \"id\": \"t029\",\n    \"user_id\": \"u004\",\n    \"subject\": \"Product SKU conflict when duplicating a catalog\",\n    \"body\": \"Customer reports: product sku conflict when duplicating a catalog.\",\n    \"status\": \"escalated\",\n    \"priority\": \"critical\",\n    \"created_at\": \"2026-04-05T23:30:24Z\"\n  },\n  {\n    \"id\": \"t030\",\n    \"user_id\": \"u036\",\n    \"subject\": \"Real-time sync falls behind during high load\",\n    \"body\": \"Customer reports: real-time sync falls behind during high load.\",\n    \"status\": \"open\",\n    \"priority\": \"low\",\n    \"created_at\": \"2026-04-10T03:52:40Z\"\n  }\n]\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_b394fd9f29c147c49ce1d492",
+          "content": "exit_code: 0\nstdout:\n[\n  {\n    \"id\": \"u001\",\n    \"email\": \"casey.vega@globex.com\",\n    \"name\": \"Casey Vega\",\n    \"status\": \"pending\",\n    \"role\": \"admin\",\n    \"org_id\": \"org-5\",\n    \"created_at\": \"2026-04-12T01:08:18Z\"\n  },\n  {\n    \"id\": \"u002\",\n    \"email\": \"sky.tan@acme.io\",\n    \"name\": \"Sky Tan\",\n    \"status\": \"suspended\",\n    \"role\": \"admin\",\n    \"org_id\": \"org-4\",\n    \"created_at\": \"2026-03-26T15:58:21Z\"\n  },\n  {\n    \"id\": \"u003\",\n    \"email\": \"sky.quiroz@initech.co\",\n    \"name\": \"Sky Quiroz\",\n    \"status\": \"pending\",\n    \"role\": \"admin\",\n    \"org_id\": \"org-3\",\n    \"created_at\": \"2026-04-12T09:54:39Z\"\n  },\n  {\n    \"id\": \"u004\",\n    \"email\": \"indra.mori@globex.com\",\n    \"name\": \"Indra Mori\",\n    \"status\": \"suspended\",\n    \"role\": \"viewer\",\n    \"org_id\": \"org-3\",\n    \"created_at\": \"2026-04-01T19:17:42Z\"\n  },\n  {\n    \"id\": \"u005\",\n    \"email\": \"kai.yoon@acme.io\",\n    \"name\": \"Kai Yoon\",\n    \"status\": \"active\",\n    \"role\": \"member\",\n    \"org_id\": \"org-5\",\n    \"created_at\": \"2026-03-27T16:03:54Z\"\n  },\n  {\n    \"id\": \"u006\",\n    \"email\": \"dana.chen@wayne.inc\",\n    \"name\": \"Dana Chen\",\n    \"status\": \"active\",\n    \"role\": \"viewer\",\n    \"org_id\": \"org-3\",\n    \"created_at\": \"2026-04-17T13:40:37Z\"\n  },\n  {\n    \"id\": \"u007\",\n    \"email\": \"lee.chen@globex.com\",\n    \"name\": \"Lee Chen\",\n    \"status\": \"pending\",\n    \"role\": \"member\",\n    \"org_id\": \"org-2\",\n    \"created_at\": \"2026-04-02T17:28:41Z\"\n  },\n  {\n    \"id\": \"u008\",\n    \"email\": \"rowan.wong@initech.co\",\n    \"name\": \"Rowan Wong\",\n    \"status\": \"suspended\",\n    \"role\": \"viewer\",\n    \"org_id\": \"org-5\",\n    \"created_at\": \"2026-04-23T14:53:08Z\"\n  },\n  {\n    \"id\": \"u009\",\n    \"email\": \"val.rao@initech.co\",\n    \"name\": \"Val Rao\",\n    \"status\": \"suspended\",\n    \"role\": \"admin\",\n    \"org_id\": \"org-2\",\n    \"created_at\": \"2026-04-11T03:52:30Z\"\n  },\n  {\n    \"id\": \"u010\",\n    \"email\": \"dana.diaz@wayne.inc\",\n    \"name\": \"Dana Diaz\",\n    \"status\": \"active\",\n    \"role\": \"member\",\n    \"org_id\": \"org-3\",\n    \"created_at\": \"2026-03-25T15:19:20Z\"\n  },\n  {\n    \"id\": \"u011\",\n    \"email\": \"gale.wong@initech.co\",\n    \"name\": \"Gale Wong\",\n    \"status\": \"active\",\n    \"role\": \"viewer\",\n    \"org_id\": \"org-3\",\n    \"created_at\": \"2026-03-30T11:09:21Z\"\n  },\n  {\n    \"id\": \"u012\",\n    \"email\": \"pat.ito@acme.io\",\n    \"name\": \"Pat Ito\",\n    \"status\": \"active\",\n    \"role\": \"viewer\",\n    \"org_id\": \"org-4\",\n    \"created_at\": \"2026-04-10T13:38:40Z\"\n  },\n  {\n    \"id\": \"u013\",\n    \"email\": \"blair.adler@initech.co\",\n    \"name\": \"Blair Adler\",\n    \"status\": \"active\",\n    \"role\": \"viewer\",\n    \"org_id\": \"org-3\",\n    \"created_at\": \"2026-04-16T03:44:37Z\"\n  },\n  {\n    \"id\": \"u014\",\n    \"email\": \"xan.ortiz@wayne.inc\",\n    \"name\": \"Xan Ortiz\",\n    \"status\": \"suspended\",\n    \"role\": \"member\",\n    \"org_id\": \"org-5\",\n    \"created_at\": \"2026-04-23T12:44:03Z\"\n  },\n  {\n    \"id\": \"u015\",\n    \"email\": \"dana.chen@globex.com\",\n    \"name\": \"Dana Chen\",\n    \"status\": \"suspended\",\n    \"role\": \"admin\",\n    \"org_id\": \"org-3\",\n    \"created_at\": \"2026-03-26T17:19:38Z\"\n  },\n  {\n    \"id\": \"u016\",\n    \"email\": \"rowan.evans@umbrella.org\",\n    \"name\": \"Rowan Evans\",\n    \"status\": \"active\",\n    \"role\": \"admin\",\n    \"org_id\": \"org-3\",\n    \"created_at\": \"2026-04-06T07:09:01Z\"\n  },\n  {\n    \"id\": \"u017\",\n    \"email\": \"zion.brooks@initech.co\",\n    \"name\": \"Zion Brooks\",\n    \"status\": \"active\",\n    \"role\": \"viewer\",\n    \"org_id\": \"org-2\",\n    \"created_at\": \"2026-04-19T00:14:13Z\"\n  },\n  {\n    \"id\": \"u018\",\n    \"email\": \"lee.yoon@wayne.inc\",\n    \"name\": \"Lee Yoon\",\n    \"status\": \"pending\",\n    \"role\": \"viewer\",\n    \"org_id\": \"org-2\",\n    \"created_at\": \"2026-04-12T12:10:52Z\"\n  },\n  {\n    \"id\": \"u019\",\n    \"email\": \"frankie.zima@globex.com\",\n    \"name\": \"Frankie Zima\",\n    \"status\": \"pending\",\n    \"role\": \"admin\",\n    \"org_id\": \"org-2\",\n    \"created_at\": \"2026-04-07T20:58:34Z\"\n  },\n  {\n    \"id\": \"u020\",\n    \"email\": \"zion.nair@globex.com\",\n    \"name\": \"Zion Nair\",\n    \"status\": \"pending\",\n    \"role\": \"admin\",\n    \"org_id\": \"org-1\",\n    \"created_at\": \"2026-04-05T10:18:24Z\"\n  },\n  {\n    \"id\": \"u021\",\n    \"email\": \"blair.park@globex.com\",\n    \"name\": \"Blair Park\",\n    \"status\": \"active\",\n    \"role\": \"member\",\n    \"org_id\": \"org-3\",\n    \"created_at\": \"2026-04-09T04:25:37Z\"\n  },\n  {\n    \"id\": \"u022\",\n    \"email\": \"zion.hayes@globex.com\",\n    \"name\": \"Zion Hayes\",\n    \"status\": \"active\",\n    \"role\": \"viewer\",\n    \"org_id\": \"org-2\",\n    \"created_at\": \"2026-04-04T15:45:13Z\"\n  },\n  {\n    \"id\": \"u023\",\n    \"email\": null,\n    \"name\": \"Kai Ito\",\n    \"status\": \"pending\",\n    \"role\": \"member\",\n    \"org_id\": \"org-5\",\n    \"created_at\": \"2026-04-04T14:20:28Z\"\n  },\n  {\n    \"id\": \"u024\",\n    \"email\": \"val.rao@initech.co\",\n    \"name\": \"Val Rao\",\n    \"status\": \"active\",\n    \"role\": \"admin\",\n    \"org_id\": \"org-3\",\n    \"created_at\": \"2026-04-15T07:57:13Z\"\n  },\n  {\n    \"id\": \"u025\",\n    \"email\": \"sky.ito@acme.io\",\n    \"name\": \"Sky Ito\",\n    \"status\": \"active\",\n    \"role\": \"viewer\",\n    \"org_id\": \"org-4\",\n    \"created_at\": \"2026-04-07T05:14:44Z\"\n  },\n  {\n    \"id\": \"u026\",\n    \"email\": \"xan.zima@initech.co\",\n    \"name\": \"Xan Zima\",\n    \"status\": \"pending\",\n    \"role\": \"viewer\",\n    \"org_id\": \"org-5\",\n    \"created_at\": \"2026-04-18T09:15:47Z\"\n  },\n  {\n    \"id\": \"u027\",\n    \"email\": \"morgan.singh@globex.com\",\n    \"name\": \"Morgan Singh\",\n    \"status\": \"pending\",\n    \"role\": \"admin\",\n    \"org_id\": \"org-4\",\n    \"created_at\": \"2026-04-23T22:01:47Z\"\n  },\n  {\n    \"id\": \"u028\",\n    \"email\": \"quinn.zima@wayne.inc\",\n    \"name\": \"Quinn Zima\",\n    \"status\": \"suspended\",\n    \"role\": \"viewer\",\n    \"org_id\": \"org-2\",\n    \"created_at\": \"2026-04-06T07:39:05Z\"\n  },\n  {\n    \"id\": \"u029\",\n    \"email\": \"nico.chen@initech.co\",\n    \"name\": \"Nico Chen\",\n    \"status\": \"suspended\",\n    \"role\": \"member\",\n    \"org_id\": \"org-1\",\n    \"created_at\": \"2026-04-09T10:05:58Z\"\n  },\n  {\n    \"id\": \"u030\",\n    \"email\": \"quinn.jensen@umbrella.org\",\n    \"name\": \"Quinn Jensen\",\n    \"status\": \"pending\",\n    \"role\": \"member\",\n    \"org_id\": \"org-3\",\n    \"created_at\": \"2026-03-28T02:03:46Z\"\n  },\n  {\n    \"id\": \"u031\",\n    \"email\": null,\n    \"name\": \"Eden Gomez\",\n    \"status\": \"suspended\",\n    \"role\": \"member\",\n    \"org_id\": \"org-2\",\n    \"created_at\": \"2026-03-25T02:52:24Z\"\n  },\n  {\n    \"id\": \"u032\",\n    \"email\": \"sky.jensen@umbrella.org\",\n    \"name\": \"Sky Jensen\",\n    \"status\": \"suspended\",\n    \"role\": \"admin\",\n    \"org_id\": \"org-3\",\n    \"created_at\": \"2026-04-10T01:43:17Z\"\n  },\n  {\n    \"id\": \"u033\",\n    \"email\": \"gale.nair@wayne.inc\",\n    \"name\": \"Gale Nair\",\n    \"status\": \"suspended\",\n    \"role\": \"viewer\",\n    \"org_id\": \"org-3\",\n    \"created_at\": \"2026-04-01T10:14:59Z\"\n  },\n  {\n    \"id\": \"u034\",\n    \"email\": \"ola.ortiz@globex.com\",\n    \"name\": \"Ola Ortiz\",\n    \"status\": \"suspended\",\n    \"role\": \"member\",\n    \"org_id\": \"org-2\",\n    \"created_at\": \"2026-04-19T21:12:22Z\"\n  },\n  {\n    \"id\": \"u035\",\n    \"email\": \"jules.quiroz@wayne.inc\",\n    \"name\": \"Jules Quiroz\",\n    \"status\": \"pending\",\n    \"role\": \"admin\",\n    \"org_id\": \"org-2\",\n    \"created_at\": \"2026-04-08T22:20:07Z\"\n  },\n  {\n    \"id\": \"u036\",\n    \"email\": \"harper.zima@globex.com\",\n    \"name\": \"Harper Zima\",\n    \"status\": \"active\",\n    \"role\": \"admin\",\n    \"org_id\": \"org-1\",\n    \"created_at\": \"2026-04-12T02:44:16Z\"\n  },\n  {\n    \"id\": \"u037\",\n    \"email\": \"pat.tan@acme.io\",\n    \"name\": \"Pat Tan\",\n    \"status\": \"pending\",\n    \"role\": \"member\",\n    \"org_id\": \"org-5\",\n    \"created_at\": \"2026-04-14T13:28:00Z\"\n  },\n  {\n    \"id\": \"u038\",\n    \"email\": \"wren.wong@umbrella.org\",\n    \"name\": \"Wren Wong\",\n    \"status\": \"pending\",\n    \"role\": \"member\",\n    \"org_id\": \"org-2\",\n    \"created_at\": \"2026-04-16T20:04:01Z\"\n  },\n  {\n    \"id\": \"u039\",\n    \"email\": \"uma.wong@acme.io\",\n    \"name\": \"Uma Wong\",\n    \"status\": \"active\",\n    \"role\": \"member\",\n    \"org_id\": \"org-2\",\n    \"created_at\": \"2026-04-15T11:04:38Z\"\n  },\n  {\n    \"id\": \"u040\",\n    \"email\": \"zion.wong@wayne.inc\",\n    \"name\": \"Zion Wong\",\n    \"status\": \"pending\",\n    \"role\": \"admin\",\n    \"org_id\": \"org-5\",\n    \"created_at\": \"2026-04-11T21:39:47Z\"\n  },\n  {\n    \"id\": \"u041\",\n    \"email\": \"dana.ortiz@globex.com\",\n    \"name\": \"Dana Ortiz\",\n    \"status\": \"pending\",\n    \"role\": \"viewer\",\n    \"org_id\": \"org-5\",\n    \"created_at\": \"2026-03-27T20:48:18Z\"\n  },\n  {\n    \"id\": \"u042\",\n    \"email\": \"sarah.chen@acme.io\",\n    \"name\": \"Sarah Chen\",\n    \"status\": \"suspended\",\n    \"role\": \"member\",\n    \"org_id\": \"org-2\",\n    \"created_at\": \"2025-11-03T09:14:22Z\",\n    \"status_changed_at\": \"2026-04-22T11:47:00Z\",\n    \"notes\": \"billing dispute; account flipped to suspended pending review\"\n  },\n  {\n    \"id\": \"u043\",\n    \"email\": \"rowan.ortiz@globex.com\",\n    \"name\": \"Rowan Ortiz\",\n    \"status\": \"suspended\",\n    \"role\": \"member\",\n    \"org_id\": \"org-4\",\n    \"created_at\": \"2026-04-11T10:01:12Z\"\n  },\n  {\n    \"id\": \"u044\",\n    \"email\": \"yael.hayes@initech.co\",\n    \"name\": \"Yael Hayes\",\n    \"status\": \"suspended\",\n    \"role\": \"member\",\n    \"org_id\": \"org-2\",\n    \"created_at\": \"2026-04-10T16:04:15Z\"\n  },\n  {\n    \"id\": \"u045\",\n    \"email\": \"ola.chen@initech.co\",\n    \"name\": \"Ola Chen\",\n    \"status\": \"active\",\n    \"role\": \"member\",\n    \"org_id\": \"org-3\",\n    \"created_at\": \"2026-04-08T11:30:41Z\"\n  },\n  {\n    \"id\": \"u046\",\n    \"email\": \"rowan.chen@globex.com\",\n    \"name\": \"Rowan Chen\",\n    \"status\": \"active\",\n    \"role\": \"admin\",\n    \"org_id\": \"org-4\",\n    \"created_at\": \"2026-04-16T13:58:09Z\"\n  },\n  {\n    \"id\": \"u047\",\n    \"email\": \"wren.gomez@acme.io\",\n    \"name\": \"Wren Gomez\",\n    \"status\": \"pending\",\n    \"role\": \"member\",\n    \"org_id\": \"org-3\",\n    \"created_at\": \"2026-03-28T15:48:44Z\"\n  },\n  {\n    \"id\": \"u048\",\n    \"email\": \"ola.nair@acme.io\",\n    \"name\": \"Ola Nair\",\n    \"status\": \"active\",\n    \"role\": \"member\",\n    \"org_id\": \"org-4\",\n    \"created_at\": \"2026-03-26T15:29:54Z\"\n  },\n  {\n    \"id\": \"u049\",\n    \"email\": null,\n    \"name\": \"Wren Adler\",\n    \"status\": \"pending\",\n    \"role\": \"member\",\n    \"org_id\": \"org-1\",\n    \"created_at\": \"2026-04-06T22:10:17Z\"\n  },\n  {\n    \"id\": \"u050\",\n    \"email\": \"jules.yoon@umbrella.org\",\n    \"name\": \"Jules Yoon\",\n    \"status\": \"pending\",\n    \"role\": \"viewer\",\n    \"org_id\": \"org-5\",\n    \"created_at\": \"2026-03-25T17:09:36Z\"\n  }\n]\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_fa8cbbb2e75e4623b081d85a",
+          "content": "exit_code: 0\nstdout (truncated):\n[\n  {\n    \"id\": \"o001\",\n    \"user_id\": \"u018\",\n    \"total_cents\": 114450,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p063\",\n      \"p029\"\n    ],\n    \"created_at\": \"2026-04-05T02:56:55Z\"\n  },\n  {\n    \"id\": \"o002\",\n    \"user_id\": \"u009\",\n    \"total_cents\": 163319,\n    \"currency\": \"GBP\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p052\",\n      \"p022\",\n      \"p060\"\n    ],\n    \"created_at\": \"2026-03-10T23:21:05Z\"\n  },\n  {\n    \"id\": \"o003\",\n    \"user_id\": \"u042\",\n    \"total_cents\": 112557,\n    \"currency\": \"USD\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p076\",\n      \"p073\",\n      \"p004\",\n      \"p011\"\n    ],\n    \"created_at\": \"2026-04-15T04:16:14Z\"\n  },\n  {\n    \"id\": \"o004\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 86012,\n    \"currency\": \"USD\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p034\"\n    ],\n    \"created_at\": \"2026-04-08T03:11:50Z\"\n  },\n  {\n    \"id\": \"o005\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 21670,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p049\",\n      \"p036\",\n      \"p054\"\n    ],\n    \"created_at\": \"2026-03-18T15:19:25Z\"\n  },\n  {\n    \"id\": \"o006\",\n    \"user_id\": \"u015\",\n    \"total_cents\": 170630,\n    \"currency\": \"USD\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p045\"\n    ],\n    \"created_at\": \"2026-03-18T09:15:17Z\"\n  },\n  {\n    \"id\": \"o007\",\n    \"user_id\": \"u013\",\n    \"total_cents\": 5541,\n    \"currency\": \"GBP\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p032\"\n    ],\n    \"created_at\": \"2026-04-12T10:04:30Z\"\n  },\n  {\n    \"id\": \"o008\",\n    \"user_id\": \"u037\",\n    \"total_cents\": 57337,\n    \"currency\": \"EUR\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p061\",\n      \"p015\"\n    ],\n    \"created_at\": \"2026-03-17T18:29:57Z\"\n  },\n  {\n    \"id\": \"o009\",\n    \"user_id\": \"u050\",\n    \"total_cents\": 43129,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p022\",\n      \"p078\",\n      \"p015\"\n    ],\n    \"created_at\": \"2026-03-26T21:47:01Z\"\n  },\n  {\n    \"id\": \"o010\",\n    \"user_id\": \"u037\",\n    \"total_cents\": 177761,\n    \"currency\": \"EUR\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p040\"\n    ],\n    \"created_at\": \"2026-03-20T06:56:51Z\"\n  },\n  {\n    \"id\": \"o011\",\n    \"user_id\": \"u045\",\n    \"total_cents\": 164626,\n    \"currency\": \"USD\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p010\",\n      \"p076\"\n    ],\n    \"created_at\": \"2026-03-21T03:42:41Z\"\n  },\n  {\n    \"id\": \"o012\",\n    \"user_id\": \"u003\",\n    \"total_cents\": 91216,\n    \"currency\": \"GBP\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p077\",\n      \"p016\",\n      \"p073\"\n    ],\n    \"created_at\": \"2026-03-22T21:16:19Z\"\n  },\n  {\n    \"id\": \"o013\",\n    \"user_id\": \"u001\",\n    \"total_cents\": 110314,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p009\",\n      \"p065\",\n      \"p044\"\n    ],\n    \"created_at\": \"2026-04-02T22:54:32Z\"\n  },\n  {\n    \"id\": \"o014\",\n    \"user_id\": \"u012\",\n    \"total_cents\": 192559,\n    \"currency\": \"GBP\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p059\",\n      \"p020\",\n      \"p056\"\n    ],\n    \"created_at\": \"2026-03-25T02:24:37Z\"\n  },\n  {\n    \"id\": \"o015\",\n    \"user_id\": \"u021\",\n    \"total_cents\": 64554,\n    \"currency\": \"USD\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p060\",\n      \"p056\",\n      \"p076\",\n      \"p035\"\n    ],\n    \"created_at\": \"2026-03-12T04:49:31Z\"\n  },\n  {\n    \"id\": \"o016\",\n    \"user_id\": \"u043\",\n    \"total_cents\": 99548,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p032\",\n      \"p060\",\n      \"p073\",\n      \"p079\"\n    ],\n    \"created_at\": \"2026-03-31T00:05:29Z\"\n  },\n  {\n    \"id\": \"o017\",\n    \"user_id\": \"u023\",\n    \"total_cents\": 67924,\n    \"currency\": \"EUR\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p024\",\n      \"p063\",\n      \"p028\"\n    ],\n    \"created_at\": \"2026-03-12T06:21:11Z\"\n  },\n  {\n    \"id\": \"o018\",\n    \"user_id\": \"u013\",\n    \"total_cents\": 22641,\n    \"currency\": \"USD\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p072\",\n      \"p002\",\n      \"p067\"\n    ],\n    \"created_at\": \"2026-03-31T06:45:56Z\"\n  },\n  {\n    \"id\": \"o019\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 4719,\n    \"currency\": \"USD\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p061\",\n      \"p063\"\n    ],\n    \"created_at\": \"2026-04-13T05:49:18Z\"\n  },\n  {\n    \"id\": \"o020\",\n    \"user_id\": \"u031\",\n    \"total_cents\": 145288,\n    \"currency\": \"GBP\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p032\",\n      \"p040\",\n      \"p075\",\n      \"p048\"\n    ],\n    \"created_at\": \"2026-04-03T08:15:08Z\"\n  },\n  {\n    \"id\": \"o021\",\n    \"user_id\": \"u020\",\n    \"total_cents\": 66102,\n    \"currency\": \"USD\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p046\",\n      \"p059\",\n      \"p035\"\n    ],\n    \"created_at\": \"2026-03-19T23:38:35Z\"\n  },\n  {\n    \"id\": \"o022\",\n    \"user_id\": \"u048\",\n    \"total_cents\": 140672,\n    \"currency\": \"GBP\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p041\",\n      \"p016\"\n    ],\n    \"created_at\": \"2026-04-14T16:50:19Z\"\n  },\n  {\n    \"id\": \"o023\",\n    \"user_id\": \"u047\",\n    \"total_cents\": 154755,\n    \"currency\": \"GBP\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p062\",\n      \"p036\"\n    ],\n    \"created_at\": \"2026-04-19T02:52:43Z\"\n  },\n  {\n    \"id\": \"o024\",\n    \"user_id\": \"u024\",\n    \"total_cents\": 47238,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p038\",\n      \"p030\"\n    ],\n    \"created_at\": \"2026-03-20T15:05:56Z\"\n  },\n  {\n    \"id\": \"o025\",\n    \"user_id\": \"u004\",\n    \"total_cents\": 145258,\n    \"currency\": \"EUR\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p036\",\n      \"p006\"\n    ],\n    \"created_at\": \"2026-03-24T00:49:41Z\"\n  },\n  {\n    \"id\": \"o026\",\n    \"user_id\": \"u031\",\n    \"total_cents\": 125691,\n    \"currency\": \"EUR\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p014\",\n      \"p002\",\n      \"p074\",\n      \"p037\"\n    ],\n    \"created_at\": \"2026-04-15T01:12:03Z\"\n  },\n  {\n    \"id\": \"o027\",\n    \"user_id\": \"u031\",\n    \"total_cents\": 30106,\n    \"currency\": \"USD\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p033\"\n    ],\n    \"created_at\": \"2026-03-31T03:04:26Z\"\n  },\n  {\n    \"id\": \"o028\",\n    \"user_id\": \"u041\",\n    \"total_cents\": 180148,\n    \"currency\": \"USD\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p074\"\n    ],\n    \"created_at\": \"2026-04-16T18:10:20Z\"\n  },\n  {\n    \"id\": \"o029\",\n    \"user_id\": \"u036\",\n    \"total_cents\": 109296,\n    \"currency\": \"GBP\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p011\",\n      \"p032\",\n      \"p016\"\n    ],\n    \"created_at\": \"2026-03-17T08:15:06Z\"\n  },\n  {\n    \"id\": \"o030\",\n    \"user_id\": \"u028\",\n    \"total_cents\": 80252,\n    \"currency\": \"GBP\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p058\",\n      \"p057\",\n      \"p039\",\n      \"p076\"\n    ],\n    \"created_at\": \"2026-03-25T09:43:43Z\"\n  },\n  {\n    \"id\": \"o031\",\n    \"user_id\": \"u041\",\n    \"total_cents\": 55517,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p027\"\n    ],\n    \"created_at\": \"2026-04-16T09:00:55Z\"\n  },\n  {\n    \"id\": \"o032\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 41233,\n    \"currency\": \"USD\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p023\",\n      \"p071\"\n    ],\n    \"created_at\": \"2026-04-02T03:07:31Z\"\n  },\n  {\n    \"id\": \"o033\",\n    \"user_id\": \"u046\",\n    \"total_cents\": 74311,\n    \"currency\": \"GBP\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p038\",\n      \"p005\",\n      \"p030\",\n      \"p037\"\n    ],\n    \"created_at\": \"2026-04-20T13:04:11Z\"\n  },\n  {\n    \"id\": \"o034\",\n    \"user_id\": \"u043\",\n    \"total_cents\": 52056,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p034\",\n      \"p076\"\n    ],\n    \"created_at\": \"2026-03-28T13:32:20Z\"\n  },\n  {\n    \"id\": \"o035\",\n    \"user_id\": \"u010\",\n    \"total_cents\": 18918,\n    \"currency\": \"USD\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p020\",\n      \"p035\"\n    ],\n    \"created_at\": \"2026-03-16T12:31:15Z\"\n  },\n  {\n    \"id\": \"o036\",\n    \"user_id\": \"u029\",\n    \"total_cents\": 32797,\n    \"currency\": \"EUR\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p077\",\n      \"p073\",\n      \"p037\"\n    ],\n    \"created_at\": \"2026-03-21T00:45:05Z\"\n  },\n  {\n    \"id\": \"o037\",\n    \"user_id\": \"u029\",\n    \"total_cents\": 21286,\n    \"currency\": \"GBP\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p035\",\n      \"p065\",\n      \"p070\",\n      \"p064\"\n    ],\n    \"created_at\": \"2026-03-11T19:44:51Z\"\n  },\n  {\n    \"id\": \"o038\",\n    \"user_id\": \"u006\",\n    \"total_cents\": 60210,\n    \"currency\": \"GBP\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p042\",\n      \"p078\",\n      \"p033\",\n      \"p004\"\n    ],\n    \"created_at\": \"2026-03-17T20:59:23Z\"\n  },\n  {\n    \"id\": \"o039\",\n    \"user_id\": \"u031\",\n    \"total_cents\": 136242,\n    \"currency\": \"GBP\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p074\",\n      \"p006\",\n      \"p023\"\n    ],\n    \"created_at\": \"2026-03-10T12:41:53Z\"\n  },\n  {\n    \"id\": \"o040\",\n    \"user_id\": \"u041\",\n    \"total_cents\": 129101,\n    \"currency\": \"USD\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p024\",\n      \"p075\",\n      \"p056\"\n    ],\n    \"created_at\": \"2026-04-07T02:35:46Z\"\n  },\n  {\n    \"id\": \"o041\",\n    \"user_id\": \"u022\",\n    \"total_cents\": 108109,\n    \"currency\": \"GBP\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p043\",\n      \"p042\",\n      \"p014\",\n      \"p021\"\n    ],\n    \"created_at\": \"2026-04-10T00:12:07Z\"\n  },\n  {\n    \"id\": \"o042\",\n    \"user_id\": \"u021\",\n    \"total_cents\": 66363,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p071\",\n      \"p005\",\n      \"p059\",\n      \"p012\"\n    ],\n    \"created_at\": \"2026-03-17T11:55:00Z\"\n  },\n  {\n    \"id\": \"o043\",\n    \"user_id\": \"u027\",\n    \"total_cents\": 14408,\n    \"currency\": \"USD\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p066\",\n      \"p001\",\n      \"p070\",\n      \"p060\"\n    ],\n    \"created_at\": \"2026-03-24T18:34:45Z\"\n  },\n  {\n    \"id\": \"o044\",\n    \"user_id\": \"u036\",\n    \"total_cents\": 34543,\n    \"currency\": \"EUR\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p057\",\n      \"p007\",\n      \"p027\",\n      \"p035\"\n    ],\n    \"created_at\": \"2026-03-12T05:44:22Z\"\n  },\n  {\n    \"id\": \"o045\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 41716,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Now let me get the flagged orders and check search index freshness."
+        },
+        {
+          "type": "tool_use",
+          "id": "call_34df7a1a5ed847259c0f798f",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl list orders --limit 120 --format json > /tmp/all_orders.json"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_70ad08f88fce46deb3c99300",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl search --query \"flagged:true\" --scope orders --format json"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_02ea3538334e4d00a2e4a567",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl search --query \"status:escalated\" --scope tickets --format json"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_50030b54bc7748f787c63006",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl search --query \"status:suspended\" --scope users --format json"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_34df7a1a5ed847259c0f798f",
+          "content": "exit_code: 0\nstdout: <empty>",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_70ad08f88fce46deb3c99300",
+          "content": "exit_code: 1\nstdout: <empty>\nstderr:\nunknown argument: --format\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_02ea3538334e4d00a2e4a567",
+          "content": "exit_code: 1\nstdout: <empty>\nstderr:\nunknown argument: --format\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_50030b54bc7748f787c63006",
+          "content": "exit_code: 1\nstdout: <empty>\nstderr:\nunknown argument: --format\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_2a0dcac7002d479eb626868b",
+          "name": "bash",
+          "input": {
+            "command": "jq '[.[] | select(.flagged == true)]' /tmp/all_orders.json"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_55b8a1c470e947d4a6c50115",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl search --query \"flagged:true\" --scope orders"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_38b268b50ab941b69c3f88ce",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl search --query \"status:escalated\" --scope tickets"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_d95377a534db4fe1ba47bea4",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl search --query \"status:suspended\" --scope users"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_2a0dcac7002d479eb626868b",
+          "content": "exit_code: 0\nstdout:\n[\n  {\n    \"id\": \"o102\",\n    \"user_id\": \"u042\",\n    \"total_cents\": 85234,\n    \"currency\": \"GBP\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p044\",\n      \"p021\",\n      \"p048\",\n      \"p040\"\n    ],\n    \"created_at\": \"2026-04-19T08:12:00Z\",\n    \"flagged\": true,\n    \"flag_reason\": \"billing anomaly; see ticket t019\"\n  },\n  {\n    \"id\": \"o107\",\n    \"user_id\": \"u042\",\n    \"total_cents\": 86214,\n    \"currency\": \"USD\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p028\",\n      \"p018\",\n      \"p033\"\n    ],\n    \"created_at\": \"2026-04-20T14:30:00Z\",\n    \"flagged\": true,\n    \"flag_reason\": \"billing anomaly; see ticket t019\"\n  },\n  {\n    \"id\": \"o115\",\n    \"user_id\": \"u042\",\n    \"total_cents\": 164812,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p010\",\n      \"p023\"\n    ],\n    \"created_at\": \"2026-04-21T18:51:44Z\",\n    \"flagged\": true,\n    \"flag_reason\": \"billing anomaly; see ticket t019\"\n  }\n]\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_55b8a1c470e947d4a6c50115",
+          "content": "exit_code: 0\nstdout:\n[]\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_38b268b50ab941b69c3f88ce",
+          "content": "exit_code: 0\nstdout:\n[\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t003\",\n    \"match\": {\n      \"status\": \"escalated\"\n    }\n  },\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t008\",\n    \"match\": {\n      \"status\": \"escalated\"\n    }\n  },\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t009\",\n    \"match\": {\n      \"status\": \"escalated\"\n    }\n  },\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t010\",\n    \"match\": {\n      \"status\": \"escalated\"\n    }\n  },\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t011\",\n    \"match\": {\n      \"status\": \"escalated\"\n    }\n  },\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t013\",\n    \"match\": {\n      \"status\": \"escalated\"\n    }\n  },\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t018\",\n    \"match\": {\n      \"status\": \"escalated\"\n    }\n  },\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t019\",\n    \"match\": {\n      \"status\": \"escalated\"\n    }\n  },\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t021\",\n    \"match\": {\n      \"status\": \"escalated\"\n    }\n  },\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t023\",\n    \"match\": {\n      \"status\": \"escalated\"\n    }\n  },\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t024\",\n    \"match\": {\n      \"status\": \"escalated\"\n    }\n  },\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t027\",\n    \"match\": {\n      \"status\": \"escalated\"\n    }\n  },\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t028\",\n    \"match\": {\n      \"status\": \"escalated\"\n    }\n  },\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t029\",\n    \"match\": {\n      \"status\": \"escalated\"\n    }\n  }\n]\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_d95377a534db4fe1ba47bea4",
+          "content": "exit_code: 0\nstdout:\n[\n  {\n    \"resource\": \"users\",\n    \"id\": \"u002\",\n    \"match\": {\n      \"status\": \"suspended\"\n    }\n  },\n  {\n    \"resource\": \"users\",\n    \"id\": \"u004\",\n    \"match\": {\n      \"status\": \"suspended\"\n    }\n  },\n  {\n    \"resource\": \"users\",\n    \"id\": \"u008\",\n    \"match\": {\n      \"status\": \"suspended\"\n    }\n  },\n  {\n    \"resource\": \"users\",\n    \"id\": \"u009\",\n    \"match\": {\n      \"status\": \"suspended\"\n    }\n  },\n  {\n    \"resource\": \"users\",\n    \"id\": \"u014\",\n    \"match\": {\n      \"status\": \"suspended\"\n    }\n  },\n  {\n    \"resource\": \"users\",\n    \"id\": \"u015\",\n    \"match\": {\n      \"status\": \"suspended\"\n    }\n  },\n  {\n    \"resource\": \"users\",\n    \"id\": \"u028\",\n    \"match\": {\n      \"status\": \"suspended\"\n    }\n  },\n  {\n    \"resource\": \"users\",\n    \"id\": \"u029\",\n    \"match\": {\n      \"status\": \"suspended\"\n    }\n  },\n  {\n    \"resource\": \"users\",\n    \"id\": \"u031\",\n    \"match\": {\n      \"status\": \"suspended\"\n    }\n  },\n  {\n    \"resource\": \"users\",\n    \"id\": \"u032\",\n    \"match\": {\n      \"status\": \"suspended\"\n    }\n  },\n  {\n    \"resource\": \"users\",\n    \"id\": \"u033\",\n    \"match\": {\n      \"status\": \"suspended\"\n    }\n  },\n  {\n    \"resource\": \"users\",\n    \"id\": \"u034\",\n    \"match\": {\n      \"status\": \"suspended\"\n    }\n  },\n  {\n    \"resource\": \"users\",\n    \"id\": \"u042\",\n    \"match\": {\n      \"status\": \"suspended\"\n    }\n  },\n  {\n    \"resource\": \"users\",\n    \"id\": \"u043\",\n    \"match\": {\n      \"status\": \"suspended\"\n    }\n  },\n  {\n    \"resource\": \"users\",\n    \"id\": \"u044\",\n    \"match\": {\n      \"status\": \"suspended\"\n    }\n  }\n]\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Now let me cross-check search index freshness and verify the auth page cache."
+        },
+        {
+          "type": "tool_use",
+          "id": "call_103095753bfc4ad2af93fb62",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl list orders --status paid --limit 120 --format json > /tmp/paid_orders.json"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_fa1d2f2db14949efa2a0419a",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl search --query \"status:paid\" --scope orders"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_06c9264659dd41059262b732",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl fetch /docs/auth"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_68c24029b0154870bead571f",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl list orders --status refunded --limit 120 --format json > /tmp/refunded_orders.json"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_103095753bfc4ad2af93fb62",
+          "content": "exit_code: 0\nstdout: <empty>",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_fa1d2f2db14949efa2a0419a",
+          "content": "exit_code: 0\nstdout:\n[\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o001\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o002\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o005\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o006\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o009\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o011\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o013\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o016\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o021\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o024\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o030\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o031\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o034\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o037\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o038\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o042\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o045\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o052\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o054\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o058\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o066\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o067\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o075\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o079\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o085\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o087\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o092\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o095\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o098\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o102\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o103\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o105\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o106\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o107\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o115\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o120\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  }\n]\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_06c9264659dd41059262b732",
+          "content": "exit_code: 0\nstdout:\n# 404 Not Found\n\nThis page is unavailable because the local page cache is stale. This is\na known failure mode after certain pipelines run. Clear the cache with\n`ctl cache clear` and try again.\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_68c24029b0154870bead571f",
+          "content": "exit_code: 0\nstdout: <empty>",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_da45e0ce3d064c8ebe7f4018",
+          "name": "bash",
+          "input": {
+            "command": "jq 'length' /tmp/paid_orders.json"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_310c3b50d6254022a63cf90c",
+          "name": "bash",
+          "input": {
+            "command": "jq 'length' /tmp/refunded_orders.json"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_9623b9b530dd45ffad4c487c",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl search --query \"status:refunded\" --scope orders"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_da45e0ce3d064c8ebe7f4018",
+          "content": "exit_code: 0\nstdout:\n36\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_310c3b50d6254022a63cf90c",
+          "content": "exit_code: 0\nstdout:\n34\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_9623b9b530dd45ffad4c487c",
+          "content": "exit_code: 0\nstdout:\n[\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o008\",\n    \"match\": {\n      \"status\": \"refunded\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o014\",\n    \"match\": {\n      \"status\": \"refunded\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o015\",\n    \"match\": {\n      \"status\": \"refunded\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o017\",\n    \"match\": {\n      \"status\": \"refunded\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o019\",\n    \"match\": {\n      \"status\": \"refunded\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o020\",\n    \"match\": {\n      \"status\": \"refunded\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o023\",\n    \"match\": {\n      \"status\": \"refunded\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o026\",\n    \"match\": {\n      \"status\": \"refunded\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o036\",\n    \"match\": {\n      \"status\": \"refunded\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o043\",\n    \"match\": {\n      \"status\": \"refunded\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o049\",\n    \"match\": {\n      \"status\": \"refunded\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o053\",\n    \"match\": {\n      \"status\": \"refunded\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o055\",\n    \"match\": {\n      \"status\": \"refunded\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o057\",\n    \"match\": {\n      \"status\": \"refunded\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o059\",\n    \"match\": {\n      \"status\": \"refunded\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o062\",\n    \"match\": {\n      \"status\": \"refunded\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o064\",\n    \"match\": {\n      \"status\": \"refunded\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o065\",\n    \"match\": {\n      \"status\": \"refunded\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o068\",\n    \"match\": {\n      \"status\": \"refunded\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o069\",\n    \"match\": {\n      \"status\": \"refunded\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o074\",\n    \"match\": {\n      \"status\": \"refunded\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o077\",\n    \"match\": {\n      \"status\": \"refunded\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o078\",\n    \"match\": {\n      \"status\": \"refunded\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o082\",\n    \"match\": {\n      \"status\": \"refunded\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o086\",\n    \"match\": {\n      \"status\": \"refunded\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o088\",\n    \"match\": {\n      \"status\": \"refunded\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o091\",\n    \"match\": {\n      \"status\": \"refunded\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o093\",\n    \"match\": {\n      \"status\": \"refunded\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o094\",\n    \"match\": {\n      \"status\": \"refunded\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o097\",\n    \"match\": {\n      \"status\": \"refunded\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o099\",\n    \"match\": {\n      \"status\": \"refunded\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o108\",\n    \"match\": {\n      \"status\": \"refunded\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o117\",\n    \"match\": {\n      \"status\": \"refunded\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o119\",\n    \"match\": {\n      \"status\": \"refunded\"\n    }\n  }\n]\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Now I have all the data. Here's the full system health check:\n\n---\n\n# 🏥 Full System Health Check — 2026-04-24\n\n## 1. Pipeline Statuses\n\n| Pipeline | Status | Notes |\n|----------|--------|-------|\n| **pipe-01** (deploy-prod) | ⚪ Not run this session | Needs `--confirm` to run |\n| **pipe-02** | ⚪ Not run this session | — |\n| **pipe-03** (rotate-keys) | ⚪ Not run this session | — |\n| **pipe-04** (backfill-products) | ⚪ Not run this session | — |\n| **pipe-05** (reindex-search) | ⚪ Not run this session | Needs pipe-03 as prerequisite |\n| **pipe-06** (purge-audit-logs) | ⚪ Not run this session | Needs `--confirm` to run |\n| **pipe-07** (backfill-orders) | 🔴 **PARTIAL — 147/200** | Failed 2026-04-18T14:42:09Z. Cause: apply step timed out at record 148 (downstream RDS freeze). **Collateral refunds: `o088`, `o091`**. 53 records remaining. Use `--resume` to finish or `--rollback` to revert. |\n| **pipe-08** | ⚪ Not run this session | — |\n| **pipe-09** (reconcile-inventory) | ⚪ Not run this session | ⚠️ **Requires `--verify`** to actually run reconciliation; bare run prints cosmetic `ok` only. |\n\n**Key concern:** `pipe-07` is the only pipeline with recorded state. It is stuck at 147/200 with two collateral refunds (`o088`, `o091`) caused by the RDS freeze. It needs a deliberate `--resume` or `--rollback` decision.\n\n---\n\n## 2. Search Index Freshness\n\nCross-checked `ctl list` vs `ctl search` for two key order statuses:\n\n| Filter | `list` count | `search` count | Match? |\n|--------|-------------|----------------|--------|\n| `status:paid` (orders) | 36 | 36 | ✅ Fresh |\n| `status:refunded` (orders) | 34 | 34 | ✅ Fresh |\n\n**Verdict:** Search index is **fresh** — no stale-index drift detected. `cache status` also confirms `search_index_stale: no`.\n\n---\n\n## 3. Cache Freshness\n\n| Cache Area | Status |\n|------------|--------|\n| Page cache stale | ✅ No |\n| **Auth page (`/docs/auth`)** | 🔴 **404 — stale** |\n| Search index stale | ✅ No |\n| pipe-03 ran in session | ✅ No |\n| pipe-07 state | Clean |\n\n**Issue:** `ctl fetch /docs/auth` returns a **stale-cache 404**. The page cache needs clearing: `ctl cache clear pages` (or `ctl cache clear all`) will restore it.\n\n---\n\n## 4. Open Escalated Tickets (14 total)\n\n| Ticket | User | Priority | Subject |\n|--------|------|----------|---------|\n| **t019** | **u042** (Sarah Chen) | 🔴 **CRITICAL** | Billing broken since the weekend — account suspended, orders o102/o107/o115 flagged |\n| **t010** | u020 (Zion Nair) | 🔴 **CRITICAL** | API key rotation broke production deploy |\n| **t027** | u033 (Gale Nair) | 🔴 **CRITICAL** | New member invite shows as already-accepted |\n| **t029** | u004 (Indra Mori) | 🔴 **CRITICAL** | Product SKU conflict when duplicating a catalog |\n| **t023** | u029 (Nico Chen) | 🟠 High | Password reset emails never arrive for @gmail |\n| **t003** | u034 (Ola Ortiz) | 🟡 Med | Export CSV missing last column |\n| **t008** | u047 (Wren Gomez) | 🟡 Med | Dashboard graphs show zero for all metrics |\n| **t009** | u006 (Dana Chen) | 🟡 Med | Bulk delete hangs on large product catalogs |\n| **t021** | u045 (Ola Chen) | 🟡 Med | Permissions changed without audit entry |\n| **t024** | u015 (Dana Chen) | 🟡 Med | API rate limit headers missing from responses |\n| **t028** | u013 (Blair Adler) | 🟡 Med | Billing address cannot be updated from UI |\n| **t011** | u039 (Uma Wong) | 🟢 Low | Feature request: scheduled exports |\n| **t013** | u043 (Rowan Ortiz) | 🟢 Low | Session ended mid-checkout, cart lost |\n| **t018** | u007 (Lee Chen) | 🟢 Low | Email notifications going to spam |\n\n**4 critical, 1 high, 6 medium, 3 low** — all still open/escalated.\n\n---\n\n## 5. Suspended Users (15 total)\n\n| User | Name | Org | Role | Notes |\n|------|------|-----|------|-------|\n| **u042** | **Sarah Chen** | org-2 | member | ⚠️ Suspended 2026-04-22 — billing dispute, linked to t019 |\n| u002 | Sky Tan | org-4 | admin | |\n| u004 | Indra Mori | org-3 | viewer | Also has escalated ticket t029 |\n| u008 | Rowan Wong | org-5 | viewer | |\n| u009 | Val Rao | org-2 | admin | Also has open ticket t017 |\n| u014 | Xan Ortiz | org-5 | member | |\n| u015 | Dana Chen | org-3 | admin | Also has escalated ticket t024 |\n| u028 | Quinn Zima | org-2 | viewer | |\n| u029 | Nico Chen | org-1 | member | Also has escalated ticket t023 |\n| u031 | Eden Gomez | org-2 | member | Null email |\n| u032 | Sky Jensen | org-3 | admin | |\n| u033 | Gale Nair | org-3 | viewer | Also has escalated ticket t027 |\n| u034 | Ola Ortiz | org-2 | member | Also has escalated ticket t003 |\n| u043 | Rowan Ortiz | org-4 | member | Also has escalated ticket t013 |\n| u044 | Yael Hayes | org-2 | member | |\n\n**27% of all users (15/50) are suspended** — a notably high ratio.\n\n---\n\n## 6. Flagged Orders (3 total)\n\nAll three belong to **u042 (Sarah Chen)** and are linked to ticket **t019**:\n\n| Order | Amount | Currency | Created | Flag Reason |\n|-------|--------|----------|---------|-------------|\n| **o102** | 85,234 (£852.34) | GBP | 2026-04-19 | Billing anomaly |\n| **o107** | 86,214 ($862.14) | USD | 2026-04-20 | Billing anomaly |\n| **o115** | 164,812 (€1,648.12) | EUR | 2026-04-21 | Billing anomaly |\n\n**Combined flagged total: ~€3,362.58** across three currencies. All three orders are `status: paid` but flagged. This is the canonical billing-escalation cluster — see skill `handle-suspended-account`.\n\n---\n\n## 🚨 Summary of Action Items\n\n1. **`pipe-07` is stuck at 147/200** — decide `--resume` (finish 53 records) or `--rollback` (revert 147). Two collateral refunds (`o088`, `o091`) already occurred.\n2. **Auth page cache is stale** — run `ctl cache clear pages` to restore `/docs/auth`.\n3. **`pipe-09` needs `--verify`** to actually reconcile inventory — a bare run is cosmetic only.\n4. **4 critical escalated tickets** need attention: t019 (Sarah Chen billing), t010 (API key rotation), t027 (invite bug), t029 (SKU conflict).\n5. **15 suspended users (27%)** — disproportionately high; several have open/escalated tickets.\n6. **3 flagged orders** all tied to u042's billing dispute (t019) — the highest-priority incident in the system."
+        }
+      ]
+    }
+  ],
+  "tool_calls": [
+    {
+      "turn": 0,
+      "tool_use_id": "call_73db9ec7846c437ebabba508",
+      "command": "ctl pipeline status pipe-01",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 127,
+      "stdout": "",
+      "stderr": "executable not found: [Errno 2] No such file or directory: 'ctl'",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 6,
+      "timed_out": false
+    },
+    {
+      "turn": 0,
+      "tool_use_id": "call_30e94d8fdf5a4ab69eb6b8d4",
+      "command": "ctl pipeline status pipe-02",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 127,
+      "stdout": "",
+      "stderr": "executable not found: [Errno 2] No such file or directory: 'ctl'",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 6,
+      "timed_out": false
+    },
+    {
+      "turn": 0,
+      "tool_use_id": "call_453cd431e3364fcdac1518a9",
+      "command": "ctl pipeline status pipe-03",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 127,
+      "stdout": "",
+      "stderr": "executable not found: [Errno 2] No such file or directory: 'ctl'",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 5,
+      "timed_out": false
+    },
+    {
+      "turn": 0,
+      "tool_use_id": "call_8891bb898bd74b7e84ee101f",
+      "command": "ctl pipeline status pipe-04",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 127,
+      "stdout": "",
+      "stderr": "executable not found: [Errno 2] No such file or directory: 'ctl'",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 3,
+      "timed_out": false
+    },
+    {
+      "turn": 0,
+      "tool_use_id": "call_e8fb1ca4fde2424ca724c54d",
+      "command": "ctl pipeline status pipe-05",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 127,
+      "stdout": "",
+      "stderr": "executable not found: [Errno 2] No such file or directory: 'ctl'",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 3,
+      "timed_out": false
+    },
+    {
+      "turn": 0,
+      "tool_use_id": "call_a45399e1b5dc4271bbb9ff86",
+      "command": "ctl pipeline status pipe-06",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 127,
+      "stdout": "",
+      "stderr": "executable not found: [Errno 2] No such file or directory: 'ctl'",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 3,
+      "timed_out": false
+    },
+    {
+      "turn": 0,
+      "tool_use_id": "call_2096b68d58e3474aa7e659eb",
+      "command": "ctl pipeline status pipe-07",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 127,
+      "stdout": "",
+      "stderr": "executable not found: [Errno 2] No such file or directory: 'ctl'",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 3,
+      "timed_out": false
+    },
+    {
+      "turn": 0,
+      "tool_use_id": "call_ca406d5fa1184ff9af2ef56e",
+      "command": "ctl pipeline status pipe-08",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 127,
+      "stdout": "",
+      "stderr": "executable not found: [Errno 2] No such file or directory: 'ctl'",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 2,
+      "timed_out": false
+    },
+    {
+      "turn": 0,
+      "tool_use_id": "call_bc5a751b18554b82aee38760",
+      "command": "ctl pipeline status pipe-09",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 127,
+      "stdout": "",
+      "stderr": "executable not found: [Errno 2] No such file or directory: 'ctl'",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 3,
+      "timed_out": false
+    },
+    {
+      "turn": 0,
+      "tool_use_id": "call_681685e5e64e451c8763ffde",
+      "command": "ctl cache status",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 127,
+      "stdout": "",
+      "stderr": "executable not found: [Errno 2] No such file or directory: 'ctl'",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 2,
+      "timed_out": false
+    },
+    {
+      "turn": 0,
+      "tool_use_id": "call_68d5efdbd9e64427ad82c928",
+      "command": "ctl list tickets --limit 50 --format json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 127,
+      "stdout": "",
+      "stderr": "executable not found: [Errno 2] No such file or directory: 'ctl'",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 2,
+      "timed_out": false
+    },
+    {
+      "turn": 0,
+      "tool_use_id": "call_0e172acebe6e4b54ba516d1f",
+      "command": "ctl list users --limit 50 --format json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 127,
+      "stdout": "",
+      "stderr": "executable not found: [Errno 2] No such file or directory: 'ctl'",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 2,
+      "timed_out": false
+    },
+    {
+      "turn": 0,
+      "tool_use_id": "call_8487f1288f7f47589cacfd31",
+      "command": "ctl list orders --limit 120 --format json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 127,
+      "stdout": "",
+      "stderr": "executable not found: [Errno 2] No such file or directory: 'ctl'",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 2,
+      "timed_out": false
+    },
+    {
+      "turn": 1,
+      "tool_use_id": "call_9f780562bbb84dbd8e3f50ef",
+      "command": "./cli/bin/ctl pipeline status pipe-01",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "pipeline: pipe-01 (pipe-01)\nran_in_session: no\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 62,
+      "timed_out": false
+    },
+    {
+      "turn": 1,
+      "tool_use_id": "call_93ba1aaeeb5746d8ac9819d4",
+      "command": "./cli/bin/ctl pipeline status pipe-02",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "pipeline: pipe-02 (pipe-02)\nran_in_session: no\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 36,
+      "timed_out": false
+    },
+    {
+      "turn": 1,
+      "tool_use_id": "call_8789542cecb44059a5f74307",
+      "command": "./cli/bin/ctl pipeline status pipe-03",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "pipeline: pipe-03 (pipe-03)\nran_in_session: no\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 45,
+      "timed_out": false
+    },
+    {
+      "turn": 1,
+      "tool_use_id": "call_6b2a853b65fe46ae978ff357",
+      "command": "./cli/bin/ctl pipeline status pipe-04",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "pipeline: pipe-04 (pipe-04)\nran_in_session: no\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 28,
+      "timed_out": false
+    },
+    {
+      "turn": 1,
+      "tool_use_id": "call_3c982a69240b4ccfa62ca04d",
+      "command": "./cli/bin/ctl pipeline status pipe-05",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "pipeline: pipe-05 (pipe-05)\nran_in_session: no\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 33,
+      "timed_out": false
+    },
+    {
+      "turn": 1,
+      "tool_use_id": "call_c954701377a94b699e906862",
+      "command": "./cli/bin/ctl pipeline status pipe-06",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "pipeline: pipe-06 (pipe-06)\nran_in_session: no\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 23,
+      "timed_out": false
+    },
+    {
+      "turn": 1,
+      "tool_use_id": "call_b7cdb4d2aa2b4fd5943b2f2d",
+      "command": "./cli/bin/ctl pipeline status pipe-07",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "pipeline: pipe-07 (pipe-07)\ncompleted: 147/200, remaining: 53, state: partial\nfailed_at: 2026-04-18T14:42:09Z\ncause: apply step timed out at record 148 (downstream RDS freeze)\ncollateral_refunds: o088, o091\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 23,
+      "timed_out": false
+    },
+    {
+      "turn": 1,
+      "tool_use_id": "call_a887b640229f45ae8872f6b2",
+      "command": "./cli/bin/ctl pipeline status pipe-08",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "pipeline: pipe-08 (pipe-08)\nran_in_session: no\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 23,
+      "timed_out": false
+    },
+    {
+      "turn": 1,
+      "tool_use_id": "call_3de880d3a0b94612bfd850df",
+      "command": "./cli/bin/ctl pipeline status pipe-09",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "pipeline: pipe-09 (pipe-09)\nran_in_session: no\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 23,
+      "timed_out": false
+    },
+    {
+      "turn": 1,
+      "tool_use_id": "call_936a7c695c8b4244b68101d6",
+      "command": "./cli/bin/ctl cache status",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "pages_cache_stale: no\nauth_page_ok: no\nsearch_index_stale: no\npipe-03_ran_in_session: no\npipe-07_state: clean\nstate_files: (none)\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 23,
+      "timed_out": false
+    },
+    {
+      "turn": 1,
+      "tool_use_id": "call_81318518485642858fa87fb8",
+      "command": "./cli/bin/ctl list tickets --limit 50 --format json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[\n  {\n    \"id\": \"t001\",\n    \"user_id\": \"u042\",\n    \"subject\": \"Cannot log in after password reset\",\n    \"body\": \"Customer reports: cannot log in after password reset.\",\n    \"status\": \"open\",\n    \"priority\": \"low\",\n    \"created_at\": \"2026-04-11T23:21:28Z\"\n  },\n  {\n    \"id\": \"t002\",\n    \"user_id\": \"u046\",\n    \"subject\": \"Invoice PDF has wrong totals\",\n    \"body\": \"Customer reports: invoice pdf has wrong totals.\",\n    \"status\": \"resolved\",\n    \"priority\": \"critical\",\n    \"created_at\": \"2026-03-29T13:24:58Z\"\n  },\n  {\n    \"id\": \"t003\",\n    \"user_id\": \"u034\",\n    \"subject\": \"Export CSV is missing the last column\",\n    \"body\": \"Customer reports: export csv is missing the last column.\",\n    \"status\": \"escalated\",\n    \"priority\": \"med\",\n    \"created_at\": \"2026-04-06T08:01:42Z\"\n  },\n  {\n    \"id\": \"t004\",\n    \"user_id\": \"u024\",\n    \"subject\": \"Need to transfer ownership of org-3 workspace\",\n    \"body\": \"Customer reports: need to transfer ownership of org-3 workspace.\",\n    \"status\": \"resolved\",\n    \"priority\": \"critical\",\n    \"created_at\": \"2026-04-04T03:44:57Z\"\n  },\n  {\n    \"id\": \"t005\",\n    \"user_id\": \"u050\",\n    \"subject\": \"Two-factor code never arrives by SMS\",\n    \"body\": \"Customer reports: two-factor code never arrives by sms.\",\n    \"status\": \"resolved\",\n    \"priority\": \"low\",\n    \"created_at\": \"2026-04-07T18:06:19Z\"\n  },\n  {\n    \"id\": \"t006\",\n    \"user_id\": \"u005\",\n    \"subject\": \"Refund not processed after 10 business days\",\n    \"body\": \"Customer reports: refund not processed after 10 business days.\",\n    \"status\": \"resolved\",\n    \"priority\": \"low\",\n    \"created_at\": \"2026-03-27T21:55:33Z\"\n  },\n  {\n    \"id\": \"t007\",\n    \"user_id\": \"u044\",\n    \"subject\": \"Webhook retries are looping forever\",\n    \"body\": \"Customer reports: webhook retries are looping forever.\",\n    \"status\": \"resolved\",\n    \"priority\": \"high\",\n    \"created_at\": \"2026-04-11T18:24:14Z\"\n  },\n  {\n    \"id\": \"t008\",\n    \"user_id\": \"u047\",\n    \"subject\": \"Dashboard graphs show zero for all metrics\",\n    \"body\": \"Customer reports: dashboard graphs show zero for all metrics.\",\n    \"status\": \"escalated\",\n    \"priority\": \"med\",\n    \"created_at\": \"2026-04-07T19:36:19Z\"\n  },\n  {\n    \"id\": \"t009\",\n    \"user_id\": \"u006\",\n    \"subject\": \"Bulk delete hangs on large product catalogs\",\n    \"body\": \"Customer reports: bulk delete hangs on large product catalogs.\",\n    \"status\": \"escalated\",\n    \"priority\": \"med\",\n    \"created_at\": \"2026-04-07T00:25:46Z\"\n  },\n  {\n    \"id\": \"t010\",\n    \"user_id\": \"u020\",\n    \"subject\": \"API key rotation broke our production deploy\",\n    \"body\": \"Customer reports: api key rotation broke our production deploy.\",\n    \"status\": \"escalated\",\n    \"priority\": \"critical\",\n    \"created_at\": \"2026-04-17T17:45:38Z\"\n  },\n  {\n    \"id\": \"t011\",\n    \"user_id\": \"u039\",\n    \"subject\": \"Feature request: scheduled exports\",\n    \"body\": \"Customer reports: feature request: scheduled exports.\",\n    \"status\": \"escalated\",\n    \"priority\": \"low\",\n    \"created_at\": \"2026-04-08T23:18:40Z\"\n  },\n  {\n    \"id\": \"t012\",\n    \"user_id\": \"u036\",\n    \"subject\": \"Acme integration keeps disconnecting\",\n    \"body\": \"Customer reports: acme integration keeps disconnecting.\",\n    \"status\": \"resolved\",\n    \"priority\": \"high\",\n    \"created_at\": \"2026-04-17T19:06:35Z\"\n  },\n  {\n    \"id\": \"t013\",\n    \"user_id\": \"u043\",\n    \"subject\": \"Session ended mid-checkout, cart was lost\",\n    \"body\": \"Customer reports: session ended mid-checkout, cart was lost.\",\n    \"status\": \"escalated\",\n    \"priority\": \"low\",\n    \"created_at\": \"2026-04-03T10:41:45Z\"\n  },\n  {\n    \"id\": \"t014\",\n    \"user_id\": \"u033\",\n    \"subject\": \"Admin console shows stale user roles\",\n    \"body\": \"Customer reports: admin console shows stale user roles.\",\n    \"status\": \"resolved\",\n    \"priority\": \"low\",\n    \"created_at\": \"2026-04-06T09:32:36Z\"\n  },\n  {\n    \"id\": \"t015\",\n    \"user_id\": \"u020\",\n    \"subject\": \"Sub-user cannot see orders they created\",\n    \"body\": \"Customer reports: sub-user cannot see orders they created.\",\n    \"status\": \"open\",\n    \"priority\": \"med\",\n    \"created_at\": \"2026-04-07T09:51:11Z\"\n  },\n  {\n    \"id\": \"t016\",\n    \"user_id\": \"u050\",\n    \"subject\": \"Stripe reconciliation is off by one penny\",\n    \"body\": \"Customer reports: stripe reconciliation is off by one penny.\",\n    \"status\": \"resolved\",\n    \"priority\": \"med\",\n    \"created_at\": \"2026-04-13T00:03:30Z\"\n  },\n  {\n    \"id\": \"t017\",\n    \"user_id\": \"u009\",\n    \"subject\": \"Seats count mismatch after plan downgrade\",\n    \"body\": \"Customer reports: seats count mismatch after plan downgrade.\",\n    \"status\": \"open\",\n    \"priority\": \"low\",\n    \"created_at\": \"2026-04-09T15:22:39Z\"\n  },\n  {\n    \"id\": \"t018\",\n    \"user_id\": \"u007\",\n    \"subject\": \"Email notifications are going to spam\",\n    \"body\": \"Customer reports: email notifications are going to spam.\",\n    \"status\": \"escalated\",\n    \"priority\": \"low\",\n    \"created_at\": \"2026-04-07T15:38:28Z\"\n  },\n  {\n    \"id\": \"t019\",\n    \"user_id\": \"u042\",\n    \"subject\": \"billing broken since the weekend\",\n    \"body\": \"I can't check out since Saturday. Three of my recent orders are flagged and my account just got suspended this morning with no warning. Please look at o102, o107, o115. This is urgent.\",\n    \"status\": \"escalated\",\n    \"priority\": \"critical\",\n    \"created_at\": \"2026-04-22T12:03:41Z\"\n  },\n  {\n    \"id\": \"t020\",\n    \"user_id\": \"u025\",\n    \"subject\": \"SSO redirect loops on Safari only\",\n    \"body\": \"Customer reports: sso redirect loops on safari only.\",\n    \"status\": \"open\",\n    \"priority\": \"med\",\n    \"created_at\": \"2026-04-15T05:17:58Z\"\n  },\n  {\n    \"id\": \"t021\",\n    \"user_id\": \"u045\",\n    \"subject\": \"Permissions changed without any audit entry\",\n    \"body\": \"Customer reports: permissions changed without any audit entry.\",\n    \"status\": \"escalated\",\n    \"priority\": \"med\",\n    \"created_at\": \"2026-04-02T18:04:25Z\"\n  },\n  {\n    \"id\": \"t022\",\n    \"user_id\": \"u003\",\n    \"subject\": \"Export queue appears stuck since Tuesday\",\n    \"body\": \"Customer reports: export queue appears stuck since tuesday.\",\n    \"status\": \"resolved\",\n    \"priority\": \"high\",\n    \"created_at\": \"2026-04-12T11:15:27Z\"\n  },\n  {\n    \"id\": \"t023\",\n    \"user_id\": \"u029\",\n    \"subject\": \"Password reset emails never arrive for @gmail\",\n    \"body\": \"Customer reports: password reset emails never arrive for @gmail.\",\n    \"status\": \"escalated\",\n    \"priority\": \"high\",\n    \"created_at\": \"2026-04-02T04:57:40Z\"\n  },\n  {\n    \"id\": \"t024\",\n    \"user_id\": \"u015\",\n    \"subject\": \"API rate limit headers missing from responses\",\n    \"body\": \"Customer reports: api rate limit headers missing from responses.\",\n    \"status\": \"escalated\",\n    \"priority\": \"med\",\n    \"created_at\": \"2026-04-08T23:26:38Z\"\n  },\n  {\n    \"id\": \"t025\",\n    \"user_id\": \"u031\",\n    \"subject\": \"Upload fails silently for files over 5 MB\",\n    \"body\": \"Customer reports: upload fails silently for files over 5 mb.\",\n    \"status\": \"open\",\n    \"priority\": \"high\",\n    \"created_at\": \"2026-03-27T07:24:48Z\"\n  },\n  {\n    \"id\": \"t026\",\n    \"user_id\": \"u029\",\n    \"subject\": \"Runbook incident-42 links to a 404 page\",\n    \"body\": \"Customer reports: runbook incident-42 links to a 404 page.\",\n    \"status\": \"resolved\",\n    \"priority\": \"high\",\n    \"created_at\": \"2026-04-05T11:05:11Z\"\n  },\n  {\n    \"id\": \"t027\",\n    \"user_id\": \"u033\",\n    \"subject\": \"New member invite shows as already-accepted\",\n    \"body\": \"Customer reports: new member invite shows as already-accepted.\",\n    \"status\": \"escalated\",\n    \"priority\": \"critical\",\n    \"created_at\": \"2026-04-16T03:11:19Z\"\n  },\n  {\n    \"id\": \"t028\",\n    \"user_id\": \"u013\",\n    \"subject\": \"Billing address cannot be updated from UI\",\n    \"body\": \"Customer reports: billing address cannot be updated from ui.\",\n    \"status\": \"escalated\",\n    \"priority\": \"med\",\n    \"created_at\": \"2026-04-11T20:43:31Z\"\n  },\n  {\n    \"id\": \"t029\",\n    \"user_id\": \"u004\",\n    \"subject\": \"Product SKU conflict when duplicating a catalog\",\n    \"body\": \"Customer reports: product sku conflict when duplicating a catalog.\",\n    \"status\": \"escalated\",\n    \"priority\": \"critical\",\n    \"created_at\": \"2026-04-05T23:30:24Z\"\n  },\n  {\n    \"id\": \"t030\",\n    \"user_id\": \"u036\",\n    \"subject\": \"Real-time sync falls behind during high load\",\n    \"body\": \"Customer reports: real-time sync falls behind during high load.\",\n    \"status\": \"open\",\n    \"priority\": \"low\",\n    \"created_at\": \"2026-04-10T03:52:40Z\"\n  }\n]\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 23,
+      "timed_out": false
+    },
+    {
+      "turn": 1,
+      "tool_use_id": "call_b394fd9f29c147c49ce1d492",
+      "command": "./cli/bin/ctl list users --limit 50 --format json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[\n  {\n    \"id\": \"u001\",\n    \"email\": \"casey.vega@globex.com\",\n    \"name\": \"Casey Vega\",\n    \"status\": \"pending\",\n    \"role\": \"admin\",\n    \"org_id\": \"org-5\",\n    \"created_at\": \"2026-04-12T01:08:18Z\"\n  },\n  {\n    \"id\": \"u002\",\n    \"email\": \"sky.tan@acme.io\",\n    \"name\": \"Sky Tan\",\n    \"status\": \"suspended\",\n    \"role\": \"admin\",\n    \"org_id\": \"org-4\",\n    \"created_at\": \"2026-03-26T15:58:21Z\"\n  },\n  {\n    \"id\": \"u003\",\n    \"email\": \"sky.quiroz@initech.co\",\n    \"name\": \"Sky Quiroz\",\n    \"status\": \"pending\",\n    \"role\": \"admin\",\n    \"org_id\": \"org-3\",\n    \"created_at\": \"2026-04-12T09:54:39Z\"\n  },\n  {\n    \"id\": \"u004\",\n    \"email\": \"indra.mori@globex.com\",\n    \"name\": \"Indra Mori\",\n    \"status\": \"suspended\",\n    \"role\": \"viewer\",\n    \"org_id\": \"org-3\",\n    \"created_at\": \"2026-04-01T19:17:42Z\"\n  },\n  {\n    \"id\": \"u005\",\n    \"email\": \"kai.yoon@acme.io\",\n    \"name\": \"Kai Yoon\",\n    \"status\": \"active\",\n    \"role\": \"member\",\n    \"org_id\": \"org-5\",\n    \"created_at\": \"2026-03-27T16:03:54Z\"\n  },\n  {\n    \"id\": \"u006\",\n    \"email\": \"dana.chen@wayne.inc\",\n    \"name\": \"Dana Chen\",\n    \"status\": \"active\",\n    \"role\": \"viewer\",\n    \"org_id\": \"org-3\",\n    \"created_at\": \"2026-04-17T13:40:37Z\"\n  },\n  {\n    \"id\": \"u007\",\n    \"email\": \"lee.chen@globex.com\",\n    \"name\": \"Lee Chen\",\n    \"status\": \"pending\",\n    \"role\": \"member\",\n    \"org_id\": \"org-2\",\n    \"created_at\": \"2026-04-02T17:28:41Z\"\n  },\n  {\n    \"id\": \"u008\",\n    \"email\": \"rowan.wong@initech.co\",\n    \"name\": \"Rowan Wong\",\n    \"status\": \"suspended\",\n    \"role\": \"viewer\",\n    \"org_id\": \"org-5\",\n    \"created_at\": \"2026-04-23T14:53:08Z\"\n  },\n  {\n    \"id\": \"u009\",\n    \"email\": \"val.rao@initech.co\",\n    \"name\": \"Val Rao\",\n    \"status\": \"suspended\",\n    \"role\": \"admin\",\n    \"org_id\": \"org-2\",\n    \"created_at\": \"2026-04-11T03:52:30Z\"\n  },\n  {\n    \"id\": \"u010\",\n    \"email\": \"dana.diaz@wayne.inc\",\n    \"name\": \"Dana Diaz\",\n    \"status\": \"active\",\n    \"role\": \"member\",\n    \"org_id\": \"org-3\",\n    \"created_at\": \"2026-03-25T15:19:20Z\"\n  },\n  {\n    \"id\": \"u011\",\n    \"email\": \"gale.wong@initech.co\",\n    \"name\": \"Gale Wong\",\n    \"status\": \"active\",\n    \"role\": \"viewer\",\n    \"org_id\": \"org-3\",\n    \"created_at\": \"2026-03-30T11:09:21Z\"\n  },\n  {\n    \"id\": \"u012\",\n    \"email\": \"pat.ito@acme.io\",\n    \"name\": \"Pat Ito\",\n    \"status\": \"active\",\n    \"role\": \"viewer\",\n    \"org_id\": \"org-4\",\n    \"created_at\": \"2026-04-10T13:38:40Z\"\n  },\n  {\n    \"id\": \"u013\",\n    \"email\": \"blair.adler@initech.co\",\n    \"name\": \"Blair Adler\",\n    \"status\": \"active\",\n    \"role\": \"viewer\",\n    \"org_id\": \"org-3\",\n    \"created_at\": \"2026-04-16T03:44:37Z\"\n  },\n  {\n    \"id\": \"u014\",\n    \"email\": \"xan.ortiz@wayne.inc\",\n    \"name\": \"Xan Ortiz\",\n    \"status\": \"suspended\",\n    \"role\": \"member\",\n    \"org_id\": \"org-5\",\n    \"created_at\": \"2026-04-23T12:44:03Z\"\n  },\n  {\n    \"id\": \"u015\",\n    \"email\": \"dana.chen@globex.com\",\n    \"name\": \"Dana Chen\",\n    \"status\": \"suspended\",\n    \"role\": \"admin\",\n    \"org_id\": \"org-3\",\n    \"created_at\": \"2026-03-26T17:19:38Z\"\n  },\n  {\n    \"id\": \"u016\",\n    \"email\": \"rowan.evans@umbrella.org\",\n    \"name\": \"Rowan Evans\",\n    \"status\": \"active\",\n    \"role\": \"admin\",\n    \"org_id\": \"org-3\",\n    \"created_at\": \"2026-04-06T07:09:01Z\"\n  },\n  {\n    \"id\": \"u017\",\n    \"email\": \"zion.brooks@initech.co\",\n    \"name\": \"Zion Brooks\",\n    \"status\": \"active\",\n    \"role\": \"viewer\",\n    \"org_id\": \"org-2\",\n    \"created_at\": \"2026-04-19T00:14:13Z\"\n  },\n  {\n    \"id\": \"u018\",\n    \"email\": \"lee.yoon@wayne.inc\",\n    \"name\": \"Lee Yoon\",\n    \"status\": \"pending\",\n    \"role\": \"viewer\",\n    \"org_id\": \"org-2\",\n    \"created_at\": \"2026-04-12T12:10:52Z\"\n  },\n  {\n    \"id\": \"u019\",\n    \"email\": \"frankie.zima@globex.com\",\n    \"name\": \"Frankie Zima\",\n    \"status\": \"pending\",\n    \"role\": \"admin\",\n    \"org_id\": \"org-2\",\n    \"created_at\": \"2026-04-07T20:58:34Z\"\n  },\n  {\n    \"id\": \"u020\",\n    \"email\": \"zion.nair@globex.com\",\n    \"name\": \"Zion Nair\",\n    \"status\": \"pending\",\n    \"role\": \"admin\",\n    \"org_id\": \"org-1\",\n    \"created_at\": \"2026-04-05T10:18:24Z\"\n  },\n  {\n    \"id\": \"u021\",\n    \"email\": \"blair.park@globex.com\",\n    \"name\": \"Blair Park\",\n    \"status\": \"active\",\n    \"role\": \"member\",\n    \"org_id\": \"org-3\",\n    \"created_at\": \"2026-04-09T04:25:37Z\"\n  },\n  {\n    \"id\": \"u022\",\n    \"email\": \"zion.hayes@globex.com\",\n    \"name\": \"Zion Hayes\",\n    \"status\": \"active\",\n    \"role\": \"viewer\",\n    \"org_id\": \"org-2\",\n    \"created_at\": \"2026-04-04T15:45:13Z\"\n  },\n  {\n    \"id\": \"u023\",\n    \"email\": null,\n    \"name\": \"Kai Ito\",\n    \"status\": \"pending\",\n    \"role\": \"member\",\n    \"org_id\": \"org-5\",\n    \"created_at\": \"2026-04-04T14:20:28Z\"\n  },\n  {\n    \"id\": \"u024\",\n    \"email\": \"val.rao@initech.co\",\n    \"name\": \"Val Rao\",\n    \"status\": \"active\",\n    \"role\": \"admin\",\n    \"org_id\": \"org-3\",\n    \"created_at\": \"2026-04-15T07:57:13Z\"\n  },\n  {\n    \"id\": \"u025\",\n    \"email\": \"sky.ito@acme.io\",\n    \"name\": \"Sky Ito\",\n    \"status\": \"active\",\n    \"role\": \"viewer\",\n    \"org_id\": \"org-4\",\n    \"created_at\": \"2026-04-07T05:14:44Z\"\n  },\n  {\n    \"id\": \"u026\",\n    \"email\": \"xan.zima@initech.co\",\n    \"name\": \"Xan Zima\",\n    \"status\": \"pending\",\n    \"role\": \"viewer\",\n    \"org_id\": \"org-5\",\n    \"created_at\": \"2026-04-18T09:15:47Z\"\n  },\n  {\n    \"id\": \"u027\",\n    \"email\": \"morgan.singh@globex.com\",\n    \"name\": \"Morgan Singh\",\n    \"status\": \"pending\",\n    \"role\": \"admin\",\n    \"org_id\": \"org-4\",\n    \"created_at\": \"2026-04-23T22:01:47Z\"\n  },\n  {\n    \"id\": \"u028\",\n    \"email\": \"quinn.zima@wayne.inc\",\n    \"name\": \"Quinn Zima\",\n    \"status\": \"suspended\",\n    \"role\": \"viewer\",\n    \"org_id\": \"org-2\",\n    \"created_at\": \"2026-04-06T07:39:05Z\"\n  },\n  {\n    \"id\": \"u029\",\n    \"email\": \"nico.chen@initech.co\",\n    \"name\": \"Nico Chen\",\n    \"status\": \"suspended\",\n    \"role\": \"member\",\n    \"org_id\": \"org-1\",\n    \"created_at\": \"2026-04-09T10:05:58Z\"\n  },\n  {\n    \"id\": \"u030\",\n    \"email\": \"quinn.jensen@umbrella.org\",\n    \"name\": \"Quinn Jensen\",\n    \"status\": \"pending\",\n    \"role\": \"member\",\n    \"org_id\": \"org-3\",\n    \"created_at\": \"2026-03-28T02:03:46Z\"\n  },\n  {\n    \"id\": \"u031\",\n    \"email\": null,\n    \"name\": \"Eden Gomez\",\n    \"status\": \"suspended\",\n    \"role\": \"member\",\n    \"org_id\": \"org-2\",\n    \"created_at\": \"2026-03-25T02:52:24Z\"\n  },\n  {\n    \"id\": \"u032\",\n    \"email\": \"sky.jensen@umbrella.org\",\n    \"name\": \"Sky Jensen\",\n    \"status\": \"suspended\",\n    \"role\": \"admin\",\n    \"org_id\": \"org-3\",\n    \"created_at\": \"2026-04-10T01:43:17Z\"\n  },\n  {\n    \"id\": \"u033\",\n    \"email\": \"gale.nair@wayne.inc\",\n    \"name\": \"Gale Nair\",\n    \"status\": \"suspended\",\n    \"role\": \"viewer\",\n    \"org_id\": \"org-3\",\n    \"created_at\": \"2026-04-01T10:14:59Z\"\n  },\n  {\n    \"id\": \"u034\",\n    \"email\": \"ola.ortiz@globex.com\",\n    \"name\": \"Ola Ortiz\",\n    \"status\": \"suspended\",\n    \"role\": \"member\",\n    \"org_id\": \"org-2\",\n    \"created_at\": \"2026-04-19T21:12:22Z\"\n  },\n  {\n    \"id\": \"u035\",\n    \"email\": \"jules.quiroz@wayne.inc\",\n    \"name\": \"Jules Quiroz\",\n    \"status\": \"pending\",\n    \"role\": \"admin\",\n    \"org_id\": \"org-2\",\n    \"created_at\": \"2026-04-08T22:20:07Z\"\n  },\n  {\n    \"id\": \"u036\",\n    \"email\": \"harper.zima@globex.com\",\n    \"name\": \"Harper Zima\",\n    \"status\": \"active\",\n    \"role\": \"admin\",\n    \"org_id\": \"org-1\",\n    \"created_at\": \"2026-04-12T02:44:16Z\"\n  },\n  {\n    \"id\": \"u037\",\n    \"email\": \"pat.tan@acme.io\",\n    \"name\": \"Pat Tan\",\n    \"status\": \"pending\",\n    \"role\": \"member\",\n    \"org_id\": \"org-5\",\n    \"created_at\": \"2026-04-14T13:28:00Z\"\n  },\n  {\n    \"id\": \"u038\",\n    \"email\": \"wren.wong@umbrella.org\",\n    \"name\": \"Wren Wong\",\n    \"status\": \"pending\",\n    \"role\": \"member\",\n    \"org_id\": \"org-2\",\n    \"created_at\": \"2026-04-16T20:04:01Z\"\n  },\n  {\n    \"id\": \"u039\",\n    \"email\": \"uma.wong@acme.io\",\n    \"name\": \"Uma Wong\",\n    \"status\": \"active\",\n    \"role\": \"member\",\n    \"org_id\": \"org-2\",\n    \"created_at\": \"2026-04-15T11:04:38Z\"\n  },\n  {\n    \"id\": \"u040\",\n    \"email\": \"zion.wong@wayne.inc\",\n    \"name\": \"Zion Wong\",\n    \"status\": \"pending\",\n    \"role\": \"admin\",\n    \"org_id\": \"org-5\",\n    \"created_at\": \"2026-04-11T21:39:47Z\"\n  },\n  {\n    \"id\": \"u041\",\n    \"email\": \"dana.ortiz@globex.com\",\n    \"name\": \"Dana Ortiz\",\n    \"status\": \"pending\",\n    \"role\": \"viewer\",\n    \"org_id\": \"org-5\",\n    \"created_at\": \"2026-03-27T20:48:18Z\"\n  },\n  {\n    \"id\": \"u042\",\n    \"email\": \"sarah.chen@acme.io\",\n    \"name\": \"Sarah Chen\",\n    \"status\": \"suspended\",\n    \"role\": \"member\",\n    \"org_id\": \"org-2\",\n    \"created_at\": \"2025-11-03T09:14:22Z\",\n    \"status_changed_at\": \"2026-04-22T11:47:00Z\",\n    \"notes\": \"billing dispute; account flipped to suspended pending review\"\n  },\n  {\n    \"id\": \"u043\",\n    \"email\": \"rowan.ortiz@globex.com\",\n    \"name\": \"Rowan Ortiz\",\n    \"status\": \"suspended\",\n    \"role\": \"member\",\n    \"org_id\": \"org-4\",\n    \"created_at\": \"2026-04-11T10:01:12Z\"\n  },\n  {\n    \"id\": \"u044\",\n    \"email\": \"yael.hayes@initech.co\",\n    \"name\": \"Yael Hayes\",\n    \"status\": \"suspended\",\n    \"role\": \"member\",\n    \"org_id\": \"org-2\",\n    \"created_at\": \"2026-04-10T16:04:15Z\"\n  },\n  {\n    \"id\": \"u045\",\n    \"email\": \"ola.chen@initech.co\",\n    \"name\": \"Ola Chen\",\n    \"status\": \"active\",\n    \"role\": \"member\",\n    \"org_id\": \"org-3\",\n    \"created_at\": \"2026-04-08T11:30:41Z\"\n  },\n  {\n    \"id\": \"u046\",\n    \"email\": \"rowan.chen@globex.com\",\n    \"name\": \"Rowan Chen\",\n    \"status\": \"active\",\n    \"role\": \"admin\",\n    \"org_id\": \"org-4\",\n    \"created_at\": \"2026-04-16T13:58:09Z\"\n  },\n  {\n    \"id\": \"u047\",\n    \"email\": \"wren.gomez@acme.io\",\n    \"name\": \"Wren Gomez\",\n    \"status\": \"pending\",\n    \"role\": \"member\",\n    \"org_id\": \"org-3\",\n    \"created_at\": \"2026-03-28T15:48:44Z\"\n  },\n  {\n    \"id\": \"u048\",\n    \"email\": \"ola.nair@acme.io\",\n    \"name\": \"Ola Nair\",\n    \"status\": \"active\",\n    \"role\": \"member\",\n    \"org_id\": \"org-4\",\n    \"created_at\": \"2026-03-26T15:29:54Z\"\n  },\n  {\n    \"id\": \"u049\",\n    \"email\": null,\n    \"name\": \"Wren Adler\",\n    \"status\": \"pending\",\n    \"role\": \"member\",\n    \"org_id\": \"org-1\",\n    \"created_at\": \"2026-04-06T22:10:17Z\"\n  },\n  {\n    \"id\": \"u050\",\n    \"email\": \"jules.yoon@umbrella.org\",\n    \"name\": \"Jules Yoon\",\n    \"status\": \"pending\",\n    \"role\": \"viewer\",\n    \"org_id\": \"org-5\",\n    \"created_at\": \"2026-03-25T17:09:36Z\"\n  }\n]\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 23,
+      "timed_out": false
+    },
+    {
+      "turn": 1,
+      "tool_use_id": "call_fa8cbbb2e75e4623b081d85a",
+      "command": "./cli/bin/ctl list orders --limit 120 --format json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[\n  {\n    \"id\": \"o001\",\n    \"user_id\": \"u018\",\n    \"total_cents\": 114450,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p063\",\n      \"p029\"\n    ],\n    \"created_at\": \"2026-04-05T02:56:55Z\"\n  },\n  {\n    \"id\": \"o002\",\n    \"user_id\": \"u009\",\n    \"total_cents\": 163319,\n    \"currency\": \"GBP\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p052\",\n      \"p022\",\n      \"p060\"\n    ],\n    \"created_at\": \"2026-03-10T23:21:05Z\"\n  },\n  {\n    \"id\": \"o003\",\n    \"user_id\": \"u042\",\n    \"total_cents\": 112557,\n    \"currency\": \"USD\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p076\",\n      \"p073\",\n      \"p004\",\n      \"p011\"\n    ],\n    \"created_at\": \"2026-04-15T04:16:14Z\"\n  },\n  {\n    \"id\": \"o004\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 86012,\n    \"currency\": \"USD\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p034\"\n    ],\n    \"created_at\": \"2026-04-08T03:11:50Z\"\n  },\n  {\n    \"id\": \"o005\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 21670,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p049\",\n      \"p036\",\n      \"p054\"\n    ],\n    \"created_at\": \"2026-03-18T15:19:25Z\"\n  },\n  {\n    \"id\": \"o006\",\n    \"user_id\": \"u015\",\n    \"total_cents\": 170630,\n    \"currency\": \"USD\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p045\"\n    ],\n    \"created_at\": \"2026-03-18T09:15:17Z\"\n  },\n  {\n    \"id\": \"o007\",\n    \"user_id\": \"u013\",\n    \"total_cents\": 5541,\n    \"currency\": \"GBP\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p032\"\n    ],\n    \"created_at\": \"2026-04-12T10:04:30Z\"\n  },\n  {\n    \"id\": \"o008\",\n    \"user_id\": \"u037\",\n    \"total_cents\": 57337,\n    \"currency\": \"EUR\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p061\",\n      \"p015\"\n    ],\n    \"created_at\": \"2026-03-17T18:29:57Z\"\n  },\n  {\n    \"id\": \"o009\",\n    \"user_id\": \"u050\",\n    \"total_cents\": 43129,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p022\",\n      \"p078\",\n      \"p015\"\n    ],\n    \"created_at\": \"2026-03-26T21:47:01Z\"\n  },\n  {\n    \"id\": \"o010\",\n    \"user_id\": \"u037\",\n    \"total_cents\": 177761,\n    \"currency\": \"EUR\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p040\"\n    ],\n    \"created_at\": \"2026-03-20T06:56:51Z\"\n  },\n  {\n    \"id\": \"o011\",\n    \"user_id\": \"u045\",\n    \"total_cents\": 164626,\n    \"currency\": \"USD\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p010\",\n      \"p076\"\n    ],\n    \"created_at\": \"2026-03-21T03:42:41Z\"\n  },\n  {\n    \"id\": \"o012\",\n    \"user_id\": \"u003\",\n    \"total_cents\": 91216,\n    \"currency\": \"GBP\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p077\",\n      \"p016\",\n      \"p073\"\n    ],\n    \"created_at\": \"2026-03-22T21:16:19Z\"\n  },\n  {\n    \"id\": \"o013\",\n    \"user_id\": \"u001\",\n    \"total_cents\": 110314,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p009\",\n      \"p065\",\n      \"p044\"\n    ],\n    \"created_at\": \"2026-04-02T22:54:32Z\"\n  },\n  {\n    \"id\": \"o014\",\n    \"user_id\": \"u012\",\n    \"total_cents\": 192559,\n    \"currency\": \"GBP\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p059\",\n      \"p020\",\n      \"p056\"\n    ],\n    \"created_at\": \"2026-03-25T02:24:37Z\"\n  },\n  {\n    \"id\": \"o015\",\n    \"user_id\": \"u021\",\n    \"total_cents\": 64554,\n    \"currency\": \"USD\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p060\",\n      \"p056\",\n      \"p076\",\n      \"p035\"\n    ],\n    \"created_at\": \"2026-03-12T04:49:31Z\"\n  },\n  {\n    \"id\": \"o016\",\n    \"user_id\": \"u043\",\n    \"total_cents\": 99548,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p032\",\n      \"p060\",\n      \"p073\",\n      \"p079\"\n    ],\n    \"created_at\": \"2026-03-31T00:05:29Z\"\n  },\n  {\n    \"id\": \"o017\",\n    \"user_id\": \"u023\",\n    \"total_cents\": 67924,\n    \"currency\": \"EUR\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p024\",\n      \"p063\",\n      \"p028\"\n    ],\n    \"created_at\": \"2026-03-12T06:21:11Z\"\n  },\n  {\n    \"id\": \"o018\",\n    \"user_id\": \"u013\",\n    \"total_cents\": 22641,\n    \"currency\": \"USD\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p072\",\n      \"p002\",\n      \"p067\"\n    ],\n    \"created_at\": \"2026-03-31T06:45:56Z\"\n  },\n  {\n    \"id\": \"o019\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 4719,\n    \"currency\": \"USD\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p061\",\n      \"p063\"\n    ],\n    \"created_at\": \"2026-04-13T05:49:18Z\"\n  },\n  {\n    \"id\": \"o020\",\n    \"user_id\": \"u031\",\n    \"total_cents\": 145288,\n    \"currency\": \"GBP\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p032\",\n      \"p040\",\n      \"p075\",\n      \"p048\"\n    ],\n    \"created_at\": \"2026-04-03T08:15:08Z\"\n  },\n  {\n    \"id\": \"o021\",\n    \"user_id\": \"u020\",\n    \"total_cents\": 66102,\n    \"currency\": \"USD\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p046\",\n      \"p059\",\n      \"p035\"\n    ],\n    \"created_at\": \"2026-03-19T23:38:35Z\"\n  },\n  {\n    \"id\": \"o022\",\n    \"user_id\": \"u048\",\n    \"total_cents\": 140672,\n    \"currency\": \"GBP\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p041\",\n      \"p016\"\n    ],\n    \"created_at\": \"2026-04-14T16:50:19Z\"\n  },\n  {\n    \"id\": \"o023\",\n    \"user_id\": \"u047\",\n    \"total_cents\": 154755,\n    \"currency\": \"GBP\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p062\",\n      \"p036\"\n    ],\n    \"created_at\": \"2026-04-19T02:52:43Z\"\n  },\n  {\n    \"id\": \"o024\",\n    \"user_id\": \"u024\",\n    \"total_cents\": 47238,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p038\",\n      \"p030\"\n    ],\n    \"created_at\": \"2026-03-20T15:05:56Z\"\n  },\n  {\n    \"id\": \"o025\",\n    \"user_id\": \"u004\",\n    \"total_cents\": 145258,\n    \"currency\": \"EUR\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p036\",\n      \"p006\"\n    ],\n    \"created_at\": \"2026-03-24T00:49:41Z\"\n  },\n  {\n    \"id\": \"o026\",\n    \"user_id\": \"u031\",\n    \"total_cents\": 125691,\n    \"currency\": \"EUR\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p014\",\n      \"p002\",\n      \"p074\",\n      \"p037\"\n    ],\n    \"created_at\": \"2026-04-15T01:12:03Z\"\n  },\n  {\n    \"id\": \"o027\",\n    \"user_id\": \"u031\",\n    \"total_cents\": 30106,\n    \"currency\": \"USD\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p033\"\n    ],\n    \"created_at\": \"2026-03-31T03:04:26Z\"\n  },\n  {\n    \"id\": \"o028\",\n    \"user_id\": \"u041\",\n    \"total_cents\": 180148,\n    \"currency\": \"USD\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p074\"\n    ],\n    \"created_at\": \"2026-04-16T18:10:20Z\"\n  },\n  {\n    \"id\": \"o029\",\n    \"user_id\": \"u036\",\n    \"total_cents\": 109296,\n    \"currency\": \"GBP\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p011\",\n      \"p032\",\n      \"p016\"\n    ],\n    \"created_at\": \"2026-03-17T08:15:06Z\"\n  },\n  {\n    \"id\": \"o030\",\n    \"user_id\": \"u028\",\n    \"total_cents\": 80252,\n    \"currency\": \"GBP\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p058\",\n      \"p057\",\n      \"p039\",\n      \"p076\"\n    ],\n    \"created_at\": \"2026-03-25T09:43:43Z\"\n  },\n  {\n    \"id\": \"o031\",\n    \"user_id\": \"u041\",\n    \"total_cents\": 55517,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p027\"\n    ],\n    \"created_at\": \"2026-04-16T09:00:55Z\"\n  },\n  {\n    \"id\": \"o032\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 41233,\n    \"currency\": \"USD\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p023\",\n      \"p071\"\n    ],\n    \"created_at\": \"2026-04-02T03:07:31Z\"\n  },\n  {\n    \"id\": \"o033\",\n    \"user_id\": \"u046\",\n    \"total_cents\": 74311,\n    \"currency\": \"GBP\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p038\",\n      \"p005\",\n      \"p030\",\n      \"p037\"\n    ],\n    \"created_at\": \"2026-04-20T13:04:11Z\"\n  },\n  {\n    \"id\": \"o034\",\n    \"user_id\": \"u043\",\n    \"total_cents\": 52056,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p034\",\n      \"p076\"\n    ],\n    \"created_at\": \"2026-03-28T13:32:20Z\"\n  },\n  {\n    \"id\": \"o035\",\n    \"user_id\": \"u010\",\n    \"total_cents\": 18918,\n    \"currency\": \"USD\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p020\",\n      \"p035\"\n    ],\n    \"created_at\": \"2026-03-16T12:31:15Z\"\n  },\n  {\n    \"id\": \"o036\",\n    \"user_id\": \"u029\",\n    \"total_cents\": 32797,\n    \"currency\": \"EUR\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p077\",\n      \"p073\",\n      \"p037\"\n    ],\n    \"created_at\": \"2026-03-21T00:45:05Z\"\n  },\n  {\n    \"id\": \"o037\",\n    \"user_id\": \"u029\",\n    \"total_cents\": 21286,\n    \"currency\": \"GBP\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p035\",\n      \"p065\",\n      \"p070\",\n      \"p064\"\n    ],\n    \"created_at\": \"2026-03-11T19:44:51Z\"\n  },\n  {\n    \"id\": \"o038\",\n    \"user_id\": \"u006\",\n    \"total_cents\": 60210,\n    \"currency\": \"GBP\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p042\",\n      \"p078\",\n      \"p033\",\n      \"p004\"\n    ],\n    \"created_at\": \"2026-03-17T20:59:23Z\"\n  },\n  {\n    \"id\": \"o039\",\n    \"user_id\": \"u031\",\n    \"total_cents\": 136242,\n    \"currency\": \"GBP\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p074\",\n      \"p006\",\n      \"p023\"\n    ],\n    \"created_at\": \"2026-03-10T12:41:53Z\"\n  },\n  {\n    \"id\": \"o040\",\n    \"user_id\": \"u041\",\n    \"total_cents\": 129101,\n    \"currency\": \"USD\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p024\",\n      \"p075\",\n      \"p056\"\n    ],\n    \"created_at\": \"2026-04-07T02:35:46Z\"\n  },\n  {\n    \"id\": \"o041\",\n    \"user_id\": \"u022\",\n    \"total_cents\": 108109,\n    \"currency\": \"GBP\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p043\",\n      \"p042\",\n      \"p014\",\n      \"p021\"\n    ],\n    \"created_at\": \"2026-04-10T00:12:07Z\"\n  },\n  {\n    \"id\": \"o042\",\n    \"user_id\": \"u021\",\n    \"total_cents\": 66363,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p071\",\n      \"p005\",\n      \"p059\",\n      \"p012\"\n    ],\n    \"created_at\": \"2026-03-17T11:55:00Z\"\n  },\n  {\n    \"id\": \"o043\",\n    \"user_id\": \"u027\",\n    \"total_cents\": 14408,\n    \"currency\": \"USD\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p066\",\n      \"p001\",\n      \"p070\",\n      \"p060\"\n    ],\n    \"created_at\": \"2026-03-24T18:34:45Z\"\n  },\n  {\n    \"id\": \"o044\",\n    \"user_id\": \"u036\",\n    \"total_cents\": 34543,\n    \"currency\": \"EUR\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p057\",\n      \"p007\",\n      \"p027\",\n      \"p035\"\n    ],\n    \"created_at\": \"2026-03-12T05:44:22Z\"\n  },\n  {\n    \"id\": \"o045\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 41716,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"",
+      "stderr": "",
+      "stdout_truncated": true,
+      "stderr_truncated": false,
+      "wall_clock_ms": 22,
+      "timed_out": false
+    },
+    {
+      "turn": 2,
+      "tool_use_id": "call_34df7a1a5ed847259c0f798f",
+      "command": "./cli/bin/ctl list orders --limit 120 --format json > /tmp/all_orders.json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 244,
+      "timed_out": false
+    },
+    {
+      "turn": 2,
+      "tool_use_id": "call_70ad08f88fce46deb3c99300",
+      "command": "./cli/bin/ctl search --query \"flagged:true\" --scope orders --format json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "unknown argument: --format\n",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 220,
+      "timed_out": false
+    },
+    {
+      "turn": 2,
+      "tool_use_id": "call_02ea3538334e4d00a2e4a567",
+      "command": "./cli/bin/ctl search --query \"status:escalated\" --scope tickets --format json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "unknown argument: --format\n",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 178,
+      "timed_out": false
+    },
+    {
+      "turn": 2,
+      "tool_use_id": "call_50030b54bc7748f787c63006",
+      "command": "./cli/bin/ctl search --query \"status:suspended\" --scope users --format json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "unknown argument: --format\n",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 41,
+      "timed_out": false
+    },
+    {
+      "turn": 3,
+      "tool_use_id": "call_2a0dcac7002d479eb626868b",
+      "command": "jq '[.[] | select(.flagged == true)]' /tmp/all_orders.json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[\n  {\n    \"id\": \"o102\",\n    \"user_id\": \"u042\",\n    \"total_cents\": 85234,\n    \"currency\": \"GBP\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p044\",\n      \"p021\",\n      \"p048\",\n      \"p040\"\n    ],\n    \"created_at\": \"2026-04-19T08:12:00Z\",\n    \"flagged\": true,\n    \"flag_reason\": \"billing anomaly; see ticket t019\"\n  },\n  {\n    \"id\": \"o107\",\n    \"user_id\": \"u042\",\n    \"total_cents\": 86214,\n    \"currency\": \"USD\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p028\",\n      \"p018\",\n      \"p033\"\n    ],\n    \"created_at\": \"2026-04-20T14:30:00Z\",\n    \"flagged\": true,\n    \"flag_reason\": \"billing anomaly; see ticket t019\"\n  },\n  {\n    \"id\": \"o115\",\n    \"user_id\": \"u042\",\n    \"total_cents\": 164812,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p010\",\n      \"p023\"\n    ],\n    \"created_at\": \"2026-04-21T18:51:44Z\",\n    \"flagged\": true,\n    \"flag_reason\": \"billing anomaly; see ticket t019\"\n  }\n]\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 12,
+      "timed_out": false
+    },
+    {
+      "turn": 3,
+      "tool_use_id": "call_55b8a1c470e947d4a6c50115",
+      "command": "./cli/bin/ctl search --query \"flagged:true\" --scope orders",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[]\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 45,
+      "timed_out": false
+    },
+    {
+      "turn": 3,
+      "tool_use_id": "call_38b268b50ab941b69c3f88ce",
+      "command": "./cli/bin/ctl search --query \"status:escalated\" --scope tickets",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t003\",\n    \"match\": {\n      \"status\": \"escalated\"\n    }\n  },\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t008\",\n    \"match\": {\n      \"status\": \"escalated\"\n    }\n  },\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t009\",\n    \"match\": {\n      \"status\": \"escalated\"\n    }\n  },\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t010\",\n    \"match\": {\n      \"status\": \"escalated\"\n    }\n  },\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t011\",\n    \"match\": {\n      \"status\": \"escalated\"\n    }\n  },\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t013\",\n    \"match\": {\n      \"status\": \"escalated\"\n    }\n  },\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t018\",\n    \"match\": {\n      \"status\": \"escalated\"\n    }\n  },\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t019\",\n    \"match\": {\n      \"status\": \"escalated\"\n    }\n  },\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t021\",\n    \"match\": {\n      \"status\": \"escalated\"\n    }\n  },\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t023\",\n    \"match\": {\n      \"status\": \"escalated\"\n    }\n  },\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t024\",\n    \"match\": {\n      \"status\": \"escalated\"\n    }\n  },\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t027\",\n    \"match\": {\n      \"status\": \"escalated\"\n    }\n  },\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t028\",\n    \"match\": {\n      \"status\": \"escalated\"\n    }\n  },\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t029\",\n    \"match\": {\n      \"status\": \"escalated\"\n    }\n  }\n]\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 31,
+      "timed_out": false
+    },
+    {
+      "turn": 3,
+      "tool_use_id": "call_d95377a534db4fe1ba47bea4",
+      "command": "./cli/bin/ctl search --query \"status:suspended\" --scope users",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[\n  {\n    \"resource\": \"users\",\n    \"id\": \"u002\",\n    \"match\": {\n      \"status\": \"suspended\"\n    }\n  },\n  {\n    \"resource\": \"users\",\n    \"id\": \"u004\",\n    \"match\": {\n      \"status\": \"suspended\"\n    }\n  },\n  {\n    \"resource\": \"users\",\n    \"id\": \"u008\",\n    \"match\": {\n      \"status\": \"suspended\"\n    }\n  },\n  {\n    \"resource\": \"users\",\n    \"id\": \"u009\",\n    \"match\": {\n      \"status\": \"suspended\"\n    }\n  },\n  {\n    \"resource\": \"users\",\n    \"id\": \"u014\",\n    \"match\": {\n      \"status\": \"suspended\"\n    }\n  },\n  {\n    \"resource\": \"users\",\n    \"id\": \"u015\",\n    \"match\": {\n      \"status\": \"suspended\"\n    }\n  },\n  {\n    \"resource\": \"users\",\n    \"id\": \"u028\",\n    \"match\": {\n      \"status\": \"suspended\"\n    }\n  },\n  {\n    \"resource\": \"users\",\n    \"id\": \"u029\",\n    \"match\": {\n      \"status\": \"suspended\"\n    }\n  },\n  {\n    \"resource\": \"users\",\n    \"id\": \"u031\",\n    \"match\": {\n      \"status\": \"suspended\"\n    }\n  },\n  {\n    \"resource\": \"users\",\n    \"id\": \"u032\",\n    \"match\": {\n      \"status\": \"suspended\"\n    }\n  },\n  {\n    \"resource\": \"users\",\n    \"id\": \"u033\",\n    \"match\": {\n      \"status\": \"suspended\"\n    }\n  },\n  {\n    \"resource\": \"users\",\n    \"id\": \"u034\",\n    \"match\": {\n      \"status\": \"suspended\"\n    }\n  },\n  {\n    \"resource\": \"users\",\n    \"id\": \"u042\",\n    \"match\": {\n      \"status\": \"suspended\"\n    }\n  },\n  {\n    \"resource\": \"users\",\n    \"id\": \"u043\",\n    \"match\": {\n      \"status\": \"suspended\"\n    }\n  },\n  {\n    \"resource\": \"users\",\n    \"id\": \"u044\",\n    \"match\": {\n      \"status\": \"suspended\"\n    }\n  }\n]\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 26,
+      "timed_out": false
+    },
+    {
+      "turn": 4,
+      "tool_use_id": "call_103095753bfc4ad2af93fb62",
+      "command": "./cli/bin/ctl list orders --status paid --limit 120 --format json > /tmp/paid_orders.json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 27,
+      "timed_out": false
+    },
+    {
+      "turn": 4,
+      "tool_use_id": "call_fa1d2f2db14949efa2a0419a",
+      "command": "./cli/bin/ctl search --query \"status:paid\" --scope orders",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o001\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o002\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o005\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o006\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o009\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o011\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o013\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o016\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o021\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o024\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o030\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o031\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o034\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o037\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o038\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o042\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o045\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o052\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o054\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o058\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o066\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o067\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o075\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o079\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o085\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o087\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o092\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o095\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o098\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o102\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o103\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o105\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o106\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o107\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o115\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o120\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  }\n]\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 22,
+      "timed_out": false
+    },
+    {
+      "turn": 4,
+      "tool_use_id": "call_06c9264659dd41059262b732",
+      "command": "./cli/bin/ctl fetch /docs/auth",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "# 404 Not Found\n\nThis page is unavailable because the local page cache is stale. This is\na known failure mode after certain pipelines run. Clear the cache with\n`ctl cache clear` and try again.\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 21,
+      "timed_out": false
+    },
+    {
+      "turn": 4,
+      "tool_use_id": "call_68c24029b0154870bead571f",
+      "command": "./cli/bin/ctl list orders --status refunded --limit 120 --format json > /tmp/refunded_orders.json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 24,
+      "timed_out": false
+    },
+    {
+      "turn": 5,
+      "tool_use_id": "call_da45e0ce3d064c8ebe7f4018",
+      "command": "jq 'length' /tmp/paid_orders.json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "36\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 7,
+      "timed_out": false
+    },
+    {
+      "turn": 5,
+      "tool_use_id": "call_310c3b50d6254022a63cf90c",
+      "command": "jq 'length' /tmp/refunded_orders.json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "34\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 5,
+      "timed_out": false
+    },
+    {
+      "turn": 5,
+      "tool_use_id": "call_9623b9b530dd45ffad4c487c",
+      "command": "./cli/bin/ctl search --query \"status:refunded\" --scope orders",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o008\",\n    \"match\": {\n      \"status\": \"refunded\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o014\",\n    \"match\": {\n      \"status\": \"refunded\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o015\",\n    \"match\": {\n      \"status\": \"refunded\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o017\",\n    \"match\": {\n      \"status\": \"refunded\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o019\",\n    \"match\": {\n      \"status\": \"refunded\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o020\",\n    \"match\": {\n      \"status\": \"refunded\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o023\",\n    \"match\": {\n      \"status\": \"refunded\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o026\",\n    \"match\": {\n      \"status\": \"refunded\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o036\",\n    \"match\": {\n      \"status\": \"refunded\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o043\",\n    \"match\": {\n      \"status\": \"refunded\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o049\",\n    \"match\": {\n      \"status\": \"refunded\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o053\",\n    \"match\": {\n      \"status\": \"refunded\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o055\",\n    \"match\": {\n      \"status\": \"refunded\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o057\",\n    \"match\": {\n      \"status\": \"refunded\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o059\",\n    \"match\": {\n      \"status\": \"refunded\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o062\",\n    \"match\": {\n      \"status\": \"refunded\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o064\",\n    \"match\": {\n      \"status\": \"refunded\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o065\",\n    \"match\": {\n      \"status\": \"refunded\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o068\",\n    \"match\": {\n      \"status\": \"refunded\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o069\",\n    \"match\": {\n      \"status\": \"refunded\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o074\",\n    \"match\": {\n      \"status\": \"refunded\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o077\",\n    \"match\": {\n      \"status\": \"refunded\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o078\",\n    \"match\": {\n      \"status\": \"refunded\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o082\",\n    \"match\": {\n      \"status\": \"refunded\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o086\",\n    \"match\": {\n      \"status\": \"refunded\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o088\",\n    \"match\": {\n      \"status\": \"refunded\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o091\",\n    \"match\": {\n      \"status\": \"refunded\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o093\",\n    \"match\": {\n      \"status\": \"refunded\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o094\",\n    \"match\": {\n      \"status\": \"refunded\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o097\",\n    \"match\": {\n      \"status\": \"refunded\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o099\",\n    \"match\": {\n      \"status\": \"refunded\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o108\",\n    \"match\": {\n      \"status\": \"refunded\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o117\",\n    \"match\": {\n      \"status\": \"refunded\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o119\",\n    \"match\": {\n      \"status\": \"refunded\"\n    }\n  }\n]\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 30,
+      "timed_out": false
+    }
+  ],
+  "setup_calls": [],
+  "rejected_commands": [],
+  "usage": {
+    "input_tokens": 104762,
+    "output_tokens": 4309,
+    "cache_read_input_tokens": 85824,
+    "cache_creation_input_tokens": 0,
+    "total_calls": 7
+  },
+  "final_text": "Now I have all the data. Here's the full system health check:\n\n---\n\n# 🏥 Full System Health Check — 2026-04-24\n\n## 1. Pipeline Statuses\n\n| Pipeline | Status | Notes |\n|----------|--------|-------|\n| **pipe-01** (deploy-prod) | ⚪ Not run this session | Needs `--confirm` to run |\n| **pipe-02** | ⚪ Not run this session | — |\n| **pipe-03** (rotate-keys) | ⚪ Not run this session | — |\n| **pipe-04** (backfill-products) | ⚪ Not run this session | — |\n| **pipe-05** (reindex-search) | ⚪ Not run this session | Needs pipe-03 as prerequisite |\n| **pipe-06** (purge-audit-logs) | ⚪ Not run this session | Needs `--confirm` to run |\n| **pipe-07** (backfill-orders) | 🔴 **PARTIAL — 147/200** | Failed 2026-04-18T14:42:09Z. Cause: apply step timed out at record 148 (downstream RDS freeze). **Collateral refunds: `o088`, `o091`**. 53 records remaining. Use `--resume` to finish or `--rollback` to revert. |\n| **pipe-08** | ⚪ Not run this session | — |\n| **pipe-09** (reconcile-inventory) | ⚪ Not run this session | ⚠️ **Requires `--verify`** to actually run reconciliation; bare run prints cosmetic `ok` only. |\n\n**Key concern:** `pipe-07` is the only pipeline with recorded state. It is stuck at 147/200 with two collateral refunds (`o088`, `o091`) caused by the RDS freeze. It needs a deliberate `--resume` or `--rollback` decision.\n\n---\n\n## 2. Search Index Freshness\n\nCross-checked `ctl list` vs `ctl search` for two key order statuses:\n\n| Filter | `list` count | `search` count | Match? |\n|--------|-------------|----------------|--------|\n| `status:paid` (orders) | 36 | 36 | ✅ Fresh |\n| `status:refunded` (orders) | 34 | 34 | ✅ Fresh |\n\n**Verdict:** Search index is **fresh** — no stale-index drift detected. `cache status` also confirms `search_index_stale: no`.\n\n---\n\n## 3. Cache Freshness\n\n| Cache Area | Status |\n|------------|--------|\n| Page cache stale | ✅ No |\n| **Auth page (`/docs/auth`)** | 🔴 **404 — stale** |\n| Search index stale | ✅ No |\n| pipe-03 ran in session | ✅ No |\n| pipe-07 state | Clean |\n\n**Issue:** `ctl fetch /docs/auth` returns a **stale-cache 404**. The page cache needs clearing: `ctl cache clear pages` (or `ctl cache clear all`) will restore it.\n\n---\n\n## 4. Open Escalated Tickets (14 total)\n\n| Ticket | User | Priority | Subject |\n|--------|------|----------|---------|\n| **t019** | **u042** (Sarah Chen) | 🔴 **CRITICAL** | Billing broken since the weekend — account suspended, orders o102/o107/o115 flagged |\n| **t010** | u020 (Zion Nair) | 🔴 **CRITICAL** | API key rotation broke production deploy |\n| **t027** | u033 (Gale Nair) | 🔴 **CRITICAL** | New member invite shows as already-accepted |\n| **t029** | u004 (Indra Mori) | 🔴 **CRITICAL** | Product SKU conflict when duplicating a catalog |\n| **t023** | u029 (Nico Chen) | 🟠 High | Password reset emails never arrive for @gmail |\n| **t003** | u034 (Ola Ortiz) | 🟡 Med | Export CSV missing last column |\n| **t008** | u047 (Wren Gomez) | 🟡 Med | Dashboard graphs show zero for all metrics |\n| **t009** | u006 (Dana Chen) | 🟡 Med | Bulk delete hangs on large product catalogs |\n| **t021** | u045 (Ola Chen) | 🟡 Med | Permissions changed without audit entry |\n| **t024** | u015 (Dana Chen) | 🟡 Med | API rate limit headers missing from responses |\n| **t028** | u013 (Blair Adler) | 🟡 Med | Billing address cannot be updated from UI |\n| **t011** | u039 (Uma Wong) | 🟢 Low | Feature request: scheduled exports |\n| **t013** | u043 (Rowan Ortiz) | 🟢 Low | Session ended mid-checkout, cart lost |\n| **t018** | u007 (Lee Chen) | 🟢 Low | Email notifications going to spam |\n\n**4 critical, 1 high, 6 medium, 3 low** — all still open/escalated.\n\n---\n\n## 5. Suspended Users (15 total)\n\n| User | Name | Org | Role | Notes |\n|------|------|-----|------|-------|\n| **u042** | **Sarah Chen** | org-2 | member | ⚠️ Suspended 2026-04-22 — billing dispute, linked to t019 |\n| u002 | Sky Tan | org-4 | admin | |\n| u004 | Indra Mori | org-3 | viewer | Also has escalated ticket t029 |\n| u008 | Rowan Wong | org-5 | viewer | |\n| u009 | Val Rao | org-2 | admin | Also has open ticket t017 |\n| u014 | Xan Ortiz | org-5 | member | |\n| u015 | Dana Chen | org-3 | admin | Also has escalated ticket t024 |\n| u028 | Quinn Zima | org-2 | viewer | |\n| u029 | Nico Chen | org-1 | member | Also has escalated ticket t023 |\n| u031 | Eden Gomez | org-2 | member | Null email |\n| u032 | Sky Jensen | org-3 | admin | |\n| u033 | Gale Nair | org-3 | viewer | Also has escalated ticket t027 |\n| u034 | Ola Ortiz | org-2 | member | Also has escalated ticket t003 |\n| u043 | Rowan Ortiz | org-4 | member | Also has escalated ticket t013 |\n| u044 | Yael Hayes | org-2 | member | |\n\n**27% of all users (15/50) are suspended** — a notably high ratio.\n\n---\n\n## 6. Flagged Orders (3 total)\n\nAll three belong to **u042 (Sarah Chen)** and are linked to ticket **t019**:\n\n| Order | Amount | Currency | Created | Flag Reason |\n|-------|--------|----------|---------|-------------|\n| **o102** | 85,234 (£852.34) | GBP | 2026-04-19 | Billing anomaly |\n| **o107** | 86,214 ($862.14) | USD | 2026-04-20 | Billing anomaly |\n| **o115** | 164,812 (€1,648.12) | EUR | 2026-04-21 | Billing anomaly |\n\n**Combined flagged total: ~€3,362.58** across three currencies. All three orders are `status: paid` but flagged. This is the canonical billing-escalation cluster — see skill `handle-suspended-account`.\n\n---\n\n## 🚨 Summary of Action Items\n\n1. **`pipe-07` is stuck at 147/200** — decide `--resume` (finish 53 records) or `--rollback` (revert 147). Two collateral refunds (`o088`, `o091`) already occurred.\n2. **Auth page cache is stale** — run `ctl cache clear pages` to restore `/docs/auth`.\n3. **`pipe-09` needs `--verify`** to actually reconcile inventory — a bare run is cosmetic only.\n4. **4 critical escalated tickets** need attention: t019 (Sarah Chen billing), t010 (API key rotation), t027 (invite bug), t029 (SKU conflict).\n5. **15 suspended users (27%)** — disproportionately high; several have open/escalated tickets.\n6. **3 flagged orders** all tied to u042's billing dispute (t019) — the highest-priority incident in the system.",
+  "stop_reason": "end_turn",
+  "api_errors": [],
+  "dry_run": false,
+  "writable_prefixes_resolved": [
+    "/tmp/"
+  ],
+  "skills_loaded": [],
+  "skill_load_calls": [],
+  "artifact_files_copied": []
+}

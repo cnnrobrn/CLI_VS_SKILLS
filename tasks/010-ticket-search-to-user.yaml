@@ -1,0 +1,33 @@
+id: "010"
+title: "Use search to locate a ticket about billing, then fetch the user"
+bucket: stateful
+prompt: |
+  Search the ticket corpus for anything about "billing" problems over
+  the weekend. Pick the most relevant ticket, identify the user who
+  opened it, and report their id and current account status.
+rule_check:
+  - id: used_search
+    assert: tool_called
+    match:
+      argv_regex: "^ctl search.*(billing|Billing)"
+    weight: 2
+  - id: handled_case_sensitivity
+    assert: tool_called
+    match:
+      argv_regex: "^ctl search.*(--i|Billing)"
+    weight: 2
+  - id: fetched_u042
+    assert: tool_called
+    match:
+      argv_regex: "^ctl get users u042"
+    weight: 2
+  - id: final_mentions_suspended
+    assert: final_text_regex
+    pattern: "suspended"
+    weight: 1
+  - id: no_unrelated_user_lookup
+    assert: no_tool_called
+    match:
+      argv_regex: "^ctl get users u(?!042)[0-9]{3}"
+    weight: 1
+tags: [search, tickets, users, stateful, A5, A15, u042]

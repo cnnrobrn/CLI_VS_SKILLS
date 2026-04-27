@@ -1,0 +1,77 @@
+# CLI_VS_SKILLS harness configuration.
+# Paths are relative to the repo root unless absolute. The agent model and
+# judge model MUST come from different families so judge bias is reduced.
+
+# OpenRouter model slugs. Verify availability at https://openrouter.ai/models.
+# Format is <provider>/<model-name>. You can swap to openai/*, google/*, etc.
+agent_model: anthropic/claude-opus-4.7
+judge_model: anthropic/claude-haiku-4.5
+
+# OpenAI-compatible base URL. OpenRouter is the default, but any compatible
+# gateway works (LiteLLM, Ollama's OpenAI shim, self-hosted proxies, etc.).
+api_base_url: https://openrouter.ai/api/v1
+
+temperature: 0
+max_turns: 25
+per_command_timeout_seconds: 30
+judges_per_transcript: 3
+low_agreement_threshold: 0.67
+
+# Executables the agent may call. argv[0] must match exactly. `bash` is
+# allowed only as `bash -c "..."`, and the inner command is re-validated
+# against this same allowlist (split on ;, &&, ||, |).
+allowed_argv0:
+  - ./cli/bin/ctl
+  - ctl
+  - cat
+  - ls
+  - mkdir
+  - head
+  - tail
+  - wc
+  - grep
+  - jq
+  - python3
+  - echo
+  - bash
+
+# Redirects (> and >>) are allowed only when the target begins with one of
+# these prefixes. `$CTL_STATE_DIR` and `$WORKDIR` are expanded from the
+# environment of the harness at validation time (per-task values).
+writable_paths:
+  - /tmp/
+  - $CTL_STATE_DIR
+  - $WORKDIR
+
+# Skills library: a directory of one-skill-per-file .md files. Each skill
+# starts with a YAML frontmatter block declaring `name` and `description`.
+# The cli-skills arm puts only the (name, description) index in the system
+# prompt; bodies are loaded on demand via the `load_skill` tool.
+skills_dir: skills/
+
+# Output directory root (relative to repo root unless absolute).
+results_root: results/
+
+# Per-tool-call output caps (bytes). stdout/stderr above this limit are
+# truncated and marked with _truncated: true in the transcript.
+stdout_cap_bytes: 10240
+stderr_cap_bytes: 10240
+
+# Pinned "now" the CLI is expected to honor — recorded in transcripts so
+# fixtures drifting out of sync with the harness is visible.
+pinned_now: "2026-04-24T00:00:00Z"
+
+# Agent max_tokens per API call. Judge runs use judge_max_tokens.
+agent_max_tokens: 4096
+judge_max_tokens: 2048
+
+# Rule-based / judge-based scoring controls. Tasks may declare a rule_check
+# block (deterministic, offline), a judge_rubric block (LLM-graded), or both.
+# Pure rule-scored tasks need zero API calls at grading time.
+scoring:
+  # Every task must define at least one scoring block. The runner fails fast
+  # on tasks that have neither.
+  require_rule_check_or_judge_rubric: true
+  # Default for `final_text_regex` / `final_text_contains` when the rule
+  # doesn't set `case_sensitive` explicitly.
+  default_case_sensitive_text_match: false

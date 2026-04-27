@@ -1,0 +1,34 @@
+id: "001"
+title: "Fetch the full record for the first user in the list"
+bucket: stateful
+prompt: |
+  List the users with `ctl list users`. Take the first user id that
+  appears in that output and then fetch that user's full record with
+  `ctl get users <id>`. Report that user's email.
+rule_check:
+  - id: listed_users
+    assert: tool_called
+    match:
+      argv_regex: "^ctl list users"
+    weight: 1
+  - id: got_u001
+    assert: tool_called
+    match:
+      argv_regex: "^ctl get users u001"
+    weight: 2
+  - id: sequence_list_then_get
+    assert: tool_sequence
+    sequence:
+      - { argv_regex: "^ctl list users" }
+      - { argv_regex: "^ctl get users u001" }
+    weight: 1
+  - id: no_invented_user
+    assert: no_tool_called
+    match:
+      argv_regex: "^ctl get users u(?!001)[0-9]{3}"
+    weight: 1
+  - id: final_mentions_u001
+    assert: final_text_contains
+    text: "u001"
+    weight: 1
+tags: [users, stateful, basic-chain]

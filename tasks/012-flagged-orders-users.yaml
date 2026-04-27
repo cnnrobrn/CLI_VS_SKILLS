@@ -1,0 +1,29 @@
+id: "012"
+title: "Find the users behind all flagged orders"
+bucket: stateful
+prompt: |
+  List every order where flagged=true. For each such order, look up
+  the owning user's email. Output a compact table: order_id, user_id,
+  email.
+rule_check:
+  - id: listed_flagged_orders
+    assert: tool_called
+    match:
+      argv_regex: "^ctl (list|search).*orders.*flagged"
+    weight: 2
+  - id: fetched_u042
+    assert: tool_called
+    match:
+      argv_regex: "^ctl get users u042"
+    weight: 2
+  - id: final_mentions_all_three
+    assert: final_text_regex
+    pattern: "o102.*o107.*o115|o102.*o115.*o107|o107.*o102.*o115|o107.*o115.*o102|o115.*o102.*o107|o115.*o107.*o102"
+    weight: 2
+  - id: sequence_list_then_get
+    assert: tool_sequence
+    sequence:
+      - { argv_regex: "^ctl (list|search).*orders.*flagged" }
+      - { argv_regex: "^ctl get users u042" }
+    weight: 1
+tags: [orders, users, stateful, A15, u042]

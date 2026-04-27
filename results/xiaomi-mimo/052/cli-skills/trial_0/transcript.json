@@ -1,0 +1,1016 @@
+{
+  "task_id": "052",
+  "task_title": "Migrate pending orders to paid with checkpoints",
+  "task_bucket": "long-horizon",
+  "task_tags": [
+    "long-horizon",
+    "orders",
+    "pipelines",
+    "migration",
+    "pagination",
+    "A1"
+  ],
+  "arm": "cli-skills",
+  "trial": 0,
+  "model": "xiaomi/mimo-v2.5",
+  "started_at": "2026-04-26T17:15:13.380475+00:00",
+  "ended_at": "2026-04-26T17:15:50.791574+00:00",
+  "wall_clock_seconds": 37.411,
+  "ctl_state_dir": "/Users/connorobrien/Documents/CLI_VS_SKILLS/results/xiaomi-mimo-tooled/052/cli-skills/trial_0/ctl-state",
+  "workdir": "/Users/connorobrien/Documents/CLI_VS_SKILLS/results/xiaomi-mimo-tooled/052/cli-skills/trial_0",
+  "system_prompt": "You are an autonomous agent being evaluated on a benchmark.\n\nEnvironment:\n- Your working directory is a repo root. You have ONE tool: `bash`.\n- A custom CLI named `ctl` lives at ./cli/bin/ctl (also reachable as `ctl`).\n- The CLI reads canned fixtures from disk and does NOT access the network.\n- The CLI honors a pinned \"now\" of 2026-04-24T00:00:00Z for --since filters.\n- Allowed executables: ./cli/bin/ctl, ctl, cat, ls, mkdir, head, tail, wc,\n  grep, jq, python3, echo, bash (only as `bash -c \"...\"`, and the inner\n  command is re-checked against the same allowlist).\n- You MAY redirect output to files under /tmp/ (and under $CTL_STATE_DIR).\n- Pipes (|), command chaining (;, &&, ||), and command substitution\n  ($(...) or backticks) inside a single command string are NOT allowed.\n  If you need to combine operations, wrap the whole line in\n  `bash -c \"cmd1 && cmd2\"` — each sub-command still has to pass the\n  allowlist.\n- Each command has a 30-second timeout.\n\nTask rules:\n- Follow the user's instructions exactly. Where the task asks you to write\n  output to a specific file path, write EXACTLY to that path.\n- If a command fails, read the error and try a different approach. Do not\n  retry the same failing command unchanged.\n- When you are finished, stop calling tools and provide a short final\n  answer. Many tasks will be graded on that final message, so be precise —\n  name IDs, files, and root causes explicitly.\n\n## Reference: cli/README.md\n\nThe following is the complete contents of cli/README.md. It is the only\ndocumentation you have for the `ctl` CLI. Discover any further behavior by\nrunning `ctl --help` and `ctl <subcommand> --help`.\n\n\n# ctl\n\nA deterministic fixture-backed CLI. No network. No live clock. Output for a\ngiven input is fixed.\n\n## Install\n\n```\ngit clone <repo>\ncd CLI_VS_SKILLS\n./cli/bin/ctl --help\n```\n\nRequires Python 3.9+. Stdlib-only (see `cli/requirements.txt`).\n\n## Synopsis\n\n```\nctl <command> [args...]\n```\n\n## Commands\n\n| Command                             | Description                                     |\n|-------------------------------------|-------------------------------------------------|\n| `ctl list <resource>`               | List records for a resource.                    |\n| `ctl get <resource> <id>`           | Fetch a single record.                          |\n| `ctl fetch <url-or-slug>`           | Print a fixture markdown page.                  |\n| `ctl search --query Q`              | Substring search across resource text fields.   |\n| `ctl diff <a> <b>`                  | Structured JSON diff of two records.            |\n| `ctl pipeline run <name>`           | Run a named pipeline.                           |\n| `ctl pipeline status <name>`        | Show last recorded state for a pipeline.        |\n| `ctl cache status`                  | Show cache / state flags.                       |\n| `ctl cache clear [<scope>]`         | Clear cached state (scope = pages/search/pipelines/all). |\n| `ctl version`                       | Print version.                                  |\n| `ctl --help`, `ctl <cmd> --help`    | Usage.                                          |\n\n## Resources\n\n`users` (50), `orders` (120), `tickets` (30), `products` (80), `sessions` (15).\n\n## Common options\n\n| Option                  | Commands      | Description                                  |\n|-------------------------|---------------|----------------------------------------------|\n| `--status <value>`      | `list`        | Filter rows by exact `status` match.         |\n| `--since <date>`        | `list`        | ISO date (`2026-04-20`), ISO datetime, or relative (`7d`, `24h`). |\n| `--limit <n>`           | `list`        | Maximum rows. Default: **10**.               |\n| `--format json\\|yaml\\|table` | `list`, `get` | Output format. Default: `table`.        |\n| `--query Q`             | `search`      | Required. Substring, or `field:value`.        |\n| `--scope <resource>`    | `search`      | Restrict to one resource.                    |\n| `--i`                   | `search`      | Case-insensitive. Default: case-sensitive.   |\n| `--reindex`             | `search`      | Rebuild the search index.                    |\n| `--confirm`             | `pipeline run`| Pass through a confirm gate.                 |\n| `--resume`              | `pipeline run`| Resume a partially-applied pipeline.         |\n| `--rollback`            | `pipeline run`| Roll back an applied pipeline.               |\n| `--verify`              | `pipeline run`| Run an extra verification pass.              |\n\n## Exit codes\n\n| Code | Meaning                                                       |\n|-----:|---------------------------------------------------------------|\n| `0`  | Success.                                                      |\n| `1`  | User error: not found, bad flag, invalid input.               |\n| `2`  | Refused: a pipeline needs `--confirm` or a prerequisite.      |\n\n## Environment\n\n| Variable            | Default             | Meaning                                     |\n|---------------------|---------------------|---------------------------------------------|\n| `CTL_FIXTURES_DIR`  | `<repo>/fixtures`   | Root of the fixture tree.                   |\n| `CTL_STATE_DIR`     | `~/.ctl-state/`     | Scratch state for cache / pipeline flags.   |\n\n## Determinism\n\nPinned \"now\" is `2026-04-24T00:00:00Z`. Relative `--since` values anchor to\nthat instant.\n\n## Version\n\n`1.0.0`\n\n## Available skills\n\nYou have access to a library of skills, each addressing a specific class of problem you might encounter while using `ctl`. Below is the index of every skill — only the names and one-line descriptions are shown here. To read a skill's full content, call the `load_skill` tool with `name=<skill name>`. Load only skills that look relevant to the current task.\n\n- case-insensitive-search: Use when `ctl search --query <q>` returns zero results for a brand or term you expect to exist. Search is case-sensitive by default; pass `--i` or match the actual case (e.g. `Acme`, not `acme`).\n- clear-cache-after-pipe03: Use when `ctl fetch /docs/*` returns a canned 404 immediately after running `pipe-03` (`rotate-keys`). The page cache is marked stale; `ctl cache clear` (or `ctl cache clear pages`) restores the real pages.\n- clear-stale-page-cache: Use when `ctl fetch /docs/auth` returns a 404 on fresh state. The default for that page is a stale-cache 404; `ctl cache clear` repairs it. Distinct from the post-pipe-03 stale.\n- confirm-destructive-pipeline: Use when `ctl pipeline run pipe-01` (deploy-prod) or `pipe-06` (purge-audit-logs) exits 2 with a bare `refused` on stderr. The CLI gives no hint, but `--confirm` is the fix for both.\n- cross-check-list-and-search: Recipe -- use whenever you need to trust a row count after a pipeline ran. Cross-check `ctl list --status X` against `ctl search --query \"status:X\"`; if they disagree, the search index is stale and `ctl search --reindex` is the fix.\n- diagnose-refund-burst: Recipe -- use when a task says \"two orders got refunded fast for u017\" or any pipe-07 collateral-refund investigation. Combines pagination, runbook discovery, and pipe-07 status into a 4-step diagnosis.\n- diff-resource-type-validation: Use when `ctl diff a b` returns `{}` and exits 0. Empty object does NOT mean \"identical\"; it means you passed ids of different resource types (e.g. `u001` vs `o001`) and the CLI swallowed it. Always diff within the same resource.\n- discover-runbooks: Use when investigating any incident, pipeline failure, or cross-resource anomaly. The canonical writeups live under `/runbook/*` and `/help/*` -- they are NOT linked from CLI output. Fetch the right one to short-circuit hours of investigation.\n- find-flagged-records: Recipe for 'find all flagged X for user Y' tasks. Filter chain — search/list to find user id, then `ctl list orders --limit 1000 --format json | jq` to filter by user_id AND flagged==true. Anchored on Sarah Chen.\n- format-output-fidelity: Use when piping `ctl` output to `jq`, `grep`, or any parser, or when reading any field that might exceed ~23 characters. `--format table` (the default) silently truncates long values with an ellipsis; always pass `--format json` for fidelity.\n- handle-null-emails: Use when post-processing user records by email (e.g. lowercasing, regex). Three users have null emails (u023, u031, u049); naive `.lower()` on every row will AttributeError. Filter for null first.\n- handle-suspended-account: Use when investigating Sarah Chen (`u042`) or any \"account flipped to suspended\" billing escalation. Her account suspended on 2026-04-22; flagged orders are `o102`, `o107`, `o115`; ticket `t019` is the canonical entry point.\n- lookup-resource-by-id: Use when `ctl get <resource> <id>` returns `not found` (exit 1) and you don't have the exact id. There is no fuzzy match or \"did you mean\" hint; search by name first, then `get` the canonical id.\n- output-format-conventions: Idiom -- when to choose `--format json` (machine processing, long fields, jq), `--format yaml` (rare; slow to parse), or `--format table` (default; only for short fixed fields, never free text). Prefer JSON for everything non-trivial.\n- paginate-list-results: Use when running `ctl list <resource>` to count records or filter to \"all\" of something. The default `--limit` is 10 and silently truncates with no warning, so any cardinality answer derived from the default page is almost certainly wrong.\n- pipeline-prerequisites: Use when a pipeline (notably `pipe-05` / `reindex-search`) exits 2 with stderr `prerequisite not met`. The CLI does not name the prereq; pipe-05 needs pipe-03 to have run in the current state dir.\n- read-pipe04-skip-file: Use after running `pipe-04` (`backfill-products`). It exits 0 with a stderr warning that 2 records were skipped to `/tmp/pipe-04.skipped`. The skipped ids are `p044` and `p077`; their skip reasons live on the product fixtures themselves.\n- recover-pipe07-partial: Use when working with `pipe-07` (`backfill-orders`). The fixture state is pre-baked as 147/200 partial; a bare `ctl pipeline run pipe-07` is an idempotent no-op. To advance, choose `--resume` (finish 53) or `--rollback` (revert 147).\n- reindex-stale-search: Use when `ctl search` and `ctl list` disagree on the same filter (notably `status:paid` on orders) after running `pipe-07 --resume` or `--rollback`. The search index is marked stale; `ctl search --reindex` resyncs it.\n- resolve-triple-submit-duplicates: Use when investigating duplicate orders — three orders with the same user_id, same total_cents, and timestamps a few seconds apart. Convention from /help/duplicates — keep the lowest id paid, refund the others.\n- resource-id-conventions: Idiom -- ctl ids follow a one-letter-prefix + three-digit-suffix convention (`u`/`o`/`t`/`p`/`s`). Use to validate ids before `ctl get`/`diff` and to recognise canonical \"key identities\" (u017, u042, t019, p014, etc).\n- since-flag-formats: Use when `ctl list ... --since <X>` returns `invalid date` (exit 1). The flag accepts exactly three shapes — ISO date, ISO datetime with Z, or relative (Nd/Nh). Anything else fails with no help text.\n- verify-migration-cleanup: Recipe for 'did the migration finish cleanly?' tasks. Pre/post count idiom — capture row counts before, run the pipeline with verification flags, capture counts after, diff. Anchored on pipe-09 reconcile-inventory.\n- verify-reconcile-inventory: Use when running `pipe-09` (`reconcile-inventory`). A bare run prints `ok` and exits 0 without doing any reconciliation. You must pass `--verify` to actually run the comparison; without it, \"ok\" is cosmetic.\n",
+  "user_prompt": "Walk through the pending orders and move them to status=paid using\nthe appropriate pipeline (pipe-02 is the payments-apply pipeline).\nBefore and after the run, record the count of pending orders and\nthe count of paid orders. If the before/after counts don't\nreconcile, roll back. Give me a report.\n",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Walk through the pending orders and move them to status=paid using\nthe appropriate pipeline (pipe-02 is the payments-apply pipeline).\nBefore and after the run, record the count of pending orders and\nthe count of paid orders. If the before/after counts don't\nreconcile, roll back. Give me a report.\n"
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "I'll start by loading relevant skills and capturing the \"before\" counts for pending and paid orders."
+        },
+        {
+          "type": "tool_use",
+          "id": "call_6d20fcf450a8467f96c6a67e",
+          "name": "load_skill",
+          "input": {
+            "name": "paginate-list-results"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_7a573385c8f14fc9a62d4bba",
+          "name": "load_skill",
+          "input": {
+            "name": "confirm-destructive-pipeline"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_35ebb0cc5f4347c08187468a",
+          "name": "load_skill",
+          "input": {
+            "name": "cross-check-list-and-search"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_6d20fcf450a8467f96c6a67e",
+          "content": "# Pagination\n\n`ctl list` returns at most 10 rows by default. There is no `truncated`\nbanner, no stderr warning, and no `--count` flag. If your answer depends\non \"how many\" or \"show me all,\" you must override `--limit`.\n\n## True row counts\n\n| resource | rows |\n|----------|----:|\n| users    |  50 |\n| orders   | 120 |\n| tickets  |  30 |\n| products |  80 |\n| sessions |  15 |\n\nOnly `sessions` fits inside the default page.\n\n## Wrong invocation\n\n```sh\nctl list orders | wc -l\n# 12  (10 data rows + header + separator)  -- conclude \"10 orders\"\n```\n\n## Right invocation\n\n```sh\nctl list orders --limit 1000 --format json | jq 'length'\n# 120\n```\n\n`--limit 1000` is the safe ceiling for every fixture in this CLI.\n\n## How to detect truncation\n\n- If `len(results) == 10` and you did not pass `--limit`, you almost\n  certainly hit the default. Re-run with a higher limit before drawing\n  conclusions.\n- `--format table` and counting visible rows is the same trap.\n- A non-integer to `--limit` fails with `--limit must be an integer`\n  (no examples). Pass an integer.\n\n## Common mistakes\n\n- Concluding \"u017 has 10 orders\" from a default `ctl list orders` run.\n  u017 actually has 14 orders.\n- Running `ctl list orders | grep refunded | wc -l` and reporting a\n  refund total. The grep ran over only the first 10 rows.\n- Eyeballing a default-paged table and inferring totals.\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_7a573385c8f14fc9a62d4bba",
+          "content": "# Destructive pipeline refusal\n\nTwo pipelines refuse to run without `--confirm`:\n\n- `pipe-01` (`deploy-prod`)\n- `pipe-06` (`purge-audit-logs`)\n\nBoth exit `2` with stderr of exactly `refused`. The CLI never tells you\nthat `--confirm` is the missing piece.\n\n## Wrong invocation\n\n```sh\n$ ctl pipeline run pipe-01\nrefused\n$ echo $?\n2\n```\n\n## Right invocation\n\n```sh\n$ ctl pipeline run pipe-01 --confirm\n[1/4] build: ok\n...\npipeline deploy-prod: ok\n$ echo $?\n0\n```\n\nSame shape for `pipe-06`:\n\n```sh\nctl pipeline run pipe-06 --confirm\n```\n\n## Common mistakes\n\n- Treating `refused` as \"the pipeline is broken\" and escalating.\n- Looking for the missing flag in `--help` (it's listed, but the error\n  itself says nothing about it).\n- Adding `--confirm` to non-destructive pipelines like `pipe-02` --\n  harmless, but unnecessary.\n\nUse this skill only when you actually intend the destructive operation.\nFor `pipe-01` that is a real prod deploy; for `pipe-06` it permanently\ndeletes audit logs.\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_35ebb0cc5f4347c08187468a",
+          "content": "# Recipe: Cross-check list and search to detect index drift\n\nTwo sources of truth, one fixture state:\n\n- `ctl list <resource> --status X` reads underlying records directly.\n- `ctl search --query \"status:X\" --scope <resource>` reads through\n  the search index.\n\nIf they disagree, the search index is stale. The most common cause\nis `pipe-07` having run with `--resume` or `--rollback` (see\n`reindex-stale-search`), but any pipeline that touches order status\ncan do it.\n\n## Steps\n\n### 1. Run both queries\n\n```sh\nctl list   orders --status paid --limit 1000 --format json | jq 'length'\nctl search --query \"status:paid\" --scope orders | jq 'length'\n```\n\n`--limit 1000` matters on the list side (see\n`paginate-list-results`).\n\n### 2. Compare\n\nIf they match: trust the count.\n\nIf they differ -- typically by exactly two rows after a pipe-07\naction, with `o088` and `o091` as the offenders:\n\n### 3. Reindex and re-cross-check\n\n```sh\nctl search --reindex\nctl search --query \"status:paid\" --scope orders | jq 'length'\n# now matches ctl list\n```\n\n## Use this whenever\n\n- A status filter materially affects the answer.\n- A pipeline ran in the current session (especially pipe-07).\n- Two queries that should logically agree disagree by 1-3 rows.\n\n## Common mistakes\n\n- Trusting whichever number \"feels right.\" Reindex and re-check.\n- Reindexing without also re-running the queries -- you need to\n  confirm the disagreement is gone.\n- Confusing this with the `--limit` trap. Pagination differences\n  are 100+ rows; index drift is typically 1-3 rows.\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Now let me capture the \"before\" counts for pending and paid orders."
+        },
+        {
+          "type": "tool_use",
+          "id": "call_5bc246504288413081bea037",
+          "name": "bash",
+          "input": {
+            "command": "ctl list orders --status pending --limit 1000 --format json | jq 'length'"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_b710d0f2831c43e1b91184f0",
+          "name": "bash",
+          "input": {
+            "command": "ctl list orders --status paid --limit 1000 --format json | jq 'length'"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_5bc246504288413081bea037",
+          "content": "exit_code: 0\nstdout: <empty>\nstderr:\nbash: ctl: command not found\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_b710d0f2831c43e1b91184f0",
+          "content": "exit_code: 0\nstdout: <empty>\nstderr:\nbash: ctl: command not found\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_c0ac7a8607304b62beb88810",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl list orders --status pending --limit 1000 --format json | jq 'length'"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_d5a5f22014754d84b0d36878",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl list orders --status paid --limit 1000 --format json | jq 'length'"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_c0ac7a8607304b62beb88810",
+          "content": "exit_code: 0\nstdout:\n18\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_d5a5f22014754d84b0d36878",
+          "content": "exit_code: 0\nstdout:\n36\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "**Before counts captured:**\n- Pending orders: **18**\n- Paid orders: **36**\n\nNow let me run the payments-apply pipeline (pipe-02)."
+        },
+        {
+          "type": "tool_use",
+          "id": "call_b6b1011d3db546af941161ba",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl pipeline run pipe-02"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_b6b1011d3db546af941161ba",
+          "content": "exit_code: 0\nstdout:\n[1/3] truncate: ok\n[2/3] load-fixtures: 275 rows\n[3/3] vacuum: ok\npipeline seed-staging: ok\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "That ran `seed-staging`, not `payments-apply`. Let me check the pipeline status and find the correct pipeline for payments."
+        },
+        {
+          "type": "tool_use",
+          "id": "call_6617f820e0374a5a8dcd57df",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl pipeline status pipe-02"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_ccbd3f1ab8664df88540e30f",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl pipeline run --help"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_6617f820e0374a5a8dcd57df",
+          "content": "exit_code: 0\nstdout:\npipeline: pipe-02 (pipe-02)\nran_in_session: yes\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_ccbd3f1ab8664df88540e30f",
+          "content": "exit_code: 0\nstdout:\nusage: ctl pipeline run <name> [--confirm] [--resume] [--rollback] [--verify]\n       ctl pipeline status <name>\n\n`run` executes the named pipeline; output is read from the fixture (no\nreal work is performed). `status` prints the last recorded state for\nthat pipeline (or `clean` if it has never run in this state dir).\n\nArguments:\n  name              Pipeline name (e.g. deploy-prod, backfill-orders).\n\nOptions:\n  --confirm         Pass through the `requires_confirm` gate.\n  --resume          Continue a partially-applied pipeline from checkpoint.\n  --rollback        Roll back the applied portion of a partial pipeline.\n  --verify          Run an extra verification pass (pipelines that\n                    support it will report discrepancies).\n  -h, --help        Show this message and exit.\n\nExit codes:\n  0    success (including safe no-ops like bare run in partial state)\n  1    unknown pipeline / bad state\n  2    refused (requires --confirm) or prerequisite unmet\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "The pipeline ran successfully. Let me now capture the \"after\" counts."
+        },
+        {
+          "type": "tool_use",
+          "id": "call_bb194836851a4fac867e70df",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl list orders --status pending --limit 1000 --format json | jq 'length'"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_139aed806a114393a367fa97",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl list orders --status paid --limit 1000 --format json | jq 'length'"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_bb194836851a4fac867e70df",
+          "content": "exit_code: 0\nstdout:\n18\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_139aed806a114393a367fa97",
+          "content": "exit_code: 0\nstdout:\n36\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "The counts are unchanged. The pipeline output said \"seed-staging\" which doesn't sound like payments-apply. Let me investigate what pipelines are available and what pipe-02 actually does."
+        },
+        {
+          "type": "tool_use",
+          "id": "call_8e10c4d9aad64db9aa431497",
+          "name": "bash",
+          "input": {
+            "command": "ls ./fixtures/pipelines/"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_a8db6e2ad89845a6baee76c9",
+          "name": "bash",
+          "input": {
+            "command": "cat ./fixtures/pipelines/pipe-02.yaml"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_8e10c4d9aad64db9aa431497",
+          "content": "exit_code: 0\nstdout:\nbackfill-orders.json\nbackfill-products.json\ndeploy-prod.json\npurge-audit-logs.json\nreconcile-inventory.json\nreindex-search.json\nrotate-keys.json\nseed-staging.json\nsync-inventory.json\nvacuum-sessions.json\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_a8db6e2ad89845a6baee76c9",
+          "content": "exit_code: 1\nstdout: <empty>\nstderr:\ncat: ./fixtures/pipelines/pipe-02.yaml: No such file or directory\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_b6b6dbea963d4b2a980a4394",
+          "name": "bash",
+          "input": {
+            "command": "cat ./fixtures/pipelines/seed-staging.json"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_a827790db7fb40f39cda0208",
+          "name": "bash",
+          "input": {
+            "command": "ls ./fixtures/pipelines/"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_b6b6dbea963d4b2a980a4394",
+          "content": "exit_code: 0\nstdout:\n{\n  \"id\": \"pipe-02\",\n  \"name\": \"seed-staging\",\n  \"description\": \"Seed staging database from fixtures.\",\n  \"definition\": {\n    \"steps\": [\n      \"truncate\",\n      \"load-fixtures\",\n      \"vacuum\"\n    ]\n  },\n  \"default_run_result\": {\n    \"status\": \"ok\",\n    \"lines\": [\n      \"[1/3] truncate: ok\",\n      \"[2/3] load-fixtures: 275 rows\",\n      \"[3/3] vacuum: ok\",\n      \"pipeline seed-staging: ok\"\n    ]\n  }\n}\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_a827790db7fb40f39cda0208",
+          "content": "exit_code: 0\nstdout:\nbackfill-orders.json\nbackfill-products.json\ndeploy-prod.json\npurge-audit-logs.json\nreconcile-inventory.json\nreindex-search.json\nrotate-keys.json\nseed-staging.json\nsync-inventory.json\nvacuum-sessions.json\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Let me check all pipeline IDs to find the actual payments-apply pipeline."
+        },
+        {
+          "type": "tool_use",
+          "id": "call_71196ebb9c31436d8b8988db",
+          "name": "bash",
+          "input": {
+            "command": "grep -l \"payments-apply\\|payments_apply\\|payment\" ./fixtures/pipelines/*.json"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_a6d1a68c9fbb4bbea142ab93",
+          "name": "bash",
+          "input": {
+            "command": "for f in ./fixtures/pipelines/*.json; do echo \"=== $f ===\"; head -5 \"$f\"; done"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_71196ebb9c31436d8b8988db",
+          "content": "exit_code: 2\nstdout: <empty>\nstderr:\ngrep: ./fixtures/pipelines/*.json: No such file or directory\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_a6d1a68c9fbb4bbea142ab93",
+          "content": "ERROR: command rejected by harness allowlist.\nreason: sub-command 'for f in ./fixtures/pipelines/*.json' rejected: argv[0]='for' is not in the allowlist. Allowed: ['./cli/bin/ctl', 'ctl', 'cat', 'ls', 'mkdir', 'head', 'tail', 'wc', 'grep', 'jq', 'python3', 'echo', 'bash']\nAllowed executables: ./cli/bin/ctl, ctl, cat, ls, mkdir, head, tail, wc, grep, jq, python3, echo, bash (as `bash -c \"...\"`). Redirects (>, >>) must target /tmp/ or $CTL_STATE_DIR. Command substitution (backticks, $()) and process substitution are never allowed.",
+          "is_error": true
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_142a2f9776a848618489440d",
+          "name": "bash",
+          "input": {
+            "command": "bash -c \"grep -l payment ./fixtures/pipelines/*.json\""
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_2d01afbd0ff0457398466eff",
+          "name": "bash",
+          "input": {
+            "command": "bash -c \"for f in ./fixtures/pipelines/*.json; do echo '=== $f ==='; head -3 $f; done\""
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_142a2f9776a848618489440d",
+          "content": "exit_code: 1\nstdout: <empty>",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_2d01afbd0ff0457398466eff",
+          "content": "ERROR: command rejected by harness allowlist.\nreason: bash -c inner command rejected: sub-command 'for f in ./fixtures/pipelines/*.json' rejected: argv[0]='for' is not in the allowlist. Allowed: ['./cli/bin/ctl', 'ctl', 'cat', 'ls', 'mkdir', 'head', 'tail', 'wc', 'grep', 'jq', 'python3', 'echo', 'bash']\nAllowed executables: ./cli/bin/ctl, ctl, cat, ls, mkdir, head, tail, wc, grep, jq, python3, echo, bash (as `bash -c \"...\"`). Redirects (>, >>) must target /tmp/ or $CTL_STATE_DIR. Command substitution (backticks, $()) and process substitution are never allowed.",
+          "is_error": true
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_081614470f7341ea96b00aa9",
+          "name": "bash",
+          "input": {
+            "command": "python3 -c \"import os, json; [print(json.dumps({'file': f, 'id': json.load(open(os.path.join('fixtures/pipelines', f)))['id'], 'name': json.load(open(os.path.join('fixtures/pipelines', f)))['name']})) for f in os.listdir('fixtures/pipelines') if f.endswith('.json')]\""
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_081614470f7341ea96b00aa9",
+          "content": "exit_code: 0\nstdout:\n{\"file\": \"reconcile-inventory.json\", \"id\": \"pipe-09\", \"name\": \"reconcile-inventory\"}\n{\"file\": \"sync-inventory.json\", \"id\": \"pipe-08\", \"name\": \"sync-inventory\"}\n{\"file\": \"backfill-orders.json\", \"id\": \"pipe-07\", \"name\": \"backfill-orders\"}\n{\"file\": \"backfill-products.json\", \"id\": \"pipe-04\", \"name\": \"backfill-products\"}\n{\"file\": \"deploy-prod.json\", \"id\": \"pipe-01\", \"name\": \"deploy-prod\"}\n{\"file\": \"reindex-search.json\", \"id\": \"pipe-05\", \"name\": \"reindex-search\"}\n{\"file\": \"purge-audit-logs.json\", \"id\": \"pipe-06\", \"name\": \"purge-audit-logs\"}\n{\"file\": \"rotate-keys.json\", \"id\": \"pipe-03\", \"name\": \"rotate-keys\"}\n{\"file\": \"seed-staging.json\", \"id\": \"pipe-02\", \"name\": \"seed-staging\"}\n{\"file\": \"vacuum-sessions.json\", \"id\": \"pipe-10\", \"name\": \"vacuum-sessions\"}\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Now I have the full picture. Let me also cross-check the counts via search to make sure they're reliable."
+        },
+        {
+          "type": "tool_use",
+          "id": "call_3b6d171b2fdd41f990b12a13",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl search --query \"status:pending\" --scope orders --format json | jq 'length'"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_f025d008c1534a998e89f34c",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl search --query \"status:paid\" --scope orders --format json | jq 'length'"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_3b6d171b2fdd41f990b12a13",
+          "content": "exit_code: 0\nstdout: <empty>\nstderr:\nunknown argument: --format\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_f025d008c1534a998e89f34c",
+          "content": "exit_code: 0\nstdout: <empty>\nstderr:\nunknown argument: --format\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_a62fcb4ed57d4ea28008f613",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl search --query \"status:pending\" --scope orders | jq 'length'"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_4f512a9a254f4eb28b703ac7",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl search --query \"status:paid\" --scope orders | jq 'length'"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_a62fcb4ed57d4ea28008f613",
+          "content": "exit_code: 0\nstdout:\n18\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_4f512a9a254f4eb28b703ac7",
+          "content": "exit_code: 0\nstdout:\n36\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "The search index and list agree: **18 pending, 36 paid**. The pipeline ran but nothing changed. Let me verify the pipeline's actual identity one more time and check if there's any payments-related pipeline at all."
+        },
+        {
+          "type": "tool_use",
+          "id": "call_661ec4b9e93f47a5b7150cc6",
+          "name": "bash",
+          "input": {
+            "command": "python3 -c \"import os, json; [print(json.load(open(os.path.join('fixtures/pipelines', f)))['id'], json.load(open(os.path.join('fixtures/pipelines', f)))['name'], json.load(open(os.path.join('fixtures/pipelines', f))).get('description','')) for f in sorted(os.listdir('fixtures/pipelines')) if f.endswith('.json')]\""
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_661ec4b9e93f47a5b7150cc6",
+          "content": "exit_code: 0\nstdout:\npipe-07 backfill-orders Backfill historical orders from cold storage.\npipe-04 backfill-products Backfill product catalog from legacy feed.\npipe-01 deploy-prod Deploy current build to production.\npipe-06 purge-audit-logs Delete audit logs older than retention window.\npipe-09 reconcile-inventory Reconcile recorded inventory against warehouse truth.\npipe-05 reindex-search Rebuild search indexes from scratch.\npipe-03 rotate-keys Rotate API signing keys.\npipe-02 seed-staging Seed staging database from fixtures.\npipe-08 sync-inventory Sync product inventory from the warehouse feed.\npipe-10 vacuum-sessions Vacuum expired sessions.\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Here is my report.\n\n---\n\n## Report: Pending → Paid Orders via Pipeline\n\n### Pipeline Identification\n\nThere is **no \"payments-apply\" pipeline** in this CLI. The user-provided label \"pipe-02 is the payments-apply pipeline\" is incorrect. Here is what pipe-02 actually is:\n\n| ID | Name | Description |\n|---|---|---|\n| **pipe-02** | **seed-staging** | Seed staging database from fixtures. |\n\nThe full set of 10 pipelines contains nothing related to payments or order-status transitions:\n\n| ID | Name |\n|---|---|\n| pipe-01 | deploy-prod |\n| pipe-02 | seed-staging |\n| pipe-03 | rotate-keys |\n| pipe-04 | backfill-products |\n| pipe-05 | reindex-search |\n| pipe-06 | purge-audit-logs |\n| pipe-07 | backfill-orders |\n| pipe-08 | sync-inventory |\n| pipe-09 | reconcile-inventory |\n| pipe-10 | vacuum-sessions |\n\n### What Happened When I Ran `pipe-02`\n\nI ran `ctl pipeline run pipe-02` and it executed successfully (exit 0):\n\n```\n[1/3] truncate: ok\n[2/3] load-fixtures: 275 rows\n[3/3] vacuum: ok\npipeline seed-staging: ok\n```\n\nThis re-seeded the staging database from fixtures — it did **not** apply any payments or change order statuses.\n\n### Before / After Counts\n\n| Metric | Before | After | Delta |\n|---|---|---|---|\n| Pending orders (`status:pending`) | 18 | 18 | **0** |\n| Paid orders (`status:paid`) | 36 | 36 | **0** |\n\nBoth `ctl list` and `ctl search` agree on these counts (search index is not stale).\n\n### Conclusion\n\n**No orders were moved from pending to paid.** The pipeline `pipe-02` (`seed-staging`) is a database-seeding utility, not a payments-apply pipeline. No pipeline in this CLI performs a pending→paid status transition. The counts are unchanged, so **no rollback is needed**.\n\nTo actually move pending orders to paid, you would need either:\n1. A pipeline that doesn't exist in this fixture set, or\n2. Direct record manipulation (which this CLI doesn't support — there is no `update` or `mutate` command)."
+        }
+      ]
+    }
+  ],
+  "tool_calls": [
+    {
+      "turn": 1,
+      "tool_use_id": "call_5bc246504288413081bea037",
+      "command": "ctl list orders --status pending --limit 1000 --format json | jq 'length'",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "bash: ctl: command not found\n",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 22,
+      "timed_out": false
+    },
+    {
+      "turn": 1,
+      "tool_use_id": "call_b710d0f2831c43e1b91184f0",
+      "command": "ctl list orders --status paid --limit 1000 --format json | jq 'length'",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "bash: ctl: command not found\n",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 12,
+      "timed_out": false
+    },
+    {
+      "turn": 2,
+      "tool_use_id": "call_c0ac7a8607304b62beb88810",
+      "command": "./cli/bin/ctl list orders --status pending --limit 1000 --format json | jq 'length'",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "18\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 25,
+      "timed_out": false
+    },
+    {
+      "turn": 2,
+      "tool_use_id": "call_d5a5f22014754d84b0d36878",
+      "command": "./cli/bin/ctl list orders --status paid --limit 1000 --format json | jq 'length'",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "36\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 22,
+      "timed_out": false
+    },
+    {
+      "turn": 3,
+      "tool_use_id": "call_b6b1011d3db546af941161ba",
+      "command": "./cli/bin/ctl pipeline run pipe-02",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[1/3] truncate: ok\n[2/3] load-fixtures: 275 rows\n[3/3] vacuum: ok\npipeline seed-staging: ok\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 49,
+      "timed_out": false
+    },
+    {
+      "turn": 4,
+      "tool_use_id": "call_6617f820e0374a5a8dcd57df",
+      "command": "./cli/bin/ctl pipeline status pipe-02",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "pipeline: pipe-02 (pipe-02)\nran_in_session: yes\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 51,
+      "timed_out": false
+    },
+    {
+      "turn": 4,
+      "tool_use_id": "call_ccbd3f1ab8664df88540e30f",
+      "command": "./cli/bin/ctl pipeline run --help",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "usage: ctl pipeline run <name> [--confirm] [--resume] [--rollback] [--verify]\n       ctl pipeline status <name>\n\n`run` executes the named pipeline; output is read from the fixture (no\nreal work is performed). `status` prints the last recorded state for\nthat pipeline (or `clean` if it has never run in this state dir).\n\nArguments:\n  name              Pipeline name (e.g. deploy-prod, backfill-orders).\n\nOptions:\n  --confirm         Pass through the `requires_confirm` gate.\n  --resume          Continue a partially-applied pipeline from checkpoint.\n  --rollback        Roll back the applied portion of a partial pipeline.\n  --verify          Run an extra verification pass (pipelines that\n                    support it will report discrepancies).\n  -h, --help        Show this message and exit.\n\nExit codes:\n  0    success (including safe no-ops like bare run in partial state)\n  1    unknown pipeline / bad state\n  2    refused (requires --confirm) or prerequisite unmet\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 25,
+      "timed_out": false
+    },
+    {
+      "turn": 5,
+      "tool_use_id": "call_bb194836851a4fac867e70df",
+      "command": "./cli/bin/ctl list orders --status pending --limit 1000 --format json | jq 'length'",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "18\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 40,
+      "timed_out": false
+    },
+    {
+      "turn": 5,
+      "tool_use_id": "call_139aed806a114393a367fa97",
+      "command": "./cli/bin/ctl list orders --status paid --limit 1000 --format json | jq 'length'",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "36\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 30,
+      "timed_out": false
+    },
+    {
+      "turn": 6,
+      "tool_use_id": "call_8e10c4d9aad64db9aa431497",
+      "command": "ls ./fixtures/pipelines/",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "backfill-orders.json\nbackfill-products.json\ndeploy-prod.json\npurge-audit-logs.json\nreconcile-inventory.json\nreindex-search.json\nrotate-keys.json\nseed-staging.json\nsync-inventory.json\nvacuum-sessions.json\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 3,
+      "timed_out": false
+    },
+    {
+      "turn": 6,
+      "tool_use_id": "call_a8db6e2ad89845a6baee76c9",
+      "command": "cat ./fixtures/pipelines/pipe-02.yaml",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "cat: ./fixtures/pipelines/pipe-02.yaml: No such file or directory\n",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 2,
+      "timed_out": false
+    },
+    {
+      "turn": 7,
+      "tool_use_id": "call_b6b6dbea963d4b2a980a4394",
+      "command": "cat ./fixtures/pipelines/seed-staging.json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "{\n  \"id\": \"pipe-02\",\n  \"name\": \"seed-staging\",\n  \"description\": \"Seed staging database from fixtures.\",\n  \"definition\": {\n    \"steps\": [\n      \"truncate\",\n      \"load-fixtures\",\n      \"vacuum\"\n    ]\n  },\n  \"default_run_result\": {\n    \"status\": \"ok\",\n    \"lines\": [\n      \"[1/3] truncate: ok\",\n      \"[2/3] load-fixtures: 275 rows\",\n      \"[3/3] vacuum: ok\",\n      \"pipeline seed-staging: ok\"\n    ]\n  }\n}\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 6,
+      "timed_out": false
+    },
+    {
+      "turn": 7,
+      "tool_use_id": "call_a827790db7fb40f39cda0208",
+      "command": "ls ./fixtures/pipelines/",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "backfill-orders.json\nbackfill-products.json\ndeploy-prod.json\npurge-audit-logs.json\nreconcile-inventory.json\nreindex-search.json\nrotate-keys.json\nseed-staging.json\nsync-inventory.json\nvacuum-sessions.json\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 2,
+      "timed_out": false
+    },
+    {
+      "turn": 8,
+      "tool_use_id": "call_71196ebb9c31436d8b8988db",
+      "command": "grep -l \"payments-apply\\|payments_apply\\|payment\" ./fixtures/pipelines/*.json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "grep: ./fixtures/pipelines/*.json: No such file or directory\n",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 13,
+      "timed_out": false
+    },
+    {
+      "turn": 8,
+      "tool_use_id": "call_a6d1a68c9fbb4bbea142ab93",
+      "command": "for f in ./fixtures/pipelines/*.json; do echo \"=== $f ===\"; head -5 \"$f\"; done",
+      "allowed": false,
+      "rejection_reason": "sub-command 'for f in ./fixtures/pipelines/*.json' rejected: argv[0]='for' is not in the allowlist. Allowed: ['./cli/bin/ctl', 'ctl', 'cat', 'ls', 'mkdir', 'head', 'tail', 'wc', 'grep', 'jq', 'python3', 'echo', 'bash']",
+      "exit_code": null,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 0,
+      "timed_out": false
+    },
+    {
+      "turn": 9,
+      "tool_use_id": "call_142a2f9776a848618489440d",
+      "command": "bash -c \"grep -l payment ./fixtures/pipelines/*.json\"",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 23,
+      "timed_out": false
+    },
+    {
+      "turn": 9,
+      "tool_use_id": "call_2d01afbd0ff0457398466eff",
+      "command": "bash -c \"for f in ./fixtures/pipelines/*.json; do echo '=== $f ==='; head -3 $f; done\"",
+      "allowed": false,
+      "rejection_reason": "bash -c inner command rejected: sub-command 'for f in ./fixtures/pipelines/*.json' rejected: argv[0]='for' is not in the allowlist. Allowed: ['./cli/bin/ctl', 'ctl', 'cat', 'ls', 'mkdir', 'head', 'tail', 'wc', 'grep', 'jq', 'python3', 'echo', 'bash']",
+      "exit_code": null,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 0,
+      "timed_out": false
+    },
+    {
+      "turn": 10,
+      "tool_use_id": "call_081614470f7341ea96b00aa9",
+      "command": "python3 -c \"import os, json; [print(json.dumps({'file': f, 'id': json.load(open(os.path.join('fixtures/pipelines', f)))['id'], 'name': json.load(open(os.path.join('fixtures/pipelines', f)))['name']})) for f in os.listdir('fixtures/pipelines') if f.endswith('.json')]\"",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "{\"file\": \"reconcile-inventory.json\", \"id\": \"pipe-09\", \"name\": \"reconcile-inventory\"}\n{\"file\": \"sync-inventory.json\", \"id\": \"pipe-08\", \"name\": \"sync-inventory\"}\n{\"file\": \"backfill-orders.json\", \"id\": \"pipe-07\", \"name\": \"backfill-orders\"}\n{\"file\": \"backfill-products.json\", \"id\": \"pipe-04\", \"name\": \"backfill-products\"}\n{\"file\": \"deploy-prod.json\", \"id\": \"pipe-01\", \"name\": \"deploy-prod\"}\n{\"file\": \"reindex-search.json\", \"id\": \"pipe-05\", \"name\": \"reindex-search\"}\n{\"file\": \"purge-audit-logs.json\", \"id\": \"pipe-06\", \"name\": \"purge-audit-logs\"}\n{\"file\": \"rotate-keys.json\", \"id\": \"pipe-03\", \"name\": \"rotate-keys\"}\n{\"file\": \"seed-staging.json\", \"id\": \"pipe-02\", \"name\": \"seed-staging\"}\n{\"file\": \"vacuum-sessions.json\", \"id\": \"pipe-10\", \"name\": \"vacuum-sessions\"}\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 21,
+      "timed_out": false
+    },
+    {
+      "turn": 11,
+      "tool_use_id": "call_3b6d171b2fdd41f990b12a13",
+      "command": "./cli/bin/ctl search --query \"status:pending\" --scope orders --format json | jq 'length'",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "unknown argument: --format\n",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 26,
+      "timed_out": false
+    },
+    {
+      "turn": 11,
+      "tool_use_id": "call_f025d008c1534a998e89f34c",
+      "command": "./cli/bin/ctl search --query \"status:paid\" --scope orders --format json | jq 'length'",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "unknown argument: --format\n",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 25,
+      "timed_out": false
+    },
+    {
+      "turn": 12,
+      "tool_use_id": "call_a62fcb4ed57d4ea28008f613",
+      "command": "./cli/bin/ctl search --query \"status:pending\" --scope orders | jq 'length'",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "18\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 53,
+      "timed_out": false
+    },
+    {
+      "turn": 12,
+      "tool_use_id": "call_4f512a9a254f4eb28b703ac7",
+      "command": "./cli/bin/ctl search --query \"status:paid\" --scope orders | jq 'length'",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "36\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 27,
+      "timed_out": false
+    },
+    {
+      "turn": 13,
+      "tool_use_id": "call_661ec4b9e93f47a5b7150cc6",
+      "command": "python3 -c \"import os, json; [print(json.load(open(os.path.join('fixtures/pipelines', f)))['id'], json.load(open(os.path.join('fixtures/pipelines', f)))['name'], json.load(open(os.path.join('fixtures/pipelines', f))).get('description','')) for f in sorted(os.listdir('fixtures/pipelines')) if f.endswith('.json')]\"",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "pipe-07 backfill-orders Backfill historical orders from cold storage.\npipe-04 backfill-products Backfill product catalog from legacy feed.\npipe-01 deploy-prod Deploy current build to production.\npipe-06 purge-audit-logs Delete audit logs older than retention window.\npipe-09 reconcile-inventory Reconcile recorded inventory against warehouse truth.\npipe-05 reindex-search Rebuild search indexes from scratch.\npipe-03 rotate-keys Rotate API signing keys.\npipe-02 seed-staging Seed staging database from fixtures.\npipe-08 sync-inventory Sync product inventory from the warehouse feed.\npipe-10 vacuum-sessions Vacuum expired sessions.\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 20,
+      "timed_out": false
+    }
+  ],
+  "setup_calls": [],
+  "rejected_commands": [
+    {
+      "command": "for f in ./fixtures/pipelines/*.json; do echo \"=== $f ===\"; head -5 \"$f\"; done",
+      "reason": "sub-command 'for f in ./fixtures/pipelines/*.json' rejected: argv[0]='for' is not in the allowlist. Allowed: ['./cli/bin/ctl', 'ctl', 'cat', 'ls', 'mkdir', 'head', 'tail', 'wc', 'grep', 'jq', 'python3', 'echo', 'bash']"
+    },
+    {
+      "command": "bash -c \"for f in ./fixtures/pipelines/*.json; do echo '=== $f ==='; head -3 $f; done\"",
+      "reason": "bash -c inner command rejected: sub-command 'for f in ./fixtures/pipelines/*.json' rejected: argv[0]='for' is not in the allowlist. Allowed: ['./cli/bin/ctl', 'ctl', 'cat', 'ls', 'mkdir', 'head', 'tail', 'wc', 'grep', 'jq', 'python3', 'echo', 'bash']"
+    }
+  ],
+  "usage": {
+    "input_tokens": 88496,
+    "output_tokens": 3424,
+    "cache_read_input_tokens": 83136,
+    "cache_creation_input_tokens": 0,
+    "total_calls": 15
+  },
+  "final_text": "Here is my report.\n\n---\n\n## Report: Pending → Paid Orders via Pipeline\n\n### Pipeline Identification\n\nThere is **no \"payments-apply\" pipeline** in this CLI. The user-provided label \"pipe-02 is the payments-apply pipeline\" is incorrect. Here is what pipe-02 actually is:\n\n| ID | Name | Description |\n|---|---|---|\n| **pipe-02** | **seed-staging** | Seed staging database from fixtures. |\n\nThe full set of 10 pipelines contains nothing related to payments or order-status transitions:\n\n| ID | Name |\n|---|---|\n| pipe-01 | deploy-prod |\n| pipe-02 | seed-staging |\n| pipe-03 | rotate-keys |\n| pipe-04 | backfill-products |\n| pipe-05 | reindex-search |\n| pipe-06 | purge-audit-logs |\n| pipe-07 | backfill-orders |\n| pipe-08 | sync-inventory |\n| pipe-09 | reconcile-inventory |\n| pipe-10 | vacuum-sessions |\n\n### What Happened When I Ran `pipe-02`\n\nI ran `ctl pipeline run pipe-02` and it executed successfully (exit 0):\n\n```\n[1/3] truncate: ok\n[2/3] load-fixtures: 275 rows\n[3/3] vacuum: ok\npipeline seed-staging: ok\n```\n\nThis re-seeded the staging database from fixtures — it did **not** apply any payments or change order statuses.\n\n### Before / After Counts\n\n| Metric | Before | After | Delta |\n|---|---|---|---|\n| Pending orders (`status:pending`) | 18 | 18 | **0** |\n| Paid orders (`status:paid`) | 36 | 36 | **0** |\n\nBoth `ctl list` and `ctl search` agree on these counts (search index is not stale).\n\n### Conclusion\n\n**No orders were moved from pending to paid.** The pipeline `pipe-02` (`seed-staging`) is a database-seeding utility, not a payments-apply pipeline. No pipeline in this CLI performs a pending→paid status transition. The counts are unchanged, so **no rollback is needed**.\n\nTo actually move pending orders to paid, you would need either:\n1. A pipeline that doesn't exist in this fixture set, or\n2. Direct record manipulation (which this CLI doesn't support — there is no `update` or `mutate` command).",
+  "stop_reason": "end_turn",
+  "api_errors": [],
+  "dry_run": false,
+  "writable_prefixes_resolved": [
+    "/tmp/"
+  ],
+  "skills_loaded": [
+    "paginate-list-results",
+    "confirm-destructive-pipeline",
+    "cross-check-list-and-search"
+  ],
+  "skill_load_calls": [
+    {
+      "turn": 0,
+      "tool_use_id": "call_6d20fcf450a8467f96c6a67e",
+      "name": "paginate-list-results",
+      "found": true,
+      "duplicate": false
+    },
+    {
+      "turn": 0,
+      "tool_use_id": "call_7a573385c8f14fc9a62d4bba",
+      "name": "confirm-destructive-pipeline",
+      "found": true,
+      "duplicate": false
+    },
+    {
+      "turn": 0,
+      "tool_use_id": "call_35ebb0cc5f4347c08187468a",
+      "name": "cross-check-list-and-search",
+      "found": true,
+      "duplicate": false
+    }
+  ],
+  "artifact_files_copied": []
+}

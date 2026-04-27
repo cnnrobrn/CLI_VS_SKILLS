@@ -1,0 +1,34 @@
+id: "004"
+title: "Walk from an escalated ticket to that user's recent orders"
+bucket: stateful
+prompt: |
+  Find the escalated ticket. Figure out who opened it. List that user's
+  last 5 orders (most recent first).
+rule_check:
+  - id: found_escalated_ticket
+    assert: tool_called
+    match:
+      argv_regex: "^ctl (list|search).*tickets.*escalated"
+    weight: 2
+  - id: got_u042_or_listed_u042_orders
+    assert: tool_called
+    match:
+      argv_regex: "^ctl (get users u042|list orders.*u042|search.*u042)"
+    weight: 2
+  - id: listed_u042_orders
+    assert: tool_called
+    match:
+      argv_regex: "^ctl (list|search).*orders.*u042"
+    weight: 2
+  - id: sequence_tickets_then_u042
+    assert: tool_sequence
+    sequence:
+      - { argv_regex: "^ctl (list|search).*tickets" }
+      - { argv_regex: "^ctl (get users u042|(list|search).*orders.*u042)" }
+    weight: 1
+  - id: no_unrelated_user_lookup
+    assert: no_tool_called
+    match:
+      argv_regex: "^ctl get users u(?!042)[0-9]{3}"
+    weight: 1
+tags: [tickets, orders, users, stateful, u042, A15]

@@ -1,0 +1,45 @@
+id: "051"
+title: "Recover pipe-07 from partial state and verify"
+bucket: long-horizon
+setup: |
+  ./cli/bin/ctl pipeline run pipe-07
+prompt: |
+  pipe-07 was kicked off and partially failed. Bring it to a clean
+  final state. Before and after, document the counts of affected
+  orders so we can prove nothing is lost. Make a recommendation: was
+  --resume or --rollback the right call?
+rule_check:
+  - id: captured_pre_state
+    assert: tool_called
+    match:
+      argv_regex: "^ctl pipeline status pipe-07"
+    weight: 1
+  - id: chose_recovery
+    assert: tool_called
+    match:
+      argv_regex: "^ctl pipeline run pipe-07 --(resume|rollback)"
+    weight: 2
+  - id: captured_post_state
+    assert: tool_sequence
+    sequence:
+      - { argv_regex: "^ctl pipeline run pipe-07 --(resume|rollback)" }
+      - { argv_regex: "^ctl pipeline status pipe-07" }
+    weight: 2
+  - id: no_bare_rerun_as_recovery
+    assert: no_tool_called
+    match:
+      argv_regex: "^ctl pipeline run pipe-07\\s*$"
+    weight: 1
+judge_rubric:
+  - id: justified_choice
+    criterion: "Agent's final message states whether --resume or --rollback was used and briefly justifies the choice."
+    weight: 2
+  - id: compared_counts
+    criterion: "Agent's final message mentions before/after counts (e.g., 147 → 200, or 147 → 0) to confirm no silent loss."
+    weight: 1
+judge_context: |
+  Ground truth (A10): pipe-07 partial at 147/200, collateral refunds
+  on o088, o091 (u017). --resume completes remaining 53 records;
+  --rollback unwinds the 147 applied. Either is correct IF justified
+  and followed by a verification step.
+tags: [long-horizon, pipelines, orders, A10, pipe-07]

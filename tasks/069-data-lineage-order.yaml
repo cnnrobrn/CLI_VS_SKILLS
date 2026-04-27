@@ -1,0 +1,44 @@
+id: "069"
+title: "Trace an order end-to-end through the system"
+bucket: long-horizon
+prompt: |
+  Pick the most recent order. Trace it end-to-end: the user who
+  placed it, the product, any related tickets, any session the user
+  has, and whether any pipelines touched this order (look at pipe-07
+  status specifically since it could have refunded it). Produce a
+  lineage diagram in text.
+rule_check:
+  - id: listed_orders_recent
+    assert: tool_called
+    match:
+      argv_regex: "^ctl (list|search).*orders"
+    weight: 1
+  - id: fetched_order
+    assert: tool_called
+    match:
+      argv_regex: "^ctl get orders o[0-9]{3}"
+    weight: 1
+  - id: fetched_user
+    assert: tool_called
+    match:
+      argv_regex: "^ctl get users u[0-9]{3}"
+    weight: 1
+  - id: fetched_product
+    assert: tool_called
+    match:
+      argv_regex: "^ctl get products p[0-9]{3}"
+    weight: 1
+  - id: checked_pipe07_status
+    assert: tool_called
+    match:
+      argv_regex: "^ctl pipeline status pipe-07"
+    weight: 2
+judge_rubric:
+  - id: lineage_output
+    criterion: "Final answer is a structured lineage (ASCII/Markdown diagram or nested bullets) showing the relationships, not a prose dump."
+    weight: 2
+judge_context: |
+  Ground truth: open-ended by selection. Judge verifies all links in
+  the chain trace back to transcript evidence. Pipe-07 status should
+  be noted even if the chosen order is outside the partial range.
+tags: [long-horizon, orders, users, products, tickets, sessions, pipelines, A10]

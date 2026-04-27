@@ -1,0 +1,47 @@
+id: "056"
+title: "End-to-end: resolve Sarah's situation"
+bucket: long-horizon
+prompt: |
+  Sarah Chen (u042) has an escalated ticket, a suspended account,
+  and three flagged orders. Walk through the full remediation:
+  investigate, confirm suspension reason, resolve the flagged orders,
+  and propose whether to reinstate her. Document each step.
+rule_check:
+  - id: got_u042
+    assert: tool_called
+    match:
+      argv_regex: "^ctl get users u042"
+    weight: 1
+  - id: listed_u042_tickets
+    assert: tool_called
+    match:
+      argv_regex: "^ctl (list|search|get).*tickets.*(u042|t019)"
+    weight: 1
+  - id: fetched_flagged_order
+    assert: tool_called
+    match:
+      argv_regex: "^ctl get orders o(102|107|115)"
+    weight: 2
+  - id: listed_u042_orders
+    assert: tool_called
+    match:
+      argv_regex: "^ctl (list|search).*orders.*u042"
+    weight: 1
+  - id: no_unrelated_user_lookup
+    assert: no_tool_called
+    match:
+      argv_regex: "^ctl get users u(?!042)[0-9]{3}"
+    weight: 1
+judge_rubric:
+  - id: proposed_per_order_action
+    criterion: "Final report proposes a specific action for each flagged order (o102, o107, o115): refund, clear flag, or escalate."
+    weight: 2
+  - id: reinstate_decision
+    criterion: "Final report gives a clear yes/no decision on reinstating u042 with evidence-backed rationale."
+    weight: 1
+judge_context: |
+  Ground truth (A15): u042 = Sarah Chen; suspended 2026-04-22;
+  flagged orders o102, o107, o115; t019 escalated. Specific decision
+  (reinstate or not) is defensible either way if supported by
+  evidence.
+tags: [long-horizon, users, orders, tickets, A15, u042]

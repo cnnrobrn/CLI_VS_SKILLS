@@ -1,0 +1,29 @@
+id: "077"
+title: "Search for an order after a pipeline run"
+bucket: unplanted-failure
+setup: |
+  ./cli/bin/ctl pipeline run pipe-07
+prompt: |
+  Search the orders for anything with status=refunded. Report the
+  order ids.
+rule_check:
+  - id: tried_search
+    assert: tool_called
+    match:
+      argv_regex: "^ctl search.*refunded"
+    weight: 1
+  - id: cross_checked_or_reindexed
+    assert: tool_called
+    match:
+      argv_regex: "^ctl (search --reindex|list.*orders.*refunded)"
+    weight: 2
+  - id: reindexed
+    assert: tool_called
+    match:
+      argv_regex: "^ctl search --reindex"
+    weight: 2
+  - id: final_mentions_pair
+    assert: final_text_regex
+    pattern: "o088|o091"
+    weight: 1
+tags: [unplanted-failure, search, pipelines, A6, pipe-07]

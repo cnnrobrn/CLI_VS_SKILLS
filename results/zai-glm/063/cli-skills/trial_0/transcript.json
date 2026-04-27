@@ -1,0 +1,1503 @@
+{
+  "task_id": "063",
+  "task_title": "Prod deploy with pre-flight and verification",
+  "task_bucket": "long-horizon",
+  "task_tags": [
+    "long-horizon",
+    "pipelines",
+    "A2",
+    "pipe-01"
+  ],
+  "arm": "cli-skills",
+  "trial": 0,
+  "model": "z-ai/glm-5.1",
+  "started_at": "2026-04-26T19:41:13.725336+00:00",
+  "ended_at": "2026-04-26T19:43:21.454840+00:00",
+  "wall_clock_seconds": 127.73,
+  "ctl_state_dir": "/Users/connorobrien/Documents/CLI_VS_SKILLS/results/zai-glm-tooled/063/cli-skills/trial_0/ctl-state",
+  "workdir": "/Users/connorobrien/Documents/CLI_VS_SKILLS/results/zai-glm-tooled/063/cli-skills/trial_0",
+  "system_prompt": "You are an autonomous agent being evaluated on a benchmark.\n\nEnvironment:\n- Your working directory is a repo root. You have ONE tool: `bash`.\n- A custom CLI named `ctl` lives at ./cli/bin/ctl (also reachable as `ctl`).\n- The CLI reads canned fixtures from disk and does NOT access the network.\n- The CLI honors a pinned \"now\" of 2026-04-24T00:00:00Z for --since filters.\n- Allowed executables: ./cli/bin/ctl, ctl, cat, ls, mkdir, head, tail, wc,\n  grep, jq, python3, echo, bash (only as `bash -c \"...\"`, and the inner\n  command is re-checked against the same allowlist).\n- You MAY redirect output to files under /tmp/ (and under $CTL_STATE_DIR).\n- Pipes (|), command chaining (;, &&, ||), and command substitution\n  ($(...) or backticks) inside a single command string are NOT allowed.\n  If you need to combine operations, wrap the whole line in\n  `bash -c \"cmd1 && cmd2\"` — each sub-command still has to pass the\n  allowlist.\n- Each command has a 30-second timeout.\n\nTask rules:\n- Follow the user's instructions exactly. Where the task asks you to write\n  output to a specific file path, write EXACTLY to that path.\n- If a command fails, read the error and try a different approach. Do not\n  retry the same failing command unchanged.\n- When you are finished, stop calling tools and provide a short final\n  answer. Many tasks will be graded on that final message, so be precise —\n  name IDs, files, and root causes explicitly.\n\n## Reference: cli/README.md\n\nThe following is the complete contents of cli/README.md. It is the only\ndocumentation you have for the `ctl` CLI. Discover any further behavior by\nrunning `ctl --help` and `ctl <subcommand> --help`.\n\n\n# ctl\n\nA deterministic fixture-backed CLI. No network. No live clock. Output for a\ngiven input is fixed.\n\n## Install\n\n```\ngit clone <repo>\ncd CLI_VS_SKILLS\n./cli/bin/ctl --help\n```\n\nRequires Python 3.9+. Stdlib-only (see `cli/requirements.txt`).\n\n## Synopsis\n\n```\nctl <command> [args...]\n```\n\n## Commands\n\n| Command                             | Description                                     |\n|-------------------------------------|-------------------------------------------------|\n| `ctl list <resource>`               | List records for a resource.                    |\n| `ctl get <resource> <id>`           | Fetch a single record.                          |\n| `ctl fetch <url-or-slug>`           | Print a fixture markdown page.                  |\n| `ctl search --query Q`              | Substring search across resource text fields.   |\n| `ctl diff <a> <b>`                  | Structured JSON diff of two records.            |\n| `ctl pipeline run <name>`           | Run a named pipeline.                           |\n| `ctl pipeline status <name>`        | Show last recorded state for a pipeline.        |\n| `ctl cache status`                  | Show cache / state flags.                       |\n| `ctl cache clear [<scope>]`         | Clear cached state (scope = pages/search/pipelines/all). |\n| `ctl version`                       | Print version.                                  |\n| `ctl --help`, `ctl <cmd> --help`    | Usage.                                          |\n\n## Resources\n\n`users` (50), `orders` (120), `tickets` (30), `products` (80), `sessions` (15).\n\n## Common options\n\n| Option                  | Commands      | Description                                  |\n|-------------------------|---------------|----------------------------------------------|\n| `--status <value>`      | `list`        | Filter rows by exact `status` match.         |\n| `--since <date>`        | `list`        | ISO date (`2026-04-20`), ISO datetime, or relative (`7d`, `24h`). |\n| `--limit <n>`           | `list`        | Maximum rows. Default: **10**.               |\n| `--format json\\|yaml\\|table` | `list`, `get` | Output format. Default: `table`.        |\n| `--query Q`             | `search`      | Required. Substring, or `field:value`.        |\n| `--scope <resource>`    | `search`      | Restrict to one resource.                    |\n| `--i`                   | `search`      | Case-insensitive. Default: case-sensitive.   |\n| `--reindex`             | `search`      | Rebuild the search index.                    |\n| `--confirm`             | `pipeline run`| Pass through a confirm gate.                 |\n| `--resume`              | `pipeline run`| Resume a partially-applied pipeline.         |\n| `--rollback`            | `pipeline run`| Roll back an applied pipeline.               |\n| `--verify`              | `pipeline run`| Run an extra verification pass.              |\n\n## Exit codes\n\n| Code | Meaning                                                       |\n|-----:|---------------------------------------------------------------|\n| `0`  | Success.                                                      |\n| `1`  | User error: not found, bad flag, invalid input.               |\n| `2`  | Refused: a pipeline needs `--confirm` or a prerequisite.      |\n\n## Environment\n\n| Variable            | Default             | Meaning                                     |\n|---------------------|---------------------|---------------------------------------------|\n| `CTL_FIXTURES_DIR`  | `<repo>/fixtures`   | Root of the fixture tree.                   |\n| `CTL_STATE_DIR`     | `~/.ctl-state/`     | Scratch state for cache / pipeline flags.   |\n\n## Determinism\n\nPinned \"now\" is `2026-04-24T00:00:00Z`. Relative `--since` values anchor to\nthat instant.\n\n## Version\n\n`1.0.0`\n\n## Available skills\n\nYou have access to a library of skills, each addressing a specific class of problem you might encounter while using `ctl`. Below is the index of every skill — only the names and one-line descriptions are shown here. To read a skill's full content, call the `load_skill` tool with `name=<skill name>`. Load only skills that look relevant to the current task.\n\n- case-insensitive-search: Use when `ctl search --query <q>` returns zero results for a brand or term you expect to exist. Search is case-sensitive by default; pass `--i` or match the actual case (e.g. `Acme`, not `acme`).\n- clear-cache-after-pipe03: Use when `ctl fetch /docs/*` returns a canned 404 immediately after running `pipe-03` (`rotate-keys`). The page cache is marked stale; `ctl cache clear` (or `ctl cache clear pages`) restores the real pages.\n- clear-stale-page-cache: Use when `ctl fetch /docs/auth` returns a 404 on fresh state. The default for that page is a stale-cache 404; `ctl cache clear` repairs it. Distinct from the post-pipe-03 stale.\n- confirm-destructive-pipeline: Use when `ctl pipeline run pipe-01` (deploy-prod) or `pipe-06` (purge-audit-logs) exits 2 with a bare `refused` on stderr. The CLI gives no hint, but `--confirm` is the fix for both.\n- cross-check-list-and-search: Recipe -- use whenever you need to trust a row count after a pipeline ran. Cross-check `ctl list --status X` against `ctl search --query \"status:X\"`; if they disagree, the search index is stale and `ctl search --reindex` is the fix.\n- diagnose-refund-burst: Recipe -- use when a task says \"two orders got refunded fast for u017\" or any pipe-07 collateral-refund investigation. Combines pagination, runbook discovery, and pipe-07 status into a 4-step diagnosis.\n- diff-resource-type-validation: Use when `ctl diff a b` returns `{}` and exits 0. Empty object does NOT mean \"identical\"; it means you passed ids of different resource types (e.g. `u001` vs `o001`) and the CLI swallowed it. Always diff within the same resource.\n- discover-runbooks: Use when investigating any incident, pipeline failure, or cross-resource anomaly. The canonical writeups live under `/runbook/*` and `/help/*` -- they are NOT linked from CLI output. Fetch the right one to short-circuit hours of investigation.\n- find-flagged-records: Recipe for 'find all flagged X for user Y' tasks. Filter chain — search/list to find user id, then `ctl list orders --limit 1000 --format json | jq` to filter by user_id AND flagged==true. Anchored on Sarah Chen.\n- format-output-fidelity: Use when piping `ctl` output to `jq`, `grep`, or any parser, or when reading any field that might exceed ~23 characters. `--format table` (the default) silently truncates long values with an ellipsis; always pass `--format json` for fidelity.\n- handle-null-emails: Use when post-processing user records by email (e.g. lowercasing, regex). Three users have null emails (u023, u031, u049); naive `.lower()` on every row will AttributeError. Filter for null first.\n- handle-suspended-account: Use when investigating Sarah Chen (`u042`) or any \"account flipped to suspended\" billing escalation. Her account suspended on 2026-04-22; flagged orders are `o102`, `o107`, `o115`; ticket `t019` is the canonical entry point.\n- lookup-resource-by-id: Use when `ctl get <resource> <id>` returns `not found` (exit 1) and you don't have the exact id. There is no fuzzy match or \"did you mean\" hint; search by name first, then `get` the canonical id.\n- output-format-conventions: Idiom -- when to choose `--format json` (machine processing, long fields, jq), `--format yaml` (rare; slow to parse), or `--format table` (default; only for short fixed fields, never free text). Prefer JSON for everything non-trivial.\n- paginate-list-results: Use when running `ctl list <resource>` to count records or filter to \"all\" of something. The default `--limit` is 10 and silently truncates with no warning, so any cardinality answer derived from the default page is almost certainly wrong.\n- pipeline-prerequisites: Use when a pipeline (notably `pipe-05` / `reindex-search`) exits 2 with stderr `prerequisite not met`. The CLI does not name the prereq; pipe-05 needs pipe-03 to have run in the current state dir.\n- read-pipe04-skip-file: Use after running `pipe-04` (`backfill-products`). It exits 0 with a stderr warning that 2 records were skipped to `/tmp/pipe-04.skipped`. The skipped ids are `p044` and `p077`; their skip reasons live on the product fixtures themselves.\n- recover-pipe07-partial: Use when working with `pipe-07` (`backfill-orders`). The fixture state is pre-baked as 147/200 partial; a bare `ctl pipeline run pipe-07` is an idempotent no-op. To advance, choose `--resume` (finish 53) or `--rollback` (revert 147).\n- reindex-stale-search: Use when `ctl search` and `ctl list` disagree on the same filter (notably `status:paid` on orders) after running `pipe-07 --resume` or `--rollback`. The search index is marked stale; `ctl search --reindex` resyncs it.\n- resolve-triple-submit-duplicates: Use when investigating duplicate orders — three orders with the same user_id, same total_cents, and timestamps a few seconds apart. Convention from /help/duplicates — keep the lowest id paid, refund the others.\n- resource-id-conventions: Idiom -- ctl ids follow a one-letter-prefix + three-digit-suffix convention (`u`/`o`/`t`/`p`/`s`). Use to validate ids before `ctl get`/`diff` and to recognise canonical \"key identities\" (u017, u042, t019, p014, etc).\n- since-flag-formats: Use when `ctl list ... --since <X>` returns `invalid date` (exit 1). The flag accepts exactly three shapes — ISO date, ISO datetime with Z, or relative (Nd/Nh). Anything else fails with no help text.\n- verify-migration-cleanup: Recipe for 'did the migration finish cleanly?' tasks. Pre/post count idiom — capture row counts before, run the pipeline with verification flags, capture counts after, diff. Anchored on pipe-09 reconcile-inventory.\n- verify-reconcile-inventory: Use when running `pipe-09` (`reconcile-inventory`). A bare run prints `ok` and exits 0 without doing any reconciliation. You must pass `--verify` to actually run the comparison; without it, \"ok\" is cosmetic.\n",
+  "user_prompt": "Run pipe-01 (deploy-prod) safely. Before running, capture a\nsnapshot of what's about to change. Use --confirm. After, verify\nthe deploy succeeded and no cache/search invariants are broken.\n",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Run pipe-01 (deploy-prod) safely. Before running, capture a\nsnapshot of what's about to change. Use --confirm. After, verify\nthe deploy succeeded and no cache/search invariants are broken.\n"
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "I'll start by loading relevant skills and understanding the current state before running the pipeline."
+        },
+        {
+          "type": "tool_use",
+          "id": "call_860999a3e239454db606aca0",
+          "name": "load_skill",
+          "input": {
+            "name": "confirm-destructive-pipeline"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_43abc3b942e54efa9aece32a",
+          "name": "load_skill",
+          "input": {
+            "name": "cross-check-list-and-search"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_c9af6433db524b2c86f0b9f0",
+          "name": "load_skill",
+          "input": {
+            "name": "clear-cache-after-pipe03"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_860999a3e239454db606aca0",
+          "content": "# Destructive pipeline refusal\n\nTwo pipelines refuse to run without `--confirm`:\n\n- `pipe-01` (`deploy-prod`)\n- `pipe-06` (`purge-audit-logs`)\n\nBoth exit `2` with stderr of exactly `refused`. The CLI never tells you\nthat `--confirm` is the missing piece.\n\n## Wrong invocation\n\n```sh\n$ ctl pipeline run pipe-01\nrefused\n$ echo $?\n2\n```\n\n## Right invocation\n\n```sh\n$ ctl pipeline run pipe-01 --confirm\n[1/4] build: ok\n...\npipeline deploy-prod: ok\n$ echo $?\n0\n```\n\nSame shape for `pipe-06`:\n\n```sh\nctl pipeline run pipe-06 --confirm\n```\n\n## Common mistakes\n\n- Treating `refused` as \"the pipeline is broken\" and escalating.\n- Looking for the missing flag in `--help` (it's listed, but the error\n  itself says nothing about it).\n- Adding `--confirm` to non-destructive pipelines like `pipe-02` --\n  harmless, but unnecessary.\n\nUse this skill only when you actually intend the destructive operation.\nFor `pipe-01` that is a real prod deploy; for `pipe-06` it permanently\ndeletes audit logs.\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_43abc3b942e54efa9aece32a",
+          "content": "# Recipe: Cross-check list and search to detect index drift\n\nTwo sources of truth, one fixture state:\n\n- `ctl list <resource> --status X` reads underlying records directly.\n- `ctl search --query \"status:X\" --scope <resource>` reads through\n  the search index.\n\nIf they disagree, the search index is stale. The most common cause\nis `pipe-07` having run with `--resume` or `--rollback` (see\n`reindex-stale-search`), but any pipeline that touches order status\ncan do it.\n\n## Steps\n\n### 1. Run both queries\n\n```sh\nctl list   orders --status paid --limit 1000 --format json | jq 'length'\nctl search --query \"status:paid\" --scope orders | jq 'length'\n```\n\n`--limit 1000` matters on the list side (see\n`paginate-list-results`).\n\n### 2. Compare\n\nIf they match: trust the count.\n\nIf they differ -- typically by exactly two rows after a pipe-07\naction, with `o088` and `o091` as the offenders:\n\n### 3. Reindex and re-cross-check\n\n```sh\nctl search --reindex\nctl search --query \"status:paid\" --scope orders | jq 'length'\n# now matches ctl list\n```\n\n## Use this whenever\n\n- A status filter materially affects the answer.\n- A pipeline ran in the current session (especially pipe-07).\n- Two queries that should logically agree disagree by 1-3 rows.\n\n## Common mistakes\n\n- Trusting whichever number \"feels right.\" Reindex and re-check.\n- Reindexing without also re-running the queries -- you need to\n  confirm the disagreement is gone.\n- Confusing this with the `--limit` trap. Pagination differences\n  are 100+ rows; index drift is typically 1-3 rows.\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_c9af6433db524b2c86f0b9f0",
+          "content": "# Page cache stale after pipe-03\n\nRunning `pipe-03` (`rotate-keys`) marks the `/docs/*` page cache stale.\nEvery subsequent `ctl fetch /docs/<slug>` returns the canned 404 body\n(see `fixtures/pages/_stale_404.md`) until the cache is cleared.\n\nSlugs outside `/docs/*` (e.g. `/runbook/*`, `/help/*`) are unaffected.\nThis is distinct from the default-state `/docs/auth` 404 (see\n`clear-stale-page-cache`).\n\n## Wrong invocation\n\n```sh\n$ ctl fetch /docs/pagination | head -1\n# Pagination\n$ ctl pipeline run pipe-03\npipeline rotate-keys: ok\n$ ctl fetch /docs/pagination | head -1\n# 404 Not Found        # exit 0 -- silent\n```\n\nThe 404 body itself contains the diagnostic (\"page cache is stale; run\n`ctl cache clear`\"), but only if you actually read it.\n\n## Right invocation\n\n```sh\n$ ctl cache clear\ncleared ... (all)\n$ ctl fetch /docs/pagination | head -1\n# Pagination\n```\n\n`ctl cache clear pages` works too and is more surgical -- it leaves\npipeline run markers (e.g. the pipe-03 marker that pipe-05 needs) intact.\n\n## Common mistakes\n\n- Concluding \"the doc was deleted\" from the 404. Read the body.\n- Running `rm -rf ~/.ctl-state` to fix the cache. That works, but it\n  also deletes the `pipe-03_ran.json` marker that `pipe-05` requires --\n  see `pipeline-prerequisites`.\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Good. Now let me capture the pre-deploy snapshot and check the current pipeline status."
+        },
+        {
+          "type": "tool_use",
+          "id": "call_474c1f115a7c4aff9cf7244c",
+          "name": "bash",
+          "input": {
+            "command": "ctl pipeline status pipe-01"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_684e49e8dc1d4990bcbc5d85",
+          "name": "bash",
+          "input": {
+            "command": "ctl cache status"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_9b4f8c5cc7374256a3c9c061",
+          "name": "bash",
+          "input": {
+            "command": "ctl list orders --limit 1000 --format json"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_474c1f115a7c4aff9cf7244c",
+          "content": "exit_code: 127\nstdout: <empty>\nstderr:\nexecutable not found: [Errno 2] No such file or directory: 'ctl'",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_684e49e8dc1d4990bcbc5d85",
+          "content": "exit_code: 127\nstdout: <empty>\nstderr:\nexecutable not found: [Errno 2] No such file or directory: 'ctl'",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_9b4f8c5cc7374256a3c9c061",
+          "content": "exit_code: 127\nstdout: <empty>\nstderr:\nexecutable not found: [Errno 2] No such file or directory: 'ctl'",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_b486637ce597429b98135cae",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl pipeline status pipe-01"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_060c5f9180304e1da84fa87e",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl cache status"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_b486637ce597429b98135cae",
+          "content": "exit_code: 0\nstdout:\npipeline: pipe-01 (pipe-01)\nran_in_session: no\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_060c5f9180304e1da84fa87e",
+          "content": "exit_code: 0\nstdout:\npages_cache_stale: no\nauth_page_ok: no\nsearch_index_stale: no\npipe-03_ran_in_session: no\npipe-07_state: clean\nstate_files: (none)\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Good — pipe-01 hasn't run yet, cache is clean, search index is fresh. Now let me capture the pre-deploy snapshot of key resources."
+        },
+        {
+          "type": "tool_use",
+          "id": "call_f395d07ad7dc4ed8958a8c5b",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl list orders --limit 1000 --format json"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_c05f4c58dee14cbcb79aa53d",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl list products --limit 1000 --format json"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_159efa7fd3c64eb2a36ae7cb",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl list users --limit 1000 --format json"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_f395d07ad7dc4ed8958a8c5b",
+          "content": "exit_code: 0\nstdout (truncated):\n[\n  {\n    \"id\": \"o001\",\n    \"user_id\": \"u018\",\n    \"total_cents\": 114450,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p063\",\n      \"p029\"\n    ],\n    \"created_at\": \"2026-04-05T02:56:55Z\"\n  },\n  {\n    \"id\": \"o002\",\n    \"user_id\": \"u009\",\n    \"total_cents\": 163319,\n    \"currency\": \"GBP\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p052\",\n      \"p022\",\n      \"p060\"\n    ],\n    \"created_at\": \"2026-03-10T23:21:05Z\"\n  },\n  {\n    \"id\": \"o003\",\n    \"user_id\": \"u042\",\n    \"total_cents\": 112557,\n    \"currency\": \"USD\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p076\",\n      \"p073\",\n      \"p004\",\n      \"p011\"\n    ],\n    \"created_at\": \"2026-04-15T04:16:14Z\"\n  },\n  {\n    \"id\": \"o004\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 86012,\n    \"currency\": \"USD\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p034\"\n    ],\n    \"created_at\": \"2026-04-08T03:11:50Z\"\n  },\n  {\n    \"id\": \"o005\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 21670,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p049\",\n      \"p036\",\n      \"p054\"\n    ],\n    \"created_at\": \"2026-03-18T15:19:25Z\"\n  },\n  {\n    \"id\": \"o006\",\n    \"user_id\": \"u015\",\n    \"total_cents\": 170630,\n    \"currency\": \"USD\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p045\"\n    ],\n    \"created_at\": \"2026-03-18T09:15:17Z\"\n  },\n  {\n    \"id\": \"o007\",\n    \"user_id\": \"u013\",\n    \"total_cents\": 5541,\n    \"currency\": \"GBP\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p032\"\n    ],\n    \"created_at\": \"2026-04-12T10:04:30Z\"\n  },\n  {\n    \"id\": \"o008\",\n    \"user_id\": \"u037\",\n    \"total_cents\": 57337,\n    \"currency\": \"EUR\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p061\",\n      \"p015\"\n    ],\n    \"created_at\": \"2026-03-17T18:29:57Z\"\n  },\n  {\n    \"id\": \"o009\",\n    \"user_id\": \"u050\",\n    \"total_cents\": 43129,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p022\",\n      \"p078\",\n      \"p015\"\n    ],\n    \"created_at\": \"2026-03-26T21:47:01Z\"\n  },\n  {\n    \"id\": \"o010\",\n    \"user_id\": \"u037\",\n    \"total_cents\": 177761,\n    \"currency\": \"EUR\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p040\"\n    ],\n    \"created_at\": \"2026-03-20T06:56:51Z\"\n  },\n  {\n    \"id\": \"o011\",\n    \"user_id\": \"u045\",\n    \"total_cents\": 164626,\n    \"currency\": \"USD\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p010\",\n      \"p076\"\n    ],\n    \"created_at\": \"2026-03-21T03:42:41Z\"\n  },\n  {\n    \"id\": \"o012\",\n    \"user_id\": \"u003\",\n    \"total_cents\": 91216,\n    \"currency\": \"GBP\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p077\",\n      \"p016\",\n      \"p073\"\n    ],\n    \"created_at\": \"2026-03-22T21:16:19Z\"\n  },\n  {\n    \"id\": \"o013\",\n    \"user_id\": \"u001\",\n    \"total_cents\": 110314,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p009\",\n      \"p065\",\n      \"p044\"\n    ],\n    \"created_at\": \"2026-04-02T22:54:32Z\"\n  },\n  {\n    \"id\": \"o014\",\n    \"user_id\": \"u012\",\n    \"total_cents\": 192559,\n    \"currency\": \"GBP\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p059\",\n      \"p020\",\n      \"p056\"\n    ],\n    \"created_at\": \"2026-03-25T02:24:37Z\"\n  },\n  {\n    \"id\": \"o015\",\n    \"user_id\": \"u021\",\n    \"total_cents\": 64554,\n    \"currency\": \"USD\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p060\",\n      \"p056\",\n      \"p076\",\n      \"p035\"\n    ],\n    \"created_at\": \"2026-03-12T04:49:31Z\"\n  },\n  {\n    \"id\": \"o016\",\n    \"user_id\": \"u043\",\n    \"total_cents\": 99548,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p032\",\n      \"p060\",\n      \"p073\",\n      \"p079\"\n    ],\n    \"created_at\": \"2026-03-31T00:05:29Z\"\n  },\n  {\n    \"id\": \"o017\",\n    \"user_id\": \"u023\",\n    \"total_cents\": 67924,\n    \"currency\": \"EUR\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p024\",\n      \"p063\",\n      \"p028\"\n    ],\n    \"created_at\": \"2026-03-12T06:21:11Z\"\n  },\n  {\n    \"id\": \"o018\",\n    \"user_id\": \"u013\",\n    \"total_cents\": 22641,\n    \"currency\": \"USD\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p072\",\n      \"p002\",\n      \"p067\"\n    ],\n    \"created_at\": \"2026-03-31T06:45:56Z\"\n  },\n  {\n    \"id\": \"o019\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 4719,\n    \"currency\": \"USD\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p061\",\n      \"p063\"\n    ],\n    \"created_at\": \"2026-04-13T05:49:18Z\"\n  },\n  {\n    \"id\": \"o020\",\n    \"user_id\": \"u031\",\n    \"total_cents\": 145288,\n    \"currency\": \"GBP\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p032\",\n      \"p040\",\n      \"p075\",\n      \"p048\"\n    ],\n    \"created_at\": \"2026-04-03T08:15:08Z\"\n  },\n  {\n    \"id\": \"o021\",\n    \"user_id\": \"u020\",\n    \"total_cents\": 66102,\n    \"currency\": \"USD\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p046\",\n      \"p059\",\n      \"p035\"\n    ],\n    \"created_at\": \"2026-03-19T23:38:35Z\"\n  },\n  {\n    \"id\": \"o022\",\n    \"user_id\": \"u048\",\n    \"total_cents\": 140672,\n    \"currency\": \"GBP\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p041\",\n      \"p016\"\n    ],\n    \"created_at\": \"2026-04-14T16:50:19Z\"\n  },\n  {\n    \"id\": \"o023\",\n    \"user_id\": \"u047\",\n    \"total_cents\": 154755,\n    \"currency\": \"GBP\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p062\",\n      \"p036\"\n    ],\n    \"created_at\": \"2026-04-19T02:52:43Z\"\n  },\n  {\n    \"id\": \"o024\",\n    \"user_id\": \"u024\",\n    \"total_cents\": 47238,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p038\",\n      \"p030\"\n    ],\n    \"created_at\": \"2026-03-20T15:05:56Z\"\n  },\n  {\n    \"id\": \"o025\",\n    \"user_id\": \"u004\",\n    \"total_cents\": 145258,\n    \"currency\": \"EUR\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p036\",\n      \"p006\"\n    ],\n    \"created_at\": \"2026-03-24T00:49:41Z\"\n  },\n  {\n    \"id\": \"o026\",\n    \"user_id\": \"u031\",\n    \"total_cents\": 125691,\n    \"currency\": \"EUR\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p014\",\n      \"p002\",\n      \"p074\",\n      \"p037\"\n    ],\n    \"created_at\": \"2026-04-15T01:12:03Z\"\n  },\n  {\n    \"id\": \"o027\",\n    \"user_id\": \"u031\",\n    \"total_cents\": 30106,\n    \"currency\": \"USD\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p033\"\n    ],\n    \"created_at\": \"2026-03-31T03:04:26Z\"\n  },\n  {\n    \"id\": \"o028\",\n    \"user_id\": \"u041\",\n    \"total_cents\": 180148,\n    \"currency\": \"USD\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p074\"\n    ],\n    \"created_at\": \"2026-04-16T18:10:20Z\"\n  },\n  {\n    \"id\": \"o029\",\n    \"user_id\": \"u036\",\n    \"total_cents\": 109296,\n    \"currency\": \"GBP\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p011\",\n      \"p032\",\n      \"p016\"\n    ],\n    \"created_at\": \"2026-03-17T08:15:06Z\"\n  },\n  {\n    \"id\": \"o030\",\n    \"user_id\": \"u028\",\n    \"total_cents\": 80252,\n    \"currency\": \"GBP\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p058\",\n      \"p057\",\n      \"p039\",\n      \"p076\"\n    ],\n    \"created_at\": \"2026-03-25T09:43:43Z\"\n  },\n  {\n    \"id\": \"o031\",\n    \"user_id\": \"u041\",\n    \"total_cents\": 55517,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p027\"\n    ],\n    \"created_at\": \"2026-04-16T09:00:55Z\"\n  },\n  {\n    \"id\": \"o032\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 41233,\n    \"currency\": \"USD\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p023\",\n      \"p071\"\n    ],\n    \"created_at\": \"2026-04-02T03:07:31Z\"\n  },\n  {\n    \"id\": \"o033\",\n    \"user_id\": \"u046\",\n    \"total_cents\": 74311,\n    \"currency\": \"GBP\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p038\",\n      \"p005\",\n      \"p030\",\n      \"p037\"\n    ],\n    \"created_at\": \"2026-04-20T13:04:11Z\"\n  },\n  {\n    \"id\": \"o034\",\n    \"user_id\": \"u043\",\n    \"total_cents\": 52056,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p034\",\n      \"p076\"\n    ],\n    \"created_at\": \"2026-03-28T13:32:20Z\"\n  },\n  {\n    \"id\": \"o035\",\n    \"user_id\": \"u010\",\n    \"total_cents\": 18918,\n    \"currency\": \"USD\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p020\",\n      \"p035\"\n    ],\n    \"created_at\": \"2026-03-16T12:31:15Z\"\n  },\n  {\n    \"id\": \"o036\",\n    \"user_id\": \"u029\",\n    \"total_cents\": 32797,\n    \"currency\": \"EUR\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p077\",\n      \"p073\",\n      \"p037\"\n    ],\n    \"created_at\": \"2026-03-21T00:45:05Z\"\n  },\n  {\n    \"id\": \"o037\",\n    \"user_id\": \"u029\",\n    \"total_cents\": 21286,\n    \"currency\": \"GBP\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p035\",\n      \"p065\",\n      \"p070\",\n      \"p064\"\n    ],\n    \"created_at\": \"2026-03-11T19:44:51Z\"\n  },\n  {\n    \"id\": \"o038\",\n    \"user_id\": \"u006\",\n    \"total_cents\": 60210,\n    \"currency\": \"GBP\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p042\",\n      \"p078\",\n      \"p033\",\n      \"p004\"\n    ],\n    \"created_at\": \"2026-03-17T20:59:23Z\"\n  },\n  {\n    \"id\": \"o039\",\n    \"user_id\": \"u031\",\n    \"total_cents\": 136242,\n    \"currency\": \"GBP\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p074\",\n      \"p006\",\n      \"p023\"\n    ],\n    \"created_at\": \"2026-03-10T12:41:53Z\"\n  },\n  {\n    \"id\": \"o040\",\n    \"user_id\": \"u041\",\n    \"total_cents\": 129101,\n    \"currency\": \"USD\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p024\",\n      \"p075\",\n      \"p056\"\n    ],\n    \"created_at\": \"2026-04-07T02:35:46Z\"\n  },\n  {\n    \"id\": \"o041\",\n    \"user_id\": \"u022\",\n    \"total_cents\": 108109,\n    \"currency\": \"GBP\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p043\",\n      \"p042\",\n      \"p014\",\n      \"p021\"\n    ],\n    \"created_at\": \"2026-04-10T00:12:07Z\"\n  },\n  {\n    \"id\": \"o042\",\n    \"user_id\": \"u021\",\n    \"total_cents\": 66363,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p071\",\n      \"p005\",\n      \"p059\",\n      \"p012\"\n    ],\n    \"created_at\": \"2026-03-17T11:55:00Z\"\n  },\n  {\n    \"id\": \"o043\",\n    \"user_id\": \"u027\",\n    \"total_cents\": 14408,\n    \"currency\": \"USD\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p066\",\n      \"p001\",\n      \"p070\",\n      \"p060\"\n    ],\n    \"created_at\": \"2026-03-24T18:34:45Z\"\n  },\n  {\n    \"id\": \"o044\",\n    \"user_id\": \"u036\",\n    \"total_cents\": 34543,\n    \"currency\": \"EUR\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p057\",\n      \"p007\",\n      \"p027\",\n      \"p035\"\n    ],\n    \"created_at\": \"2026-03-12T05:44:22Z\"\n  },\n  {\n    \"id\": \"o045\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 41716,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_c05f4c58dee14cbcb79aa53d",
+          "content": "exit_code: 0\nstdout (truncated):\n[\n  {\n    \"id\": \"p001\",\n    \"name\": \"Acme Foghorn\",\n    \"sku\": \"SKU-0001\",\n    \"price_cents\": 9999,\n    \"inventory\": 57,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p002\",\n    \"name\": \"Acme Anvil\",\n    \"sku\": \"SKU-0002\",\n    \"price_cents\": 499,\n    \"inventory\": 114,\n    \"category\": \"gadgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p003\",\n    \"name\": \"Acme Rocket Skates\",\n    \"sku\": \"SKU-0003\",\n    \"price_cents\": 9999,\n    \"inventory\": 379,\n    \"category\": \"subscriptions\",\n    \"active\": false\n  },\n  {\n    \"id\": \"p004\",\n    \"name\": \"Acme Earthquake Pills\",\n    \"sku\": \"SKU-0004\",\n    \"price_cents\": 1999,\n    \"inventory\": 16,\n    \"category\": \"widgets\",\n    \"active\": false\n  },\n  {\n    \"id\": \"p005\",\n    \"name\": \"Globex Ionizer\",\n    \"sku\": \"SKU-0005\",\n    \"price_cents\": 499,\n    \"inventory\": 258,\n    \"category\": \"subscriptions\",\n    \"active\": false\n  },\n  {\n    \"id\": \"p006\",\n    \"name\": \"Globex Plasma Cell\",\n    \"sku\": \"SKU-0006\",\n    \"price_cents\": 499,\n    \"inventory\": 366,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p007\",\n    \"name\": \"Globex Heat Sink\",\n    \"sku\": \"SKU-0007\",\n    \"price_cents\": 1999,\n    \"inventory\": 301,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p008\",\n    \"name\": \"Initech TPS Binder\",\n    \"sku\": \"SKU-0008\",\n    \"price_cents\": 199,\n    \"inventory\": 388,\n    \"category\": \"gadgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p009\",\n    \"name\": \"Initech Red Stapler\",\n    \"sku\": \"SKU-0009\",\n    \"price_cents\": 999,\n    \"inventory\": 142,\n    \"category\": \"gadgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p010\",\n    \"name\": \"Initech Cover Sheet\",\n    \"sku\": \"SKU-0010\",\n    \"price_cents\": 19999,\n    \"inventory\": 172,\n    \"category\": \"widgets\",\n    \"active\": false\n  },\n  {\n    \"id\": \"p011\",\n    \"name\": \"Umbrella Vaccine\",\n    \"sku\": \"SKU-0011\",\n    \"price_cents\": 199,\n    \"inventory\": 183,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p012\",\n    \"name\": \"Umbrella Tracker\",\n    \"sku\": \"SKU-0012\",\n    \"price_cents\": 19999,\n    \"inventory\": 22,\n    \"category\": \"services\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p013\",\n    \"name\": \"Umbrella Field Kit\",\n    \"sku\": \"SKU-0013\",\n    \"price_cents\": 1999,\n    \"inventory\": 40,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p014\",\n    \"name\": \"Wayne Grapple\",\n    \"sku\": \"SKU-0014\",\n    \"price_cents\": 9999,\n    \"inventory\": 316,\n    \"category\": \"consumables\",\n    \"active\": true,\n    \"inventory_discrepancy\": {\n      \"note\": \"recorded 120, warehouse reports 117\",\n      \"delta\": -3,\n      \"source\": \"pipe-09 reconcile\"\n    }\n  },\n  {\n    \"id\": \"p015\",\n    \"name\": \"Wayne Cowl\",\n    \"sku\": \"SKU-0015\",\n    \"price_cents\": 9999,\n    \"inventory\": 35,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p016\",\n    \"name\": \"Wayne Batmobile Wax\",\n    \"sku\": \"SKU-0016\",\n    \"price_cents\": 19999,\n    \"inventory\": 148,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p017\",\n    \"name\": \"Standard Widget A\",\n    \"sku\": \"SKU-0017\",\n    \"price_cents\": 19999,\n    \"inventory\": 51,\n    \"category\": \"services\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p018\",\n    \"name\": \"Standard Widget B\",\n    \"sku\": \"SKU-0018\",\n    \"price_cents\": 9999,\n    \"inventory\": 427,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p019\",\n    \"name\": \"Standard Widget C\",\n    \"sku\": \"SKU-0019\",\n    \"price_cents\": 999,\n    \"inventory\": 107,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p020\",\n    \"name\": \"Premium Gadget X\",\n    \"sku\": \"SKU-0020\",\n    \"price_cents\": 9999,\n    \"inventory\": 331,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p021\",\n    \"name\": \"Premium Gadget Y\",\n    \"sku\": \"SKU-0021\",\n    \"price_cents\": 499,\n    \"inventory\": 273,\n    \"category\": \"gadgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p022\",\n    \"name\": \"Premium Gadget Z\",\n    \"sku\": \"SKU-0022\",\n    \"price_cents\": 1999,\n    \"inventory\": 138,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p023\",\n    \"name\": \"Consumable Ink\",\n    \"sku\": \"SKU-0023\",\n    \"price_cents\": 999,\n    \"inventory\": 431,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p024\",\n    \"name\": \"Consumable Toner\",\n    \"sku\": \"SKU-0024\",\n    \"price_cents\": 199,\n    \"inventory\": 412,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p025\",\n    \"name\": \"Consumable Ribbon\",\n    \"sku\": \"SKU-0025\",\n    \"price_cents\": 199,\n    \"inventory\": 108,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p026\",\n    \"name\": \"Service Install\",\n    \"sku\": \"SKU-0026\",\n    \"price_cents\": 999,\n    \"inventory\": 108,\n    \"category\": \"services\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p027\",\n    \"name\": \"Service Tuneup\",\n    \"sku\": \"SKU-0027\",\n    \"price_cents\": 9999,\n    \"inventory\": 234,\n    \"category\": \"gadgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p028\",\n    \"name\": \"Service Audit\",\n    \"sku\": \"SKU-0028\",\n    \"price_cents\": 499,\n    \"inventory\": 381,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p029\",\n    \"name\": \"Monthly Plan\",\n    \"sku\": \"SKU-0029\",\n    \"price_cents\": 9999,\n    \"inventory\": 299,\n    \"category\": \"services\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p030\",\n    \"name\": \"Annual Plan\",\n    \"sku\": \"SKU-0030\",\n    \"price_cents\": 1999,\n    \"inventory\": 185,\n    \"category\": \"gadgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p031\",\n    \"name\": \"Acme Foghorn Mk 1\",\n    \"sku\": \"SKU-0031\",\n    \"price_cents\": 499,\n    \"inventory\": 260,\n    \"category\": \"services\",\n    \"active\": false\n  },\n  {\n    \"id\": \"p032\",\n    \"name\": \"Acme Anvil Mk 1\",\n    \"sku\": \"SKU-0032\",\n    \"price_cents\": 199,\n    \"inventory\": 440,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p033\",\n    \"name\": \"Acme Rocket Skates Mk 1\",\n    \"sku\": \"SKU-0033\",\n    \"price_cents\": 499,\n    \"inventory\": 405,\n    \"category\": \"services\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p034\",\n    \"name\": \"Acme Earthquake Pills Mk 1\",\n    \"sku\": \"SKU-0034\",\n    \"price_cents\": 1999,\n    \"inventory\": 195,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p035\",\n    \"name\": \"Globex Ionizer Mk 1\",\n    \"sku\": \"SKU-0035\",\n    \"price_cents\": 4999,\n    \"inventory\": 128,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p036\",\n    \"name\": \"Globex Plasma Cell Mk 1\",\n    \"sku\": \"SKU-0036\",\n    \"price_cents\": 199,\n    \"inventory\": 348,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p037\",\n    \"name\": \"Globex Heat Sink Mk 1\",\n    \"sku\": \"SKU-0037\",\n    \"price_cents\": 4999,\n    \"inventory\": 384,\n    \"category\": \"consumables\",\n    \"active\": true,\n    \"inventory_discrepancy\": {\n      \"note\": \"recorded 42, warehouse reports 50\",\n      \"delta\": 8,\n      \"source\": \"pipe-09 reconcile\"\n    }\n  },\n  {\n    \"id\": \"p038\",\n    \"name\": \"Initech TPS Binder Mk 1\",\n    \"sku\": \"SKU-0038\",\n    \"price_cents\": 999,\n    \"inventory\": 57,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p039\",\n    \"name\": \"Initech Red Stapler Mk 1\",\n    \"sku\": \"SKU-0039\",\n    \"price_cents\": 1999,\n    \"inventory\": 1,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p040\",\n    \"name\": \"Initech Cover Sheet Mk 1\",\n    \"sku\": \"SKU-0040\",\n    \"price_cents\": 19999,\n    \"inventory\": 91,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p041\",\n    \"name\": \"Umbrella Vaccine Mk 1\",\n    \"sku\": \"SKU-0041\",\n    \"price_cents\": 19999,\n    \"inventory\": 320,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p042\",\n    \"name\": \"Umbrella Tracker Mk 1\",\n    \"sku\": \"SKU-0042\",\n    \"price_cents\": 4999,\n    \"inventory\": 311,\n    \"category\": \"gadgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p043\",\n    \"name\": \"Umbrella Field Kit Mk 1\",\n    \"sku\": \"SKU-0043\",\n    \"price_cents\": 19999,\n    \"inventory\": 82,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p044\",\n    \"name\": \"Wayne Grapple Mk 1\",\n    \"sku\": \"SKU-0044\",\n    \"price_cents\": 4999,\n    \"inventory\": 470,\n    \"category\": \"widgets\",\n    \"active\": true,\n    \"pipe_04_skip_reason\": \"missing SKU prefix (legacy import)\"\n  },\n  {\n    \"id\": \"p045\",\n    \"name\": \"Wayne Cowl Mk 1\",\n    \"sku\": \"SKU-0045\",\n    \"price_cents\": 1999,\n    \"inventory\": 9,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p046\",\n    \"name\": \"Wayne Batmobile Wax Mk 1\",\n    \"sku\": \"SKU-0046\",\n    \"price_cents\": 19999,\n    \"inventory\": 413,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p047\",\n    \"name\": \"Standard Widget A Mk 1\",\n    \"sku\": \"SKU-0047\",\n    \"price_cents\": 499,\n    \"inventory\": 449,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p048\",\n    \"name\": \"Standard Widget B Mk 1\",\n    \"sku\": \"SKU-0048\",\n    \"price_cents\": 199,\n    \"inventory\": 374,\n    \"category\": \"services\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p049\",\n    \"name\": \"Standard Widget C Mk 1\",\n    \"sku\": \"SKU-0049\",\n    \"price_cents\": 19999,\n    \"inventory\": 272,\n    \"category\": \"gadgets\",\n    \"active\": false\n  },\n  {\n    \"id\": \"p050\",\n    \"name\": \"Premium Gadget X Mk 1\",\n    \"sku\": \"SKU-0050\",\n    \"price_cents\": 1999,\n    \"inventory\": 484,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p051\",\n    \"name\": \"Premium Gadget Y Mk 1\",\n    \"sku\": \"SKU-0051\",\n    \"price_cents\": 4999,\n    \"inventory\": 446,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p052\",\n    \"name\": \"Premium Gadget Z Mk 1\",\n    \"sku\": \"SKU-0052\",\n    \"price_cents\": 499,\n    \"inventory\": 475,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p053\",\n    \"name\": \"Consumable Ink Mk 1\",\n    \"sku\": \"SKU-0053\",\n    \"price_cents\": 9999,\n    \"inventory\": 102,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p054\",\n    \"name\": \"Consumable Toner Mk 1\",\n    \"sku\": \"SKU-0054\",\n    \"price_cents\": 9999,\n    \"inventory\": 332,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p055\",\n    \"name\": \"Consumable Ribbon Mk 1\",\n    \"sku\": \"SKU-0055\",\n    \"price_cents\": 4999,\n    \"inventory\": 231,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\":",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_159efa7fd3c64eb2a36ae7cb",
+          "content": "exit_code: 0\nstdout:\n[\n  {\n    \"id\": \"u001\",\n    \"email\": \"casey.vega@globex.com\",\n    \"name\": \"Casey Vega\",\n    \"status\": \"pending\",\n    \"role\": \"admin\",\n    \"org_id\": \"org-5\",\n    \"created_at\": \"2026-04-12T01:08:18Z\"\n  },\n  {\n    \"id\": \"u002\",\n    \"email\": \"sky.tan@acme.io\",\n    \"name\": \"Sky Tan\",\n    \"status\": \"suspended\",\n    \"role\": \"admin\",\n    \"org_id\": \"org-4\",\n    \"created_at\": \"2026-03-26T15:58:21Z\"\n  },\n  {\n    \"id\": \"u003\",\n    \"email\": \"sky.quiroz@initech.co\",\n    \"name\": \"Sky Quiroz\",\n    \"status\": \"pending\",\n    \"role\": \"admin\",\n    \"org_id\": \"org-3\",\n    \"created_at\": \"2026-04-12T09:54:39Z\"\n  },\n  {\n    \"id\": \"u004\",\n    \"email\": \"indra.mori@globex.com\",\n    \"name\": \"Indra Mori\",\n    \"status\": \"suspended\",\n    \"role\": \"viewer\",\n    \"org_id\": \"org-3\",\n    \"created_at\": \"2026-04-01T19:17:42Z\"\n  },\n  {\n    \"id\": \"u005\",\n    \"email\": \"kai.yoon@acme.io\",\n    \"name\": \"Kai Yoon\",\n    \"status\": \"active\",\n    \"role\": \"member\",\n    \"org_id\": \"org-5\",\n    \"created_at\": \"2026-03-27T16:03:54Z\"\n  },\n  {\n    \"id\": \"u006\",\n    \"email\": \"dana.chen@wayne.inc\",\n    \"name\": \"Dana Chen\",\n    \"status\": \"active\",\n    \"role\": \"viewer\",\n    \"org_id\": \"org-3\",\n    \"created_at\": \"2026-04-17T13:40:37Z\"\n  },\n  {\n    \"id\": \"u007\",\n    \"email\": \"lee.chen@globex.com\",\n    \"name\": \"Lee Chen\",\n    \"status\": \"pending\",\n    \"role\": \"member\",\n    \"org_id\": \"org-2\",\n    \"created_at\": \"2026-04-02T17:28:41Z\"\n  },\n  {\n    \"id\": \"u008\",\n    \"email\": \"rowan.wong@initech.co\",\n    \"name\": \"Rowan Wong\",\n    \"status\": \"suspended\",\n    \"role\": \"viewer\",\n    \"org_id\": \"org-5\",\n    \"created_at\": \"2026-04-23T14:53:08Z\"\n  },\n  {\n    \"id\": \"u009\",\n    \"email\": \"val.rao@initech.co\",\n    \"name\": \"Val Rao\",\n    \"status\": \"suspended\",\n    \"role\": \"admin\",\n    \"org_id\": \"org-2\",\n    \"created_at\": \"2026-04-11T03:52:30Z\"\n  },\n  {\n    \"id\": \"u010\",\n    \"email\": \"dana.diaz@wayne.inc\",\n    \"name\": \"Dana Diaz\",\n    \"status\": \"active\",\n    \"role\": \"member\",\n    \"org_id\": \"org-3\",\n    \"created_at\": \"2026-03-25T15:19:20Z\"\n  },\n  {\n    \"id\": \"u011\",\n    \"email\": \"gale.wong@initech.co\",\n    \"name\": \"Gale Wong\",\n    \"status\": \"active\",\n    \"role\": \"viewer\",\n    \"org_id\": \"org-3\",\n    \"created_at\": \"2026-03-30T11:09:21Z\"\n  },\n  {\n    \"id\": \"u012\",\n    \"email\": \"pat.ito@acme.io\",\n    \"name\": \"Pat Ito\",\n    \"status\": \"active\",\n    \"role\": \"viewer\",\n    \"org_id\": \"org-4\",\n    \"created_at\": \"2026-04-10T13:38:40Z\"\n  },\n  {\n    \"id\": \"u013\",\n    \"email\": \"blair.adler@initech.co\",\n    \"name\": \"Blair Adler\",\n    \"status\": \"active\",\n    \"role\": \"viewer\",\n    \"org_id\": \"org-3\",\n    \"created_at\": \"2026-04-16T03:44:37Z\"\n  },\n  {\n    \"id\": \"u014\",\n    \"email\": \"xan.ortiz@wayne.inc\",\n    \"name\": \"Xan Ortiz\",\n    \"status\": \"suspended\",\n    \"role\": \"member\",\n    \"org_id\": \"org-5\",\n    \"created_at\": \"2026-04-23T12:44:03Z\"\n  },\n  {\n    \"id\": \"u015\",\n    \"email\": \"dana.chen@globex.com\",\n    \"name\": \"Dana Chen\",\n    \"status\": \"suspended\",\n    \"role\": \"admin\",\n    \"org_id\": \"org-3\",\n    \"created_at\": \"2026-03-26T17:19:38Z\"\n  },\n  {\n    \"id\": \"u016\",\n    \"email\": \"rowan.evans@umbrella.org\",\n    \"name\": \"Rowan Evans\",\n    \"status\": \"active\",\n    \"role\": \"admin\",\n    \"org_id\": \"org-3\",\n    \"created_at\": \"2026-04-06T07:09:01Z\"\n  },\n  {\n    \"id\": \"u017\",\n    \"email\": \"zion.brooks@initech.co\",\n    \"name\": \"Zion Brooks\",\n    \"status\": \"active\",\n    \"role\": \"viewer\",\n    \"org_id\": \"org-2\",\n    \"created_at\": \"2026-04-19T00:14:13Z\"\n  },\n  {\n    \"id\": \"u018\",\n    \"email\": \"lee.yoon@wayne.inc\",\n    \"name\": \"Lee Yoon\",\n    \"status\": \"pending\",\n    \"role\": \"viewer\",\n    \"org_id\": \"org-2\",\n    \"created_at\": \"2026-04-12T12:10:52Z\"\n  },\n  {\n    \"id\": \"u019\",\n    \"email\": \"frankie.zima@globex.com\",\n    \"name\": \"Frankie Zima\",\n    \"status\": \"pending\",\n    \"role\": \"admin\",\n    \"org_id\": \"org-2\",\n    \"created_at\": \"2026-04-07T20:58:34Z\"\n  },\n  {\n    \"id\": \"u020\",\n    \"email\": \"zion.nair@globex.com\",\n    \"name\": \"Zion Nair\",\n    \"status\": \"pending\",\n    \"role\": \"admin\",\n    \"org_id\": \"org-1\",\n    \"created_at\": \"2026-04-05T10:18:24Z\"\n  },\n  {\n    \"id\": \"u021\",\n    \"email\": \"blair.park@globex.com\",\n    \"name\": \"Blair Park\",\n    \"status\": \"active\",\n    \"role\": \"member\",\n    \"org_id\": \"org-3\",\n    \"created_at\": \"2026-04-09T04:25:37Z\"\n  },\n  {\n    \"id\": \"u022\",\n    \"email\": \"zion.hayes@globex.com\",\n    \"name\": \"Zion Hayes\",\n    \"status\": \"active\",\n    \"role\": \"viewer\",\n    \"org_id\": \"org-2\",\n    \"created_at\": \"2026-04-04T15:45:13Z\"\n  },\n  {\n    \"id\": \"u023\",\n    \"email\": null,\n    \"name\": \"Kai Ito\",\n    \"status\": \"pending\",\n    \"role\": \"member\",\n    \"org_id\": \"org-5\",\n    \"created_at\": \"2026-04-04T14:20:28Z\"\n  },\n  {\n    \"id\": \"u024\",\n    \"email\": \"val.rao@initech.co\",\n    \"name\": \"Val Rao\",\n    \"status\": \"active\",\n    \"role\": \"admin\",\n    \"org_id\": \"org-3\",\n    \"created_at\": \"2026-04-15T07:57:13Z\"\n  },\n  {\n    \"id\": \"u025\",\n    \"email\": \"sky.ito@acme.io\",\n    \"name\": \"Sky Ito\",\n    \"status\": \"active\",\n    \"role\": \"viewer\",\n    \"org_id\": \"org-4\",\n    \"created_at\": \"2026-04-07T05:14:44Z\"\n  },\n  {\n    \"id\": \"u026\",\n    \"email\": \"xan.zima@initech.co\",\n    \"name\": \"Xan Zima\",\n    \"status\": \"pending\",\n    \"role\": \"viewer\",\n    \"org_id\": \"org-5\",\n    \"created_at\": \"2026-04-18T09:15:47Z\"\n  },\n  {\n    \"id\": \"u027\",\n    \"email\": \"morgan.singh@globex.com\",\n    \"name\": \"Morgan Singh\",\n    \"status\": \"pending\",\n    \"role\": \"admin\",\n    \"org_id\": \"org-4\",\n    \"created_at\": \"2026-04-23T22:01:47Z\"\n  },\n  {\n    \"id\": \"u028\",\n    \"email\": \"quinn.zima@wayne.inc\",\n    \"name\": \"Quinn Zima\",\n    \"status\": \"suspended\",\n    \"role\": \"viewer\",\n    \"org_id\": \"org-2\",\n    \"created_at\": \"2026-04-06T07:39:05Z\"\n  },\n  {\n    \"id\": \"u029\",\n    \"email\": \"nico.chen@initech.co\",\n    \"name\": \"Nico Chen\",\n    \"status\": \"suspended\",\n    \"role\": \"member\",\n    \"org_id\": \"org-1\",\n    \"created_at\": \"2026-04-09T10:05:58Z\"\n  },\n  {\n    \"id\": \"u030\",\n    \"email\": \"quinn.jensen@umbrella.org\",\n    \"name\": \"Quinn Jensen\",\n    \"status\": \"pending\",\n    \"role\": \"member\",\n    \"org_id\": \"org-3\",\n    \"created_at\": \"2026-03-28T02:03:46Z\"\n  },\n  {\n    \"id\": \"u031\",\n    \"email\": null,\n    \"name\": \"Eden Gomez\",\n    \"status\": \"suspended\",\n    \"role\": \"member\",\n    \"org_id\": \"org-2\",\n    \"created_at\": \"2026-03-25T02:52:24Z\"\n  },\n  {\n    \"id\": \"u032\",\n    \"email\": \"sky.jensen@umbrella.org\",\n    \"name\": \"Sky Jensen\",\n    \"status\": \"suspended\",\n    \"role\": \"admin\",\n    \"org_id\": \"org-3\",\n    \"created_at\": \"2026-04-10T01:43:17Z\"\n  },\n  {\n    \"id\": \"u033\",\n    \"email\": \"gale.nair@wayne.inc\",\n    \"name\": \"Gale Nair\",\n    \"status\": \"suspended\",\n    \"role\": \"viewer\",\n    \"org_id\": \"org-3\",\n    \"created_at\": \"2026-04-01T10:14:59Z\"\n  },\n  {\n    \"id\": \"u034\",\n    \"email\": \"ola.ortiz@globex.com\",\n    \"name\": \"Ola Ortiz\",\n    \"status\": \"suspended\",\n    \"role\": \"member\",\n    \"org_id\": \"org-2\",\n    \"created_at\": \"2026-04-19T21:12:22Z\"\n  },\n  {\n    \"id\": \"u035\",\n    \"email\": \"jules.quiroz@wayne.inc\",\n    \"name\": \"Jules Quiroz\",\n    \"status\": \"pending\",\n    \"role\": \"admin\",\n    \"org_id\": \"org-2\",\n    \"created_at\": \"2026-04-08T22:20:07Z\"\n  },\n  {\n    \"id\": \"u036\",\n    \"email\": \"harper.zima@globex.com\",\n    \"name\": \"Harper Zima\",\n    \"status\": \"active\",\n    \"role\": \"admin\",\n    \"org_id\": \"org-1\",\n    \"created_at\": \"2026-04-12T02:44:16Z\"\n  },\n  {\n    \"id\": \"u037\",\n    \"email\": \"pat.tan@acme.io\",\n    \"name\": \"Pat Tan\",\n    \"status\": \"pending\",\n    \"role\": \"member\",\n    \"org_id\": \"org-5\",\n    \"created_at\": \"2026-04-14T13:28:00Z\"\n  },\n  {\n    \"id\": \"u038\",\n    \"email\": \"wren.wong@umbrella.org\",\n    \"name\": \"Wren Wong\",\n    \"status\": \"pending\",\n    \"role\": \"member\",\n    \"org_id\": \"org-2\",\n    \"created_at\": \"2026-04-16T20:04:01Z\"\n  },\n  {\n    \"id\": \"u039\",\n    \"email\": \"uma.wong@acme.io\",\n    \"name\": \"Uma Wong\",\n    \"status\": \"active\",\n    \"role\": \"member\",\n    \"org_id\": \"org-2\",\n    \"created_at\": \"2026-04-15T11:04:38Z\"\n  },\n  {\n    \"id\": \"u040\",\n    \"email\": \"zion.wong@wayne.inc\",\n    \"name\": \"Zion Wong\",\n    \"status\": \"pending\",\n    \"role\": \"admin\",\n    \"org_id\": \"org-5\",\n    \"created_at\": \"2026-04-11T21:39:47Z\"\n  },\n  {\n    \"id\": \"u041\",\n    \"email\": \"dana.ortiz@globex.com\",\n    \"name\": \"Dana Ortiz\",\n    \"status\": \"pending\",\n    \"role\": \"viewer\",\n    \"org_id\": \"org-5\",\n    \"created_at\": \"2026-03-27T20:48:18Z\"\n  },\n  {\n    \"id\": \"u042\",\n    \"email\": \"sarah.chen@acme.io\",\n    \"name\": \"Sarah Chen\",\n    \"status\": \"suspended\",\n    \"role\": \"member\",\n    \"org_id\": \"org-2\",\n    \"created_at\": \"2025-11-03T09:14:22Z\",\n    \"status_changed_at\": \"2026-04-22T11:47:00Z\",\n    \"notes\": \"billing dispute; account flipped to suspended pending review\"\n  },\n  {\n    \"id\": \"u043\",\n    \"email\": \"rowan.ortiz@globex.com\",\n    \"name\": \"Rowan Ortiz\",\n    \"status\": \"suspended\",\n    \"role\": \"member\",\n    \"org_id\": \"org-4\",\n    \"created_at\": \"2026-04-11T10:01:12Z\"\n  },\n  {\n    \"id\": \"u044\",\n    \"email\": \"yael.hayes@initech.co\",\n    \"name\": \"Yael Hayes\",\n    \"status\": \"suspended\",\n    \"role\": \"member\",\n    \"org_id\": \"org-2\",\n    \"created_at\": \"2026-04-10T16:04:15Z\"\n  },\n  {\n    \"id\": \"u045\",\n    \"email\": \"ola.chen@initech.co\",\n    \"name\": \"Ola Chen\",\n    \"status\": \"active\",\n    \"role\": \"member\",\n    \"org_id\": \"org-3\",\n    \"created_at\": \"2026-04-08T11:30:41Z\"\n  },\n  {\n    \"id\": \"u046\",\n    \"email\": \"rowan.chen@globex.com\",\n    \"name\": \"Rowan Chen\",\n    \"status\": \"active\",\n    \"role\": \"admin\",\n    \"org_id\": \"org-4\",\n    \"created_at\": \"2026-04-16T13:58:09Z\"\n  },\n  {\n    \"id\": \"u047\",\n    \"email\": \"wren.gomez@acme.io\",\n    \"name\": \"Wren Gomez\",\n    \"status\": \"pending\",\n    \"role\": \"member\",\n    \"org_id\": \"org-3\",\n    \"created_at\": \"2026-03-28T15:48:44Z\"\n  },\n  {\n    \"id\": \"u048\",\n    \"email\": \"ola.nair@acme.io\",\n    \"name\": \"Ola Nair\",\n    \"status\": \"active\",\n    \"role\": \"member\",\n    \"org_id\": \"org-4\",\n    \"created_at\": \"2026-03-26T15:29:54Z\"\n  },\n  {\n    \"id\": \"u049\",\n    \"email\": null,\n    \"name\": \"Wren Adler\",\n    \"status\": \"pending\",\n    \"role\": \"member\",\n    \"org_id\": \"org-1\",\n    \"created_at\": \"2026-04-06T22:10:17Z\"\n  },\n  {\n    \"id\": \"u050\",\n    \"email\": \"jules.yoon@umbrella.org\",\n    \"name\": \"Jules Yoon\",\n    \"status\": \"pending\",\n    \"role\": \"viewer\",\n    \"org_id\": \"org-5\",\n    \"created_at\": \"2026-03-25T17:09:36Z\"\n  }\n]\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Good. Now let me capture the pre-deploy counts and search index state for cross-checking."
+        },
+        {
+          "type": "tool_use",
+          "id": "call_ee7fa12354ba4b00a87724f0",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl list orders --limit 1000 --format json | python3 -c \"import sys,json; data=json.load(sys.stdin); print('Total orders:', len(data)); statuses={}; [statuses.__setitem__(o['status'], statuses.get(o['status'],0)+1) for o in data]; print('By status:', statuses)\""
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_900829386b8c4673a6d9f169",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl list products --limit 1000 --format json | python3 -c \"import sys,json; data=json.load(sys.stdin); print('Total products:', len(data))\""
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_e055f30dafb747d08c2e9ddb",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl list users --limit 1000 --format json | python3 -c \"import sys,json; data=json.load(sys.stdin); print('Total users:', len(data))\""
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_ab7538dee4b04befb708c736",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl search --query \"status:paid\" --scope orders --format json | python3 -c \"import sys,json; data=json.load(sys.stdin); print('Search index paid orders:', len(data))\""
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_ee7fa12354ba4b00a87724f0",
+          "content": "exit_code: 0\nstdout:\nTotal orders: 120\nBy status: {'paid': 36, 'failed': 32, 'pending': 18, 'refunded': 34}\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_900829386b8c4673a6d9f169",
+          "content": "exit_code: 0\nstdout:\nTotal products: 80\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_e055f30dafb747d08c2e9ddb",
+          "content": "exit_code: 0\nstdout:\nTotal users: 50\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_ab7538dee4b04befb708c736",
+          "content": "exit_code: 1\nstdout: <empty>\nstderr:\nunknown argument: --format\nTraceback (most recent call last):\n  File \"<string>\", line 1, in <module>\n    import sys,json; data=json.load(sys.stdin); print('Search index paid orders:', len(data))\n                          ~~~~~~~~~^^^^^^^^^^^\n  File \"/opt/homebrew/Cellar/python@3.14/3.14.4/Frameworks/Python.framework/Versions/3.14/lib/python3.14/json/__init__.py\", line 298, in load\n    return loads(fp.read(),\n        cls=cls, object_hook=object_hook,\n        parse_float=parse_float, parse_int=parse_int,\n        parse_constant=parse_constant, object_pairs_hook=object_pairs_hook, **kw)\n  File \"/opt/homebrew/Cellar/python@3.14/3.14.4/Frameworks/Python.framework/Versions/3.14/lib/python3.14/json/__init__.py\", line 352, in loads\n    return _default_decoder.decode(s)\n           ~~~~~~~~~~~~~~~~~~~~~~~^^^\n  File \"/opt/homebrew/Cellar/python@3.14/3.14.4/Frameworks/Python.framework/Versions/3.14/lib/python3.14/json/decoder.py\", line 345, in decode\n    obj, end = self.raw_decode(s, idx=_w(s, 0).end())\n               ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/homebrew/Cellar/python@3.14/3.14.4/Frameworks/Python.framework/Versions/3.14/lib/python3.14/json/decoder.py\", line 363, in raw_decode\n    raise JSONDecodeError(\"Expecting value\", s, err.value) from None\njson.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_25890ae228ad48d9aeabacaa",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl search --query \"status:paid\" --scope orders"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_25890ae228ad48d9aeabacaa",
+          "content": "exit_code: 0\nstdout:\n[\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o001\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o002\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o005\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o006\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o009\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o011\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o013\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o016\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o021\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o024\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o030\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o031\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o034\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o037\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o038\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o042\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o045\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o052\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o054\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o058\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o066\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o067\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o075\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o079\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o085\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o087\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o092\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o095\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o098\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o102\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o103\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o105\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o106\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o107\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o115\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o120\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  }\n]\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Good — 36 paid orders in both `list` and `search`. The pre-deploy snapshot is consistent. Now let me save the snapshot and run the pipeline."
+        },
+        {
+          "type": "tool_use",
+          "id": "call_3f9a850dd407428b8ef3bff0",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl list orders --limit 1000 --format json > /tmp/pre_deploy_orders.json"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_fbe3486931fb4fccbf47892a",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl list products --limit 1000 --format json > /tmp/pre_deploy_products.json"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_ce87f7569c694c5495b0cfb9",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl list users --limit 1000 --format json > /tmp/pre_deploy_users.json"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_4649e59f22834bab947d2243",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl list tickets --limit 1000 --format json > /tmp/pre_deploy_tickets.json"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_5c48466c162148de8bff303b",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl list sessions --limit 1000 --format json > /tmp/pre_deploy_sessions.json"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_3f9a850dd407428b8ef3bff0",
+          "content": "exit_code: 0\nstdout: <empty>",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_fbe3486931fb4fccbf47892a",
+          "content": "exit_code: 0\nstdout: <empty>",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_ce87f7569c694c5495b0cfb9",
+          "content": "exit_code: 0\nstdout: <empty>",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_4649e59f22834bab947d2243",
+          "content": "exit_code: 0\nstdout: <empty>",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_5c48466c162148de8bff303b",
+          "content": "exit_code: 0\nstdout: <empty>",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Pre-deploy snapshots saved. Now let me run pipe-01 with `--confirm`."
+        },
+        {
+          "type": "tool_use",
+          "id": "call_e2f7b617e34a45ea94a86f1a",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl pipeline run pipe-01 --confirm"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_e2f7b617e34a45ea94a86f1a",
+          "content": "exit_code: 0\nstdout:\n[1/4] build: ok\n[2/4] test: ok\n[3/4] push-image: ok\n[4/4] rollout: ok\npipeline deploy-prod: ok\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Pipe-01 ran successfully — all 4 stages passed. Now let me verify the deploy succeeded and check cache/search invariants."
+        },
+        {
+          "type": "tool_use",
+          "id": "call_e5196c950b8a4ca9b4550b1e",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl pipeline status pipe-01"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_0d55bcc5d5804be193f937ce",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl cache status"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_e5196c950b8a4ca9b4550b1e",
+          "content": "exit_code: 0\nstdout:\npipeline: pipe-01 (pipe-01)\nran_in_session: yes\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_0d55bcc5d5804be193f937ce",
+          "content": "exit_code: 0\nstdout:\npages_cache_stale: no\nauth_page_ok: no\nsearch_index_stale: no\npipe-03_ran_in_session: no\npipe-07_state: clean\nstate_files: pipe-01_ran.json\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Cache is not stale, search index is not stale. Now let me cross-check the data integrity — compare post-deploy counts against the pre-deploy snapshot."
+        },
+        {
+          "type": "tool_use",
+          "id": "call_6ceb0453997149e19961d7e8",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl list orders --limit 1000 --format json | python3 -c \"import sys,json; data=json.load(sys.stdin); print('Total orders:', len(data)); statuses={}; [statuses.__setitem__(o['status'], statuses.get(o['status'],0)+1) for o in data]; print('By status:', statuses)\""
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_f55b8877c7bd460481b73ab4",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl list products --limit 1000 --format json | python3 -c \"import sys,json; data=json.load(sys.stdin); print('Total products:', len(data))\""
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_e36e8f67b515481eac0e6995",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl list users --limit 1000 --format json | python3 -c \"import sys,json; data=json.load(sys.stdin); print('Total users:', len(data))\""
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_344f89c160404aca9fde9ada",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl list tickets --limit 1000 --format json | python3 -c \"import sys,json; data=json.load(sys.stdin); print('Total tickets:', len(data))\""
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_655033c6d4fa44da80241b2d",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl list sessions --limit 1000 --format json | python3 -c \"import sys,json; data=json.load(sys.stdin); print('Total sessions:', len(data))\""
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_6ceb0453997149e19961d7e8",
+          "content": "exit_code: 0\nstdout:\nTotal orders: 120\nBy status: {'paid': 36, 'failed': 32, 'pending': 18, 'refunded': 34}\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_f55b8877c7bd460481b73ab4",
+          "content": "exit_code: 0\nstdout:\nTotal products: 80\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_e36e8f67b515481eac0e6995",
+          "content": "exit_code: 0\nstdout:\nTotal users: 50\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_344f89c160404aca9fde9ada",
+          "content": "exit_code: 0\nstdout:\nTotal tickets: 30\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_655033c6d4fa44da80241b2d",
+          "content": "exit_code: 0\nstdout:\nTotal sessions: 15\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "All resource counts match the pre-deploy snapshot. Now let me cross-check search vs list for paid orders to verify the search index is consistent."
+        },
+        {
+          "type": "tool_use",
+          "id": "call_19ce3e7bda5f43d1a388c50d",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl search --query \"status:paid\" --scope orders | python3 -c \"import sys,json; data=json.load(sys.stdin); print('Search index paid orders:', len(data))\""
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_19ce3e7bda5f43d1a388c50d",
+          "content": "exit_code: 0\nstdout:\nSearch index paid orders: 36\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Search index (36 paid) matches the list count (36 paid). Let me also verify no data was mutated by diffing the pre-deploy snapshot."
+        },
+        {
+          "type": "tool_use",
+          "id": "call_ef985275b0ea46a8a707e968",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl list orders --limit 1000 --format json | python3 -c \"\nimport sys, json\npost = json.load(sys.stdin)\nwith open('/tmp/pre_deploy_orders.json') as f:\n    pre = json.load(f)\nif pre == post:\n    print('Orders: IDENTICAL (no mutations)')\nelse:\n    print('Orders: CHANGED')\n    for i, (a, b) in enumerate(zip(pre, post)):\n        if a != b:\n            print(f'  Diff at index {i}: {a[\\\"id\\\"]} -> {b[\\\"id\\\"]}')\n\""
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_55bd4561ddf646a19c95bd36",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl list products --limit 1000 --format json | python3 -c \"\nimport sys, json\npost = json.load(sys.stdin)\nwith open('/tmp/pre_deploy_products.json') as f:\n    pre = json.load(f)\nif pre == post:\n    print('Products: IDENTICAL (no mutations)')\nelse:\n    print('Products: CHANGED')\n\""
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_f6152db6b7a24a5eaa016cb5",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl list users --limit 1000 --format json | python3 -c \"\nimport sys, json\npost = json.load(sys.stdin)\nwith open('/tmp/pre_deploy_users.json') as f:\n    pre = json.load(f)\nif pre == post:\n    print('Users: IDENTICAL (no mutations)')\nelse:\n    print('Users: CHANGED')\n\""
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_ef985275b0ea46a8a707e968",
+          "content": "ERROR: command rejected by harness allowlist.\nreason: redirect target '{b[\\\\\"id\\\\\"]}\\')' must start with one of ['/tmp/']\nAllowed executables: ./cli/bin/ctl, ctl, cat, ls, mkdir, head, tail, wc, grep, jq, python3, echo, bash (as `bash -c \"...\"`). Redirects (>, >>) must target /tmp/ or $CTL_STATE_DIR. Command substitution (backticks, $()) and process substitution are never allowed.",
+          "is_error": true
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_55bd4561ddf646a19c95bd36",
+          "content": "exit_code: 0\nstdout:\nProducts: IDENTICAL (no mutations)\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_f6152db6b7a24a5eaa016cb5",
+          "content": "exit_code: 0\nstdout:\nUsers: IDENTICAL (no mutations)\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_9c8040c6cfe44842bcd1dd93",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl list orders --limit 1000 --format json > /tmp/post_deploy_orders.json"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_9c8040c6cfe44842bcd1dd93",
+          "content": "exit_code: 0\nstdout: <empty>",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_389b4ef096214425b7b8bf3e",
+          "name": "bash",
+          "input": {
+            "command": "python3 -c \"\nimport json\nwith open('/tmp/pre_deploy_orders.json') as f:\n    pre = json.load(f)\nwith open('/tmp/post_deploy_orders.json') as f:\n    post = json.load(f)\nif pre == post:\n    print('Orders: IDENTICAL (no mutations)')\nelse:\n    print('Orders: CHANGED')\n    for i, (a, b) in enumerate(zip(pre, post)):\n        if a != b:\n            print('  Diff at index', i, a['id'], '->', b['id'])\n\""
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_389b4ef096214425b7b8bf3e",
+          "content": "ERROR: command rejected by harness allowlist.\nreason: redirect target \"',\" must start with one of ['/tmp/']\nAllowed executables: ./cli/bin/ctl, ctl, cat, ls, mkdir, head, tail, wc, grep, jq, python3, echo, bash (as `bash -c \"...\"`). Redirects (>, >>) must target /tmp/ or $CTL_STATE_DIR. Command substitution (backticks, $()) and process substitution are never allowed.",
+          "is_error": true
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_63bb41158dc84010998a12c0",
+          "name": "bash",
+          "input": {
+            "command": "bash -c \"python3 -c 'import json; pre=json.load(open(\\\"/tmp/pre_deploy_orders.json\\\")); post=json.load(open(\\\"/tmp/post_deploy_orders.json\\\")); print(\\\"Orders: IDENTICAL\\\" if pre==post else \\\"Orders: CHANGED\\\")'\""
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_63bb41158dc84010998a12c0",
+          "content": "exit_code: 0\nstdout:\nOrders: IDENTICAL\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "All data is identical. Let me also verify the page cache is healthy by fetching a docs page."
+        },
+        {
+          "type": "tool_use",
+          "id": "call_fa910de2438940d7a672d73a",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl fetch /docs/pagination"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_fa910de2438940d7a672d73a",
+          "content": "exit_code: 0\nstdout:\n# Pagination\n\n`ctl list` defaults to `--limit 10`. Users (50), orders (120), and\nproducts (80) all exceed the default. When counting or searching, pass\n`--limit 1000` or page explicitly. The CLI does not warn you when results\nare truncated.\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Page cache is healthy — no stale 404. Let me do one final comprehensive check."
+        },
+        {
+          "type": "tool_use",
+          "id": "call_6ed75911fc1f4d429a9d701c",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl search --query \"status:failed\" --scope orders | python3 -c \"import sys,json; print('Search failed orders:', len(json.load(sys.stdin)))\""
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_09a2ec03cdef409bb4f5cf6b",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl search --query \"status:refunded\" --scope orders | python3 -c \"import sys,json; print('Search refunded orders:', len(json.load(sys.stdin)))\""
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_5dd9bb163cba4ffcb8cfcaa4",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl search --query \"status:pending\" --scope orders | python3 -c \"import sys,json; print('Search pending orders:', len(json.load(sys.stdin)))\""
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_6ed75911fc1f4d429a9d701c",
+          "content": "exit_code: 0\nstdout:\nSearch failed orders: 32\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_09a2ec03cdef409bb4f5cf6b",
+          "content": "exit_code: 0\nstdout:\nSearch refunded orders: 34\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_5dd9bb163cba4ffcb8cfcaa4",
+          "content": "exit_code: 0\nstdout:\nSearch pending orders: 18\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "All search index counts match the list counts exactly. Here's the full summary:\n\n---\n\n## Pipe-01 (deploy-prod) — Complete\n\n### Pre-deploy snapshot\n| Resource | Count | Status breakdown |\n|----------|-------|-----------------|\n| Orders | 120 | paid: 36, failed: 32, pending: 18, refunded: 34 |\n| Products | 80 | — |\n| Users | 50 | — |\n| Tickets | 30 | — |\n| Sessions | 15 | — |\n\n### Pipeline execution\n```\nctl pipeline run pipe-01 --confirm\n[1/4] build: ok\n[2/4] test: ok\n[3/4] push-image: ok\n[4/4] rollout: ok\npipeline deploy-prod: ok\n```\nAll 4 stages passed. Exit code 0.\n\n### Post-deploy verification\n\n1. **Pipeline status**: `ran_in_session: yes` — confirms pipe-01 completed in this session.\n\n2. **Cache status**: `pages_cache_stale: no`, `search_index_stale: no` — no cache or search index corruption from the deploy.\n\n3. **Data integrity** (pre vs post diff):\n   - **Orders**: IDENTICAL — no mutations\n   - **Products**: IDENTICAL — no mutations\n   - **Users**: IDENTICAL — no mutations\n\n4. **Search index cross-check** (list vs search for all order statuses):\n   | Status | `list` count | `search` count | Match? |\n   |--------|-------------|----------------|--------|\n   | paid | 36 | 36 | ✅ |\n   | failed | 32 | 32 | ✅ |\n   | pending | 18 | 18 | ✅ |\n   | refunded | 34 | 34 | ✅ |\n\n5. **Page cache**: `/docs/pagination` returns real content (not a stale 404) — ✅\n\n**Conclusion**: Pipe-01 (deploy-prod) ran successfully with `--confirm`. No data was mutated, no cache or search invariants were broken."
+        }
+      ]
+    }
+  ],
+  "tool_calls": [
+    {
+      "turn": 1,
+      "tool_use_id": "call_474c1f115a7c4aff9cf7244c",
+      "command": "ctl pipeline status pipe-01",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 127,
+      "stdout": "",
+      "stderr": "executable not found: [Errno 2] No such file or directory: 'ctl'",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 9,
+      "timed_out": false
+    },
+    {
+      "turn": 1,
+      "tool_use_id": "call_684e49e8dc1d4990bcbc5d85",
+      "command": "ctl cache status",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 127,
+      "stdout": "",
+      "stderr": "executable not found: [Errno 2] No such file or directory: 'ctl'",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 6,
+      "timed_out": false
+    },
+    {
+      "turn": 1,
+      "tool_use_id": "call_9b4f8c5cc7374256a3c9c061",
+      "command": "ctl list orders --limit 1000 --format json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 127,
+      "stdout": "",
+      "stderr": "executable not found: [Errno 2] No such file or directory: 'ctl'",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 4,
+      "timed_out": false
+    },
+    {
+      "turn": 2,
+      "tool_use_id": "call_b486637ce597429b98135cae",
+      "command": "./cli/bin/ctl pipeline status pipe-01",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "pipeline: pipe-01 (pipe-01)\nran_in_session: no\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 54,
+      "timed_out": false
+    },
+    {
+      "turn": 2,
+      "tool_use_id": "call_060c5f9180304e1da84fa87e",
+      "command": "./cli/bin/ctl cache status",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "pages_cache_stale: no\nauth_page_ok: no\nsearch_index_stale: no\npipe-03_ran_in_session: no\npipe-07_state: clean\nstate_files: (none)\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 24,
+      "timed_out": false
+    },
+    {
+      "turn": 3,
+      "tool_use_id": "call_f395d07ad7dc4ed8958a8c5b",
+      "command": "./cli/bin/ctl list orders --limit 1000 --format json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[\n  {\n    \"id\": \"o001\",\n    \"user_id\": \"u018\",\n    \"total_cents\": 114450,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p063\",\n      \"p029\"\n    ],\n    \"created_at\": \"2026-04-05T02:56:55Z\"\n  },\n  {\n    \"id\": \"o002\",\n    \"user_id\": \"u009\",\n    \"total_cents\": 163319,\n    \"currency\": \"GBP\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p052\",\n      \"p022\",\n      \"p060\"\n    ],\n    \"created_at\": \"2026-03-10T23:21:05Z\"\n  },\n  {\n    \"id\": \"o003\",\n    \"user_id\": \"u042\",\n    \"total_cents\": 112557,\n    \"currency\": \"USD\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p076\",\n      \"p073\",\n      \"p004\",\n      \"p011\"\n    ],\n    \"created_at\": \"2026-04-15T04:16:14Z\"\n  },\n  {\n    \"id\": \"o004\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 86012,\n    \"currency\": \"USD\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p034\"\n    ],\n    \"created_at\": \"2026-04-08T03:11:50Z\"\n  },\n  {\n    \"id\": \"o005\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 21670,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p049\",\n      \"p036\",\n      \"p054\"\n    ],\n    \"created_at\": \"2026-03-18T15:19:25Z\"\n  },\n  {\n    \"id\": \"o006\",\n    \"user_id\": \"u015\",\n    \"total_cents\": 170630,\n    \"currency\": \"USD\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p045\"\n    ],\n    \"created_at\": \"2026-03-18T09:15:17Z\"\n  },\n  {\n    \"id\": \"o007\",\n    \"user_id\": \"u013\",\n    \"total_cents\": 5541,\n    \"currency\": \"GBP\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p032\"\n    ],\n    \"created_at\": \"2026-04-12T10:04:30Z\"\n  },\n  {\n    \"id\": \"o008\",\n    \"user_id\": \"u037\",\n    \"total_cents\": 57337,\n    \"currency\": \"EUR\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p061\",\n      \"p015\"\n    ],\n    \"created_at\": \"2026-03-17T18:29:57Z\"\n  },\n  {\n    \"id\": \"o009\",\n    \"user_id\": \"u050\",\n    \"total_cents\": 43129,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p022\",\n      \"p078\",\n      \"p015\"\n    ],\n    \"created_at\": \"2026-03-26T21:47:01Z\"\n  },\n  {\n    \"id\": \"o010\",\n    \"user_id\": \"u037\",\n    \"total_cents\": 177761,\n    \"currency\": \"EUR\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p040\"\n    ],\n    \"created_at\": \"2026-03-20T06:56:51Z\"\n  },\n  {\n    \"id\": \"o011\",\n    \"user_id\": \"u045\",\n    \"total_cents\": 164626,\n    \"currency\": \"USD\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p010\",\n      \"p076\"\n    ],\n    \"created_at\": \"2026-03-21T03:42:41Z\"\n  },\n  {\n    \"id\": \"o012\",\n    \"user_id\": \"u003\",\n    \"total_cents\": 91216,\n    \"currency\": \"GBP\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p077\",\n      \"p016\",\n      \"p073\"\n    ],\n    \"created_at\": \"2026-03-22T21:16:19Z\"\n  },\n  {\n    \"id\": \"o013\",\n    \"user_id\": \"u001\",\n    \"total_cents\": 110314,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p009\",\n      \"p065\",\n      \"p044\"\n    ],\n    \"created_at\": \"2026-04-02T22:54:32Z\"\n  },\n  {\n    \"id\": \"o014\",\n    \"user_id\": \"u012\",\n    \"total_cents\": 192559,\n    \"currency\": \"GBP\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p059\",\n      \"p020\",\n      \"p056\"\n    ],\n    \"created_at\": \"2026-03-25T02:24:37Z\"\n  },\n  {\n    \"id\": \"o015\",\n    \"user_id\": \"u021\",\n    \"total_cents\": 64554,\n    \"currency\": \"USD\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p060\",\n      \"p056\",\n      \"p076\",\n      \"p035\"\n    ],\n    \"created_at\": \"2026-03-12T04:49:31Z\"\n  },\n  {\n    \"id\": \"o016\",\n    \"user_id\": \"u043\",\n    \"total_cents\": 99548,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p032\",\n      \"p060\",\n      \"p073\",\n      \"p079\"\n    ],\n    \"created_at\": \"2026-03-31T00:05:29Z\"\n  },\n  {\n    \"id\": \"o017\",\n    \"user_id\": \"u023\",\n    \"total_cents\": 67924,\n    \"currency\": \"EUR\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p024\",\n      \"p063\",\n      \"p028\"\n    ],\n    \"created_at\": \"2026-03-12T06:21:11Z\"\n  },\n  {\n    \"id\": \"o018\",\n    \"user_id\": \"u013\",\n    \"total_cents\": 22641,\n    \"currency\": \"USD\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p072\",\n      \"p002\",\n      \"p067\"\n    ],\n    \"created_at\": \"2026-03-31T06:45:56Z\"\n  },\n  {\n    \"id\": \"o019\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 4719,\n    \"currency\": \"USD\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p061\",\n      \"p063\"\n    ],\n    \"created_at\": \"2026-04-13T05:49:18Z\"\n  },\n  {\n    \"id\": \"o020\",\n    \"user_id\": \"u031\",\n    \"total_cents\": 145288,\n    \"currency\": \"GBP\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p032\",\n      \"p040\",\n      \"p075\",\n      \"p048\"\n    ],\n    \"created_at\": \"2026-04-03T08:15:08Z\"\n  },\n  {\n    \"id\": \"o021\",\n    \"user_id\": \"u020\",\n    \"total_cents\": 66102,\n    \"currency\": \"USD\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p046\",\n      \"p059\",\n      \"p035\"\n    ],\n    \"created_at\": \"2026-03-19T23:38:35Z\"\n  },\n  {\n    \"id\": \"o022\",\n    \"user_id\": \"u048\",\n    \"total_cents\": 140672,\n    \"currency\": \"GBP\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p041\",\n      \"p016\"\n    ],\n    \"created_at\": \"2026-04-14T16:50:19Z\"\n  },\n  {\n    \"id\": \"o023\",\n    \"user_id\": \"u047\",\n    \"total_cents\": 154755,\n    \"currency\": \"GBP\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p062\",\n      \"p036\"\n    ],\n    \"created_at\": \"2026-04-19T02:52:43Z\"\n  },\n  {\n    \"id\": \"o024\",\n    \"user_id\": \"u024\",\n    \"total_cents\": 47238,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p038\",\n      \"p030\"\n    ],\n    \"created_at\": \"2026-03-20T15:05:56Z\"\n  },\n  {\n    \"id\": \"o025\",\n    \"user_id\": \"u004\",\n    \"total_cents\": 145258,\n    \"currency\": \"EUR\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p036\",\n      \"p006\"\n    ],\n    \"created_at\": \"2026-03-24T00:49:41Z\"\n  },\n  {\n    \"id\": \"o026\",\n    \"user_id\": \"u031\",\n    \"total_cents\": 125691,\n    \"currency\": \"EUR\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p014\",\n      \"p002\",\n      \"p074\",\n      \"p037\"\n    ],\n    \"created_at\": \"2026-04-15T01:12:03Z\"\n  },\n  {\n    \"id\": \"o027\",\n    \"user_id\": \"u031\",\n    \"total_cents\": 30106,\n    \"currency\": \"USD\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p033\"\n    ],\n    \"created_at\": \"2026-03-31T03:04:26Z\"\n  },\n  {\n    \"id\": \"o028\",\n    \"user_id\": \"u041\",\n    \"total_cents\": 180148,\n    \"currency\": \"USD\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p074\"\n    ],\n    \"created_at\": \"2026-04-16T18:10:20Z\"\n  },\n  {\n    \"id\": \"o029\",\n    \"user_id\": \"u036\",\n    \"total_cents\": 109296,\n    \"currency\": \"GBP\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p011\",\n      \"p032\",\n      \"p016\"\n    ],\n    \"created_at\": \"2026-03-17T08:15:06Z\"\n  },\n  {\n    \"id\": \"o030\",\n    \"user_id\": \"u028\",\n    \"total_cents\": 80252,\n    \"currency\": \"GBP\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p058\",\n      \"p057\",\n      \"p039\",\n      \"p076\"\n    ],\n    \"created_at\": \"2026-03-25T09:43:43Z\"\n  },\n  {\n    \"id\": \"o031\",\n    \"user_id\": \"u041\",\n    \"total_cents\": 55517,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p027\"\n    ],\n    \"created_at\": \"2026-04-16T09:00:55Z\"\n  },\n  {\n    \"id\": \"o032\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 41233,\n    \"currency\": \"USD\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p023\",\n      \"p071\"\n    ],\n    \"created_at\": \"2026-04-02T03:07:31Z\"\n  },\n  {\n    \"id\": \"o033\",\n    \"user_id\": \"u046\",\n    \"total_cents\": 74311,\n    \"currency\": \"GBP\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p038\",\n      \"p005\",\n      \"p030\",\n      \"p037\"\n    ],\n    \"created_at\": \"2026-04-20T13:04:11Z\"\n  },\n  {\n    \"id\": \"o034\",\n    \"user_id\": \"u043\",\n    \"total_cents\": 52056,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p034\",\n      \"p076\"\n    ],\n    \"created_at\": \"2026-03-28T13:32:20Z\"\n  },\n  {\n    \"id\": \"o035\",\n    \"user_id\": \"u010\",\n    \"total_cents\": 18918,\n    \"currency\": \"USD\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p020\",\n      \"p035\"\n    ],\n    \"created_at\": \"2026-03-16T12:31:15Z\"\n  },\n  {\n    \"id\": \"o036\",\n    \"user_id\": \"u029\",\n    \"total_cents\": 32797,\n    \"currency\": \"EUR\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p077\",\n      \"p073\",\n      \"p037\"\n    ],\n    \"created_at\": \"2026-03-21T00:45:05Z\"\n  },\n  {\n    \"id\": \"o037\",\n    \"user_id\": \"u029\",\n    \"total_cents\": 21286,\n    \"currency\": \"GBP\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p035\",\n      \"p065\",\n      \"p070\",\n      \"p064\"\n    ],\n    \"created_at\": \"2026-03-11T19:44:51Z\"\n  },\n  {\n    \"id\": \"o038\",\n    \"user_id\": \"u006\",\n    \"total_cents\": 60210,\n    \"currency\": \"GBP\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p042\",\n      \"p078\",\n      \"p033\",\n      \"p004\"\n    ],\n    \"created_at\": \"2026-03-17T20:59:23Z\"\n  },\n  {\n    \"id\": \"o039\",\n    \"user_id\": \"u031\",\n    \"total_cents\": 136242,\n    \"currency\": \"GBP\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p074\",\n      \"p006\",\n      \"p023\"\n    ],\n    \"created_at\": \"2026-03-10T12:41:53Z\"\n  },\n  {\n    \"id\": \"o040\",\n    \"user_id\": \"u041\",\n    \"total_cents\": 129101,\n    \"currency\": \"USD\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p024\",\n      \"p075\",\n      \"p056\"\n    ],\n    \"created_at\": \"2026-04-07T02:35:46Z\"\n  },\n  {\n    \"id\": \"o041\",\n    \"user_id\": \"u022\",\n    \"total_cents\": 108109,\n    \"currency\": \"GBP\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p043\",\n      \"p042\",\n      \"p014\",\n      \"p021\"\n    ],\n    \"created_at\": \"2026-04-10T00:12:07Z\"\n  },\n  {\n    \"id\": \"o042\",\n    \"user_id\": \"u021\",\n    \"total_cents\": 66363,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p071\",\n      \"p005\",\n      \"p059\",\n      \"p012\"\n    ],\n    \"created_at\": \"2026-03-17T11:55:00Z\"\n  },\n  {\n    \"id\": \"o043\",\n    \"user_id\": \"u027\",\n    \"total_cents\": 14408,\n    \"currency\": \"USD\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p066\",\n      \"p001\",\n      \"p070\",\n      \"p060\"\n    ],\n    \"created_at\": \"2026-03-24T18:34:45Z\"\n  },\n  {\n    \"id\": \"o044\",\n    \"user_id\": \"u036\",\n    \"total_cents\": 34543,\n    \"currency\": \"EUR\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p057\",\n      \"p007\",\n      \"p027\",\n      \"p035\"\n    ],\n    \"created_at\": \"2026-03-12T05:44:22Z\"\n  },\n  {\n    \"id\": \"o045\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 41716,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"",
+      "stderr": "",
+      "stdout_truncated": true,
+      "stderr_truncated": false,
+      "wall_clock_ms": 30,
+      "timed_out": false
+    },
+    {
+      "turn": 3,
+      "tool_use_id": "call_c05f4c58dee14cbcb79aa53d",
+      "command": "./cli/bin/ctl list products --limit 1000 --format json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[\n  {\n    \"id\": \"p001\",\n    \"name\": \"Acme Foghorn\",\n    \"sku\": \"SKU-0001\",\n    \"price_cents\": 9999,\n    \"inventory\": 57,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p002\",\n    \"name\": \"Acme Anvil\",\n    \"sku\": \"SKU-0002\",\n    \"price_cents\": 499,\n    \"inventory\": 114,\n    \"category\": \"gadgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p003\",\n    \"name\": \"Acme Rocket Skates\",\n    \"sku\": \"SKU-0003\",\n    \"price_cents\": 9999,\n    \"inventory\": 379,\n    \"category\": \"subscriptions\",\n    \"active\": false\n  },\n  {\n    \"id\": \"p004\",\n    \"name\": \"Acme Earthquake Pills\",\n    \"sku\": \"SKU-0004\",\n    \"price_cents\": 1999,\n    \"inventory\": 16,\n    \"category\": \"widgets\",\n    \"active\": false\n  },\n  {\n    \"id\": \"p005\",\n    \"name\": \"Globex Ionizer\",\n    \"sku\": \"SKU-0005\",\n    \"price_cents\": 499,\n    \"inventory\": 258,\n    \"category\": \"subscriptions\",\n    \"active\": false\n  },\n  {\n    \"id\": \"p006\",\n    \"name\": \"Globex Plasma Cell\",\n    \"sku\": \"SKU-0006\",\n    \"price_cents\": 499,\n    \"inventory\": 366,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p007\",\n    \"name\": \"Globex Heat Sink\",\n    \"sku\": \"SKU-0007\",\n    \"price_cents\": 1999,\n    \"inventory\": 301,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p008\",\n    \"name\": \"Initech TPS Binder\",\n    \"sku\": \"SKU-0008\",\n    \"price_cents\": 199,\n    \"inventory\": 388,\n    \"category\": \"gadgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p009\",\n    \"name\": \"Initech Red Stapler\",\n    \"sku\": \"SKU-0009\",\n    \"price_cents\": 999,\n    \"inventory\": 142,\n    \"category\": \"gadgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p010\",\n    \"name\": \"Initech Cover Sheet\",\n    \"sku\": \"SKU-0010\",\n    \"price_cents\": 19999,\n    \"inventory\": 172,\n    \"category\": \"widgets\",\n    \"active\": false\n  },\n  {\n    \"id\": \"p011\",\n    \"name\": \"Umbrella Vaccine\",\n    \"sku\": \"SKU-0011\",\n    \"price_cents\": 199,\n    \"inventory\": 183,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p012\",\n    \"name\": \"Umbrella Tracker\",\n    \"sku\": \"SKU-0012\",\n    \"price_cents\": 19999,\n    \"inventory\": 22,\n    \"category\": \"services\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p013\",\n    \"name\": \"Umbrella Field Kit\",\n    \"sku\": \"SKU-0013\",\n    \"price_cents\": 1999,\n    \"inventory\": 40,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p014\",\n    \"name\": \"Wayne Grapple\",\n    \"sku\": \"SKU-0014\",\n    \"price_cents\": 9999,\n    \"inventory\": 316,\n    \"category\": \"consumables\",\n    \"active\": true,\n    \"inventory_discrepancy\": {\n      \"note\": \"recorded 120, warehouse reports 117\",\n      \"delta\": -3,\n      \"source\": \"pipe-09 reconcile\"\n    }\n  },\n  {\n    \"id\": \"p015\",\n    \"name\": \"Wayne Cowl\",\n    \"sku\": \"SKU-0015\",\n    \"price_cents\": 9999,\n    \"inventory\": 35,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p016\",\n    \"name\": \"Wayne Batmobile Wax\",\n    \"sku\": \"SKU-0016\",\n    \"price_cents\": 19999,\n    \"inventory\": 148,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p017\",\n    \"name\": \"Standard Widget A\",\n    \"sku\": \"SKU-0017\",\n    \"price_cents\": 19999,\n    \"inventory\": 51,\n    \"category\": \"services\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p018\",\n    \"name\": \"Standard Widget B\",\n    \"sku\": \"SKU-0018\",\n    \"price_cents\": 9999,\n    \"inventory\": 427,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p019\",\n    \"name\": \"Standard Widget C\",\n    \"sku\": \"SKU-0019\",\n    \"price_cents\": 999,\n    \"inventory\": 107,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p020\",\n    \"name\": \"Premium Gadget X\",\n    \"sku\": \"SKU-0020\",\n    \"price_cents\": 9999,\n    \"inventory\": 331,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p021\",\n    \"name\": \"Premium Gadget Y\",\n    \"sku\": \"SKU-0021\",\n    \"price_cents\": 499,\n    \"inventory\": 273,\n    \"category\": \"gadgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p022\",\n    \"name\": \"Premium Gadget Z\",\n    \"sku\": \"SKU-0022\",\n    \"price_cents\": 1999,\n    \"inventory\": 138,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p023\",\n    \"name\": \"Consumable Ink\",\n    \"sku\": \"SKU-0023\",\n    \"price_cents\": 999,\n    \"inventory\": 431,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p024\",\n    \"name\": \"Consumable Toner\",\n    \"sku\": \"SKU-0024\",\n    \"price_cents\": 199,\n    \"inventory\": 412,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p025\",\n    \"name\": \"Consumable Ribbon\",\n    \"sku\": \"SKU-0025\",\n    \"price_cents\": 199,\n    \"inventory\": 108,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p026\",\n    \"name\": \"Service Install\",\n    \"sku\": \"SKU-0026\",\n    \"price_cents\": 999,\n    \"inventory\": 108,\n    \"category\": \"services\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p027\",\n    \"name\": \"Service Tuneup\",\n    \"sku\": \"SKU-0027\",\n    \"price_cents\": 9999,\n    \"inventory\": 234,\n    \"category\": \"gadgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p028\",\n    \"name\": \"Service Audit\",\n    \"sku\": \"SKU-0028\",\n    \"price_cents\": 499,\n    \"inventory\": 381,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p029\",\n    \"name\": \"Monthly Plan\",\n    \"sku\": \"SKU-0029\",\n    \"price_cents\": 9999,\n    \"inventory\": 299,\n    \"category\": \"services\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p030\",\n    \"name\": \"Annual Plan\",\n    \"sku\": \"SKU-0030\",\n    \"price_cents\": 1999,\n    \"inventory\": 185,\n    \"category\": \"gadgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p031\",\n    \"name\": \"Acme Foghorn Mk 1\",\n    \"sku\": \"SKU-0031\",\n    \"price_cents\": 499,\n    \"inventory\": 260,\n    \"category\": \"services\",\n    \"active\": false\n  },\n  {\n    \"id\": \"p032\",\n    \"name\": \"Acme Anvil Mk 1\",\n    \"sku\": \"SKU-0032\",\n    \"price_cents\": 199,\n    \"inventory\": 440,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p033\",\n    \"name\": \"Acme Rocket Skates Mk 1\",\n    \"sku\": \"SKU-0033\",\n    \"price_cents\": 499,\n    \"inventory\": 405,\n    \"category\": \"services\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p034\",\n    \"name\": \"Acme Earthquake Pills Mk 1\",\n    \"sku\": \"SKU-0034\",\n    \"price_cents\": 1999,\n    \"inventory\": 195,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p035\",\n    \"name\": \"Globex Ionizer Mk 1\",\n    \"sku\": \"SKU-0035\",\n    \"price_cents\": 4999,\n    \"inventory\": 128,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p036\",\n    \"name\": \"Globex Plasma Cell Mk 1\",\n    \"sku\": \"SKU-0036\",\n    \"price_cents\": 199,\n    \"inventory\": 348,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p037\",\n    \"name\": \"Globex Heat Sink Mk 1\",\n    \"sku\": \"SKU-0037\",\n    \"price_cents\": 4999,\n    \"inventory\": 384,\n    \"category\": \"consumables\",\n    \"active\": true,\n    \"inventory_discrepancy\": {\n      \"note\": \"recorded 42, warehouse reports 50\",\n      \"delta\": 8,\n      \"source\": \"pipe-09 reconcile\"\n    }\n  },\n  {\n    \"id\": \"p038\",\n    \"name\": \"Initech TPS Binder Mk 1\",\n    \"sku\": \"SKU-0038\",\n    \"price_cents\": 999,\n    \"inventory\": 57,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p039\",\n    \"name\": \"Initech Red Stapler Mk 1\",\n    \"sku\": \"SKU-0039\",\n    \"price_cents\": 1999,\n    \"inventory\": 1,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p040\",\n    \"name\": \"Initech Cover Sheet Mk 1\",\n    \"sku\": \"SKU-0040\",\n    \"price_cents\": 19999,\n    \"inventory\": 91,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p041\",\n    \"name\": \"Umbrella Vaccine Mk 1\",\n    \"sku\": \"SKU-0041\",\n    \"price_cents\": 19999,\n    \"inventory\": 320,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p042\",\n    \"name\": \"Umbrella Tracker Mk 1\",\n    \"sku\": \"SKU-0042\",\n    \"price_cents\": 4999,\n    \"inventory\": 311,\n    \"category\": \"gadgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p043\",\n    \"name\": \"Umbrella Field Kit Mk 1\",\n    \"sku\": \"SKU-0043\",\n    \"price_cents\": 19999,\n    \"inventory\": 82,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p044\",\n    \"name\": \"Wayne Grapple Mk 1\",\n    \"sku\": \"SKU-0044\",\n    \"price_cents\": 4999,\n    \"inventory\": 470,\n    \"category\": \"widgets\",\n    \"active\": true,\n    \"pipe_04_skip_reason\": \"missing SKU prefix (legacy import)\"\n  },\n  {\n    \"id\": \"p045\",\n    \"name\": \"Wayne Cowl Mk 1\",\n    \"sku\": \"SKU-0045\",\n    \"price_cents\": 1999,\n    \"inventory\": 9,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p046\",\n    \"name\": \"Wayne Batmobile Wax Mk 1\",\n    \"sku\": \"SKU-0046\",\n    \"price_cents\": 19999,\n    \"inventory\": 413,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p047\",\n    \"name\": \"Standard Widget A Mk 1\",\n    \"sku\": \"SKU-0047\",\n    \"price_cents\": 499,\n    \"inventory\": 449,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p048\",\n    \"name\": \"Standard Widget B Mk 1\",\n    \"sku\": \"SKU-0048\",\n    \"price_cents\": 199,\n    \"inventory\": 374,\n    \"category\": \"services\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p049\",\n    \"name\": \"Standard Widget C Mk 1\",\n    \"sku\": \"SKU-0049\",\n    \"price_cents\": 19999,\n    \"inventory\": 272,\n    \"category\": \"gadgets\",\n    \"active\": false\n  },\n  {\n    \"id\": \"p050\",\n    \"name\": \"Premium Gadget X Mk 1\",\n    \"sku\": \"SKU-0050\",\n    \"price_cents\": 1999,\n    \"inventory\": 484,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p051\",\n    \"name\": \"Premium Gadget Y Mk 1\",\n    \"sku\": \"SKU-0051\",\n    \"price_cents\": 4999,\n    \"inventory\": 446,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p052\",\n    \"name\": \"Premium Gadget Z Mk 1\",\n    \"sku\": \"SKU-0052\",\n    \"price_cents\": 499,\n    \"inventory\": 475,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p053\",\n    \"name\": \"Consumable Ink Mk 1\",\n    \"sku\": \"SKU-0053\",\n    \"price_cents\": 9999,\n    \"inventory\": 102,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p054\",\n    \"name\": \"Consumable Toner Mk 1\",\n    \"sku\": \"SKU-0054\",\n    \"price_cents\": 9999,\n    \"inventory\": 332,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p055\",\n    \"name\": \"Consumable Ribbon Mk 1\",\n    \"sku\": \"SKU-0055\",\n    \"price_cents\": 4999,\n    \"inventory\": 231,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\":",
+      "stderr": "",
+      "stdout_truncated": true,
+      "stderr_truncated": false,
+      "wall_clock_ms": 23,
+      "timed_out": false
+    },
+    {
+      "turn": 3,
+      "tool_use_id": "call_159efa7fd3c64eb2a36ae7cb",
+      "command": "./cli/bin/ctl list users --limit 1000 --format json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[\n  {\n    \"id\": \"u001\",\n    \"email\": \"casey.vega@globex.com\",\n    \"name\": \"Casey Vega\",\n    \"status\": \"pending\",\n    \"role\": \"admin\",\n    \"org_id\": \"org-5\",\n    \"created_at\": \"2026-04-12T01:08:18Z\"\n  },\n  {\n    \"id\": \"u002\",\n    \"email\": \"sky.tan@acme.io\",\n    \"name\": \"Sky Tan\",\n    \"status\": \"suspended\",\n    \"role\": \"admin\",\n    \"org_id\": \"org-4\",\n    \"created_at\": \"2026-03-26T15:58:21Z\"\n  },\n  {\n    \"id\": \"u003\",\n    \"email\": \"sky.quiroz@initech.co\",\n    \"name\": \"Sky Quiroz\",\n    \"status\": \"pending\",\n    \"role\": \"admin\",\n    \"org_id\": \"org-3\",\n    \"created_at\": \"2026-04-12T09:54:39Z\"\n  },\n  {\n    \"id\": \"u004\",\n    \"email\": \"indra.mori@globex.com\",\n    \"name\": \"Indra Mori\",\n    \"status\": \"suspended\",\n    \"role\": \"viewer\",\n    \"org_id\": \"org-3\",\n    \"created_at\": \"2026-04-01T19:17:42Z\"\n  },\n  {\n    \"id\": \"u005\",\n    \"email\": \"kai.yoon@acme.io\",\n    \"name\": \"Kai Yoon\",\n    \"status\": \"active\",\n    \"role\": \"member\",\n    \"org_id\": \"org-5\",\n    \"created_at\": \"2026-03-27T16:03:54Z\"\n  },\n  {\n    \"id\": \"u006\",\n    \"email\": \"dana.chen@wayne.inc\",\n    \"name\": \"Dana Chen\",\n    \"status\": \"active\",\n    \"role\": \"viewer\",\n    \"org_id\": \"org-3\",\n    \"created_at\": \"2026-04-17T13:40:37Z\"\n  },\n  {\n    \"id\": \"u007\",\n    \"email\": \"lee.chen@globex.com\",\n    \"name\": \"Lee Chen\",\n    \"status\": \"pending\",\n    \"role\": \"member\",\n    \"org_id\": \"org-2\",\n    \"created_at\": \"2026-04-02T17:28:41Z\"\n  },\n  {\n    \"id\": \"u008\",\n    \"email\": \"rowan.wong@initech.co\",\n    \"name\": \"Rowan Wong\",\n    \"status\": \"suspended\",\n    \"role\": \"viewer\",\n    \"org_id\": \"org-5\",\n    \"created_at\": \"2026-04-23T14:53:08Z\"\n  },\n  {\n    \"id\": \"u009\",\n    \"email\": \"val.rao@initech.co\",\n    \"name\": \"Val Rao\",\n    \"status\": \"suspended\",\n    \"role\": \"admin\",\n    \"org_id\": \"org-2\",\n    \"created_at\": \"2026-04-11T03:52:30Z\"\n  },\n  {\n    \"id\": \"u010\",\n    \"email\": \"dana.diaz@wayne.inc\",\n    \"name\": \"Dana Diaz\",\n    \"status\": \"active\",\n    \"role\": \"member\",\n    \"org_id\": \"org-3\",\n    \"created_at\": \"2026-03-25T15:19:20Z\"\n  },\n  {\n    \"id\": \"u011\",\n    \"email\": \"gale.wong@initech.co\",\n    \"name\": \"Gale Wong\",\n    \"status\": \"active\",\n    \"role\": \"viewer\",\n    \"org_id\": \"org-3\",\n    \"created_at\": \"2026-03-30T11:09:21Z\"\n  },\n  {\n    \"id\": \"u012\",\n    \"email\": \"pat.ito@acme.io\",\n    \"name\": \"Pat Ito\",\n    \"status\": \"active\",\n    \"role\": \"viewer\",\n    \"org_id\": \"org-4\",\n    \"created_at\": \"2026-04-10T13:38:40Z\"\n  },\n  {\n    \"id\": \"u013\",\n    \"email\": \"blair.adler@initech.co\",\n    \"name\": \"Blair Adler\",\n    \"status\": \"active\",\n    \"role\": \"viewer\",\n    \"org_id\": \"org-3\",\n    \"created_at\": \"2026-04-16T03:44:37Z\"\n  },\n  {\n    \"id\": \"u014\",\n    \"email\": \"xan.ortiz@wayne.inc\",\n    \"name\": \"Xan Ortiz\",\n    \"status\": \"suspended\",\n    \"role\": \"member\",\n    \"org_id\": \"org-5\",\n    \"created_at\": \"2026-04-23T12:44:03Z\"\n  },\n  {\n    \"id\": \"u015\",\n    \"email\": \"dana.chen@globex.com\",\n    \"name\": \"Dana Chen\",\n    \"status\": \"suspended\",\n    \"role\": \"admin\",\n    \"org_id\": \"org-3\",\n    \"created_at\": \"2026-03-26T17:19:38Z\"\n  },\n  {\n    \"id\": \"u016\",\n    \"email\": \"rowan.evans@umbrella.org\",\n    \"name\": \"Rowan Evans\",\n    \"status\": \"active\",\n    \"role\": \"admin\",\n    \"org_id\": \"org-3\",\n    \"created_at\": \"2026-04-06T07:09:01Z\"\n  },\n  {\n    \"id\": \"u017\",\n    \"email\": \"zion.brooks@initech.co\",\n    \"name\": \"Zion Brooks\",\n    \"status\": \"active\",\n    \"role\": \"viewer\",\n    \"org_id\": \"org-2\",\n    \"created_at\": \"2026-04-19T00:14:13Z\"\n  },\n  {\n    \"id\": \"u018\",\n    \"email\": \"lee.yoon@wayne.inc\",\n    \"name\": \"Lee Yoon\",\n    \"status\": \"pending\",\n    \"role\": \"viewer\",\n    \"org_id\": \"org-2\",\n    \"created_at\": \"2026-04-12T12:10:52Z\"\n  },\n  {\n    \"id\": \"u019\",\n    \"email\": \"frankie.zima@globex.com\",\n    \"name\": \"Frankie Zima\",\n    \"status\": \"pending\",\n    \"role\": \"admin\",\n    \"org_id\": \"org-2\",\n    \"created_at\": \"2026-04-07T20:58:34Z\"\n  },\n  {\n    \"id\": \"u020\",\n    \"email\": \"zion.nair@globex.com\",\n    \"name\": \"Zion Nair\",\n    \"status\": \"pending\",\n    \"role\": \"admin\",\n    \"org_id\": \"org-1\",\n    \"created_at\": \"2026-04-05T10:18:24Z\"\n  },\n  {\n    \"id\": \"u021\",\n    \"email\": \"blair.park@globex.com\",\n    \"name\": \"Blair Park\",\n    \"status\": \"active\",\n    \"role\": \"member\",\n    \"org_id\": \"org-3\",\n    \"created_at\": \"2026-04-09T04:25:37Z\"\n  },\n  {\n    \"id\": \"u022\",\n    \"email\": \"zion.hayes@globex.com\",\n    \"name\": \"Zion Hayes\",\n    \"status\": \"active\",\n    \"role\": \"viewer\",\n    \"org_id\": \"org-2\",\n    \"created_at\": \"2026-04-04T15:45:13Z\"\n  },\n  {\n    \"id\": \"u023\",\n    \"email\": null,\n    \"name\": \"Kai Ito\",\n    \"status\": \"pending\",\n    \"role\": \"member\",\n    \"org_id\": \"org-5\",\n    \"created_at\": \"2026-04-04T14:20:28Z\"\n  },\n  {\n    \"id\": \"u024\",\n    \"email\": \"val.rao@initech.co\",\n    \"name\": \"Val Rao\",\n    \"status\": \"active\",\n    \"role\": \"admin\",\n    \"org_id\": \"org-3\",\n    \"created_at\": \"2026-04-15T07:57:13Z\"\n  },\n  {\n    \"id\": \"u025\",\n    \"email\": \"sky.ito@acme.io\",\n    \"name\": \"Sky Ito\",\n    \"status\": \"active\",\n    \"role\": \"viewer\",\n    \"org_id\": \"org-4\",\n    \"created_at\": \"2026-04-07T05:14:44Z\"\n  },\n  {\n    \"id\": \"u026\",\n    \"email\": \"xan.zima@initech.co\",\n    \"name\": \"Xan Zima\",\n    \"status\": \"pending\",\n    \"role\": \"viewer\",\n    \"org_id\": \"org-5\",\n    \"created_at\": \"2026-04-18T09:15:47Z\"\n  },\n  {\n    \"id\": \"u027\",\n    \"email\": \"morgan.singh@globex.com\",\n    \"name\": \"Morgan Singh\",\n    \"status\": \"pending\",\n    \"role\": \"admin\",\n    \"org_id\": \"org-4\",\n    \"created_at\": \"2026-04-23T22:01:47Z\"\n  },\n  {\n    \"id\": \"u028\",\n    \"email\": \"quinn.zima@wayne.inc\",\n    \"name\": \"Quinn Zima\",\n    \"status\": \"suspended\",\n    \"role\": \"viewer\",\n    \"org_id\": \"org-2\",\n    \"created_at\": \"2026-04-06T07:39:05Z\"\n  },\n  {\n    \"id\": \"u029\",\n    \"email\": \"nico.chen@initech.co\",\n    \"name\": \"Nico Chen\",\n    \"status\": \"suspended\",\n    \"role\": \"member\",\n    \"org_id\": \"org-1\",\n    \"created_at\": \"2026-04-09T10:05:58Z\"\n  },\n  {\n    \"id\": \"u030\",\n    \"email\": \"quinn.jensen@umbrella.org\",\n    \"name\": \"Quinn Jensen\",\n    \"status\": \"pending\",\n    \"role\": \"member\",\n    \"org_id\": \"org-3\",\n    \"created_at\": \"2026-03-28T02:03:46Z\"\n  },\n  {\n    \"id\": \"u031\",\n    \"email\": null,\n    \"name\": \"Eden Gomez\",\n    \"status\": \"suspended\",\n    \"role\": \"member\",\n    \"org_id\": \"org-2\",\n    \"created_at\": \"2026-03-25T02:52:24Z\"\n  },\n  {\n    \"id\": \"u032\",\n    \"email\": \"sky.jensen@umbrella.org\",\n    \"name\": \"Sky Jensen\",\n    \"status\": \"suspended\",\n    \"role\": \"admin\",\n    \"org_id\": \"org-3\",\n    \"created_at\": \"2026-04-10T01:43:17Z\"\n  },\n  {\n    \"id\": \"u033\",\n    \"email\": \"gale.nair@wayne.inc\",\n    \"name\": \"Gale Nair\",\n    \"status\": \"suspended\",\n    \"role\": \"viewer\",\n    \"org_id\": \"org-3\",\n    \"created_at\": \"2026-04-01T10:14:59Z\"\n  },\n  {\n    \"id\": \"u034\",\n    \"email\": \"ola.ortiz@globex.com\",\n    \"name\": \"Ola Ortiz\",\n    \"status\": \"suspended\",\n    \"role\": \"member\",\n    \"org_id\": \"org-2\",\n    \"created_at\": \"2026-04-19T21:12:22Z\"\n  },\n  {\n    \"id\": \"u035\",\n    \"email\": \"jules.quiroz@wayne.inc\",\n    \"name\": \"Jules Quiroz\",\n    \"status\": \"pending\",\n    \"role\": \"admin\",\n    \"org_id\": \"org-2\",\n    \"created_at\": \"2026-04-08T22:20:07Z\"\n  },\n  {\n    \"id\": \"u036\",\n    \"email\": \"harper.zima@globex.com\",\n    \"name\": \"Harper Zima\",\n    \"status\": \"active\",\n    \"role\": \"admin\",\n    \"org_id\": \"org-1\",\n    \"created_at\": \"2026-04-12T02:44:16Z\"\n  },\n  {\n    \"id\": \"u037\",\n    \"email\": \"pat.tan@acme.io\",\n    \"name\": \"Pat Tan\",\n    \"status\": \"pending\",\n    \"role\": \"member\",\n    \"org_id\": \"org-5\",\n    \"created_at\": \"2026-04-14T13:28:00Z\"\n  },\n  {\n    \"id\": \"u038\",\n    \"email\": \"wren.wong@umbrella.org\",\n    \"name\": \"Wren Wong\",\n    \"status\": \"pending\",\n    \"role\": \"member\",\n    \"org_id\": \"org-2\",\n    \"created_at\": \"2026-04-16T20:04:01Z\"\n  },\n  {\n    \"id\": \"u039\",\n    \"email\": \"uma.wong@acme.io\",\n    \"name\": \"Uma Wong\",\n    \"status\": \"active\",\n    \"role\": \"member\",\n    \"org_id\": \"org-2\",\n    \"created_at\": \"2026-04-15T11:04:38Z\"\n  },\n  {\n    \"id\": \"u040\",\n    \"email\": \"zion.wong@wayne.inc\",\n    \"name\": \"Zion Wong\",\n    \"status\": \"pending\",\n    \"role\": \"admin\",\n    \"org_id\": \"org-5\",\n    \"created_at\": \"2026-04-11T21:39:47Z\"\n  },\n  {\n    \"id\": \"u041\",\n    \"email\": \"dana.ortiz@globex.com\",\n    \"name\": \"Dana Ortiz\",\n    \"status\": \"pending\",\n    \"role\": \"viewer\",\n    \"org_id\": \"org-5\",\n    \"created_at\": \"2026-03-27T20:48:18Z\"\n  },\n  {\n    \"id\": \"u042\",\n    \"email\": \"sarah.chen@acme.io\",\n    \"name\": \"Sarah Chen\",\n    \"status\": \"suspended\",\n    \"role\": \"member\",\n    \"org_id\": \"org-2\",\n    \"created_at\": \"2025-11-03T09:14:22Z\",\n    \"status_changed_at\": \"2026-04-22T11:47:00Z\",\n    \"notes\": \"billing dispute; account flipped to suspended pending review\"\n  },\n  {\n    \"id\": \"u043\",\n    \"email\": \"rowan.ortiz@globex.com\",\n    \"name\": \"Rowan Ortiz\",\n    \"status\": \"suspended\",\n    \"role\": \"member\",\n    \"org_id\": \"org-4\",\n    \"created_at\": \"2026-04-11T10:01:12Z\"\n  },\n  {\n    \"id\": \"u044\",\n    \"email\": \"yael.hayes@initech.co\",\n    \"name\": \"Yael Hayes\",\n    \"status\": \"suspended\",\n    \"role\": \"member\",\n    \"org_id\": \"org-2\",\n    \"created_at\": \"2026-04-10T16:04:15Z\"\n  },\n  {\n    \"id\": \"u045\",\n    \"email\": \"ola.chen@initech.co\",\n    \"name\": \"Ola Chen\",\n    \"status\": \"active\",\n    \"role\": \"member\",\n    \"org_id\": \"org-3\",\n    \"created_at\": \"2026-04-08T11:30:41Z\"\n  },\n  {\n    \"id\": \"u046\",\n    \"email\": \"rowan.chen@globex.com\",\n    \"name\": \"Rowan Chen\",\n    \"status\": \"active\",\n    \"role\": \"admin\",\n    \"org_id\": \"org-4\",\n    \"created_at\": \"2026-04-16T13:58:09Z\"\n  },\n  {\n    \"id\": \"u047\",\n    \"email\": \"wren.gomez@acme.io\",\n    \"name\": \"Wren Gomez\",\n    \"status\": \"pending\",\n    \"role\": \"member\",\n    \"org_id\": \"org-3\",\n    \"created_at\": \"2026-03-28T15:48:44Z\"\n  },\n  {\n    \"id\": \"u048\",\n    \"email\": \"ola.nair@acme.io\",\n    \"name\": \"Ola Nair\",\n    \"status\": \"active\",\n    \"role\": \"member\",\n    \"org_id\": \"org-4\",\n    \"created_at\": \"2026-03-26T15:29:54Z\"\n  },\n  {\n    \"id\": \"u049\",\n    \"email\": null,\n    \"name\": \"Wren Adler\",\n    \"status\": \"pending\",\n    \"role\": \"member\",\n    \"org_id\": \"org-1\",\n    \"created_at\": \"2026-04-06T22:10:17Z\"\n  },\n  {\n    \"id\": \"u050\",\n    \"email\": \"jules.yoon@umbrella.org\",\n    \"name\": \"Jules Yoon\",\n    \"status\": \"pending\",\n    \"role\": \"viewer\",\n    \"org_id\": \"org-5\",\n    \"created_at\": \"2026-03-25T17:09:36Z\"\n  }\n]\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 21,
+      "timed_out": false
+    },
+    {
+      "turn": 4,
+      "tool_use_id": "call_ee7fa12354ba4b00a87724f0",
+      "command": "./cli/bin/ctl list orders --limit 1000 --format json | python3 -c \"import sys,json; data=json.load(sys.stdin); print('Total orders:', len(data)); statuses={}; [statuses.__setitem__(o['status'], statuses.get(o['status'],0)+1) for o in data]; print('By status:', statuses)\"",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "Total orders: 120\nBy status: {'paid': 36, 'failed': 32, 'pending': 18, 'refunded': 34}\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 73,
+      "timed_out": false
+    },
+    {
+      "turn": 4,
+      "tool_use_id": "call_900829386b8c4673a6d9f169",
+      "command": "./cli/bin/ctl list products --limit 1000 --format json | python3 -c \"import sys,json; data=json.load(sys.stdin); print('Total products:', len(data))\"",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "Total products: 80\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 28,
+      "timed_out": false
+    },
+    {
+      "turn": 4,
+      "tool_use_id": "call_e055f30dafb747d08c2e9ddb",
+      "command": "./cli/bin/ctl list users --limit 1000 --format json | python3 -c \"import sys,json; data=json.load(sys.stdin); print('Total users:', len(data))\"",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "Total users: 50\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 28,
+      "timed_out": false
+    },
+    {
+      "turn": 4,
+      "tool_use_id": "call_ab7538dee4b04befb708c736",
+      "command": "./cli/bin/ctl search --query \"status:paid\" --scope orders --format json | python3 -c \"import sys,json; data=json.load(sys.stdin); print('Search index paid orders:', len(data))\"",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "unknown argument: --format\nTraceback (most recent call last):\n  File \"<string>\", line 1, in <module>\n    import sys,json; data=json.load(sys.stdin); print('Search index paid orders:', len(data))\n                          ~~~~~~~~~^^^^^^^^^^^\n  File \"/opt/homebrew/Cellar/python@3.14/3.14.4/Frameworks/Python.framework/Versions/3.14/lib/python3.14/json/__init__.py\", line 298, in load\n    return loads(fp.read(),\n        cls=cls, object_hook=object_hook,\n        parse_float=parse_float, parse_int=parse_int,\n        parse_constant=parse_constant, object_pairs_hook=object_pairs_hook, **kw)\n  File \"/opt/homebrew/Cellar/python@3.14/3.14.4/Frameworks/Python.framework/Versions/3.14/lib/python3.14/json/__init__.py\", line 352, in loads\n    return _default_decoder.decode(s)\n           ~~~~~~~~~~~~~~~~~~~~~~~^^^\n  File \"/opt/homebrew/Cellar/python@3.14/3.14.4/Frameworks/Python.framework/Versions/3.14/lib/python3.14/json/decoder.py\", line 345, in decode\n    obj, end = self.raw_decode(s, idx=_w(s, 0).end())\n               ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/homebrew/Cellar/python@3.14/3.14.4/Frameworks/Python.framework/Versions/3.14/lib/python3.14/json/decoder.py\", line 363, in raw_decode\n    raise JSONDecodeError(\"Expecting value\", s, err.value) from None\njson.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)\n",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 75,
+      "timed_out": false
+    },
+    {
+      "turn": 5,
+      "tool_use_id": "call_25890ae228ad48d9aeabacaa",
+      "command": "./cli/bin/ctl search --query \"status:paid\" --scope orders",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o001\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o002\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o005\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o006\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o009\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o011\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o013\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o016\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o021\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o024\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o030\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o031\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o034\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o037\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o038\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o042\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o045\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o052\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o054\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o058\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o066\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o067\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o075\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o079\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o085\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o087\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o092\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o095\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o098\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o102\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o103\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o105\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o106\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o107\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o115\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o120\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  }\n]\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 33,
+      "timed_out": false
+    },
+    {
+      "turn": 6,
+      "tool_use_id": "call_3f9a850dd407428b8ef3bff0",
+      "command": "./cli/bin/ctl list orders --limit 1000 --format json > /tmp/pre_deploy_orders.json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 38,
+      "timed_out": false
+    },
+    {
+      "turn": 6,
+      "tool_use_id": "call_fbe3486931fb4fccbf47892a",
+      "command": "./cli/bin/ctl list products --limit 1000 --format json > /tmp/pre_deploy_products.json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 27,
+      "timed_out": false
+    },
+    {
+      "turn": 6,
+      "tool_use_id": "call_ce87f7569c694c5495b0cfb9",
+      "command": "./cli/bin/ctl list users --limit 1000 --format json > /tmp/pre_deploy_users.json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 24,
+      "timed_out": false
+    },
+    {
+      "turn": 6,
+      "tool_use_id": "call_4649e59f22834bab947d2243",
+      "command": "./cli/bin/ctl list tickets --limit 1000 --format json > /tmp/pre_deploy_tickets.json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 23,
+      "timed_out": false
+    },
+    {
+      "turn": 6,
+      "tool_use_id": "call_5c48466c162148de8bff303b",
+      "command": "./cli/bin/ctl list sessions --limit 1000 --format json > /tmp/pre_deploy_sessions.json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 23,
+      "timed_out": false
+    },
+    {
+      "turn": 7,
+      "tool_use_id": "call_e2f7b617e34a45ea94a86f1a",
+      "command": "./cli/bin/ctl pipeline run pipe-01 --confirm",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[1/4] build: ok\n[2/4] test: ok\n[3/4] push-image: ok\n[4/4] rollout: ok\npipeline deploy-prod: ok\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 56,
+      "timed_out": false
+    },
+    {
+      "turn": 8,
+      "tool_use_id": "call_e5196c950b8a4ca9b4550b1e",
+      "command": "./cli/bin/ctl pipeline status pipe-01",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "pipeline: pipe-01 (pipe-01)\nran_in_session: yes\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 44,
+      "timed_out": false
+    },
+    {
+      "turn": 8,
+      "tool_use_id": "call_0d55bcc5d5804be193f937ce",
+      "command": "./cli/bin/ctl cache status",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "pages_cache_stale: no\nauth_page_ok: no\nsearch_index_stale: no\npipe-03_ran_in_session: no\npipe-07_state: clean\nstate_files: pipe-01_ran.json\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 24,
+      "timed_out": false
+    },
+    {
+      "turn": 9,
+      "tool_use_id": "call_6ceb0453997149e19961d7e8",
+      "command": "./cli/bin/ctl list orders --limit 1000 --format json | python3 -c \"import sys,json; data=json.load(sys.stdin); print('Total orders:', len(data)); statuses={}; [statuses.__setitem__(o['status'], statuses.get(o['status'],0)+1) for o in data]; print('By status:', statuses)\"",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "Total orders: 120\nBy status: {'paid': 36, 'failed': 32, 'pending': 18, 'refunded': 34}\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 61,
+      "timed_out": false
+    },
+    {
+      "turn": 9,
+      "tool_use_id": "call_f55b8877c7bd460481b73ab4",
+      "command": "./cli/bin/ctl list products --limit 1000 --format json | python3 -c \"import sys,json; data=json.load(sys.stdin); print('Total products:', len(data))\"",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "Total products: 80\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 27,
+      "timed_out": false
+    },
+    {
+      "turn": 9,
+      "tool_use_id": "call_e36e8f67b515481eac0e6995",
+      "command": "./cli/bin/ctl list users --limit 1000 --format json | python3 -c \"import sys,json; data=json.load(sys.stdin); print('Total users:', len(data))\"",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "Total users: 50\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 24,
+      "timed_out": false
+    },
+    {
+      "turn": 9,
+      "tool_use_id": "call_344f89c160404aca9fde9ada",
+      "command": "./cli/bin/ctl list tickets --limit 1000 --format json | python3 -c \"import sys,json; data=json.load(sys.stdin); print('Total tickets:', len(data))\"",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "Total tickets: 30\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 24,
+      "timed_out": false
+    },
+    {
+      "turn": 9,
+      "tool_use_id": "call_655033c6d4fa44da80241b2d",
+      "command": "./cli/bin/ctl list sessions --limit 1000 --format json | python3 -c \"import sys,json; data=json.load(sys.stdin); print('Total sessions:', len(data))\"",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "Total sessions: 15\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 25,
+      "timed_out": false
+    },
+    {
+      "turn": 10,
+      "tool_use_id": "call_19ce3e7bda5f43d1a388c50d",
+      "command": "./cli/bin/ctl search --query \"status:paid\" --scope orders | python3 -c \"import sys,json; data=json.load(sys.stdin); print('Search index paid orders:', len(data))\"",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "Search index paid orders: 36\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 33,
+      "timed_out": false
+    },
+    {
+      "turn": 11,
+      "tool_use_id": "call_ef985275b0ea46a8a707e968",
+      "command": "./cli/bin/ctl list orders --limit 1000 --format json | python3 -c \"\nimport sys, json\npost = json.load(sys.stdin)\nwith open('/tmp/pre_deploy_orders.json') as f:\n    pre = json.load(f)\nif pre == post:\n    print('Orders: IDENTICAL (no mutations)')\nelse:\n    print('Orders: CHANGED')\n    for i, (a, b) in enumerate(zip(pre, post)):\n        if a != b:\n            print(f'  Diff at index {i}: {a[\\\"id\\\"]} -> {b[\\\"id\\\"]}')\n\"",
+      "allowed": false,
+      "rejection_reason": "redirect target '{b[\\\\\"id\\\\\"]}\\')' must start with one of ['/tmp/']",
+      "exit_code": null,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 0,
+      "timed_out": false
+    },
+    {
+      "turn": 11,
+      "tool_use_id": "call_55bd4561ddf646a19c95bd36",
+      "command": "./cli/bin/ctl list products --limit 1000 --format json | python3 -c \"\nimport sys, json\npost = json.load(sys.stdin)\nwith open('/tmp/pre_deploy_products.json') as f:\n    pre = json.load(f)\nif pre == post:\n    print('Products: IDENTICAL (no mutations)')\nelse:\n    print('Products: CHANGED')\n\"",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "Products: IDENTICAL (no mutations)\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 53,
+      "timed_out": false
+    },
+    {
+      "turn": 11,
+      "tool_use_id": "call_f6152db6b7a24a5eaa016cb5",
+      "command": "./cli/bin/ctl list users --limit 1000 --format json | python3 -c \"\nimport sys, json\npost = json.load(sys.stdin)\nwith open('/tmp/pre_deploy_users.json') as f:\n    pre = json.load(f)\nif pre == post:\n    print('Users: IDENTICAL (no mutations)')\nelse:\n    print('Users: CHANGED')\n\"",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "Users: IDENTICAL (no mutations)\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 27,
+      "timed_out": false
+    },
+    {
+      "turn": 12,
+      "tool_use_id": "call_9c8040c6cfe44842bcd1dd93",
+      "command": "./cli/bin/ctl list orders --limit 1000 --format json > /tmp/post_deploy_orders.json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 51,
+      "timed_out": false
+    },
+    {
+      "turn": 13,
+      "tool_use_id": "call_389b4ef096214425b7b8bf3e",
+      "command": "python3 -c \"\nimport json\nwith open('/tmp/pre_deploy_orders.json') as f:\n    pre = json.load(f)\nwith open('/tmp/post_deploy_orders.json') as f:\n    post = json.load(f)\nif pre == post:\n    print('Orders: IDENTICAL (no mutations)')\nelse:\n    print('Orders: CHANGED')\n    for i, (a, b) in enumerate(zip(pre, post)):\n        if a != b:\n            print('  Diff at index', i, a['id'], '->', b['id'])\n\"",
+      "allowed": false,
+      "rejection_reason": "redirect target \"',\" must start with one of ['/tmp/']",
+      "exit_code": null,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 0,
+      "timed_out": false
+    },
+    {
+      "turn": 14,
+      "tool_use_id": "call_63bb41158dc84010998a12c0",
+      "command": "bash -c \"python3 -c 'import json; pre=json.load(open(\\\"/tmp/pre_deploy_orders.json\\\")); post=json.load(open(\\\"/tmp/post_deploy_orders.json\\\")); print(\\\"Orders: IDENTICAL\\\" if pre==post else \\\"Orders: CHANGED\\\")'\"",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "Orders: IDENTICAL\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 183,
+      "timed_out": false
+    },
+    {
+      "turn": 15,
+      "tool_use_id": "call_fa910de2438940d7a672d73a",
+      "command": "./cli/bin/ctl fetch /docs/pagination",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "# Pagination\n\n`ctl list` defaults to `--limit 10`. Users (50), orders (120), and\nproducts (80) all exceed the default. When counting or searching, pass\n`--limit 1000` or page explicitly. The CLI does not warn you when results\nare truncated.\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 55,
+      "timed_out": false
+    },
+    {
+      "turn": 16,
+      "tool_use_id": "call_6ed75911fc1f4d429a9d701c",
+      "command": "./cli/bin/ctl search --query \"status:failed\" --scope orders | python3 -c \"import sys,json; print('Search failed orders:', len(json.load(sys.stdin)))\"",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "Search failed orders: 32\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 102,
+      "timed_out": false
+    },
+    {
+      "turn": 16,
+      "tool_use_id": "call_09a2ec03cdef409bb4f5cf6b",
+      "command": "./cli/bin/ctl search --query \"status:refunded\" --scope orders | python3 -c \"import sys,json; print('Search refunded orders:', len(json.load(sys.stdin)))\"",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "Search refunded orders: 34\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 62,
+      "timed_out": false
+    },
+    {
+      "turn": 16,
+      "tool_use_id": "call_5dd9bb163cba4ffcb8cfcaa4",
+      "command": "./cli/bin/ctl search --query \"status:pending\" --scope orders | python3 -c \"import sys,json; print('Search pending orders:', len(json.load(sys.stdin)))\"",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "Search pending orders: 18\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 56,
+      "timed_out": false
+    }
+  ],
+  "setup_calls": [],
+  "rejected_commands": [
+    {
+      "command": "./cli/bin/ctl list orders --limit 1000 --format json | python3 -c \"\nimport sys, json\npost = json.load(sys.stdin)\nwith open('/tmp/pre_deploy_orders.json') as f:\n    pre = json.load(f)\nif pre == post:\n    print('Orders: IDENTICAL (no mutations)')\nelse:\n    print('Orders: CHANGED')\n    for i, (a, b) in enumerate(zip(pre, post)):\n        if a != b:\n            print(f'  Diff at index {i}: {a[\\\"id\\\"]} -> {b[\\\"id\\\"]}')\n\"",
+      "reason": "redirect target '{b[\\\\\"id\\\\\"]}\\')' must start with one of ['/tmp/']"
+    },
+    {
+      "command": "python3 -c \"\nimport json\nwith open('/tmp/pre_deploy_orders.json') as f:\n    pre = json.load(f)\nwith open('/tmp/post_deploy_orders.json') as f:\n    post = json.load(f)\nif pre == post:\n    print('Orders: IDENTICAL (no mutations)')\nelse:\n    print('Orders: CHANGED')\n    for i, (a, b) in enumerate(zip(pre, post)):\n        if a != b:\n            print('  Diff at index', i, a['id'], '->', b['id'])\n\"",
+      "reason": "redirect target \"',\" must start with one of ['/tmp/']"
+    }
+  ],
+  "usage": {
+    "input_tokens": 288143,
+    "output_tokens": 2629,
+    "cache_read_input_tokens": 269952,
+    "cache_creation_input_tokens": 0,
+    "total_calls": 18
+  },
+  "final_text": "All search index counts match the list counts exactly. Here's the full summary:\n\n---\n\n## Pipe-01 (deploy-prod) — Complete\n\n### Pre-deploy snapshot\n| Resource | Count | Status breakdown |\n|----------|-------|-----------------|\n| Orders | 120 | paid: 36, failed: 32, pending: 18, refunded: 34 |\n| Products | 80 | — |\n| Users | 50 | — |\n| Tickets | 30 | — |\n| Sessions | 15 | — |\n\n### Pipeline execution\n```\nctl pipeline run pipe-01 --confirm\n[1/4] build: ok\n[2/4] test: ok\n[3/4] push-image: ok\n[4/4] rollout: ok\npipeline deploy-prod: ok\n```\nAll 4 stages passed. Exit code 0.\n\n### Post-deploy verification\n\n1. **Pipeline status**: `ran_in_session: yes` — confirms pipe-01 completed in this session.\n\n2. **Cache status**: `pages_cache_stale: no`, `search_index_stale: no` — no cache or search index corruption from the deploy.\n\n3. **Data integrity** (pre vs post diff):\n   - **Orders**: IDENTICAL — no mutations\n   - **Products**: IDENTICAL — no mutations\n   - **Users**: IDENTICAL — no mutations\n\n4. **Search index cross-check** (list vs search for all order statuses):\n   | Status | `list` count | `search` count | Match? |\n   |--------|-------------|----------------|--------|\n   | paid | 36 | 36 | ✅ |\n   | failed | 32 | 32 | ✅ |\n   | pending | 18 | 18 | ✅ |\n   | refunded | 34 | 34 | ✅ |\n\n5. **Page cache**: `/docs/pagination` returns real content (not a stale 404) — ✅\n\n**Conclusion**: Pipe-01 (deploy-prod) ran successfully with `--confirm`. No data was mutated, no cache or search invariants were broken.",
+  "stop_reason": "end_turn",
+  "api_errors": [],
+  "dry_run": false,
+  "writable_prefixes_resolved": [
+    "/tmp/"
+  ],
+  "skills_loaded": [
+    "confirm-destructive-pipeline",
+    "cross-check-list-and-search",
+    "clear-cache-after-pipe03"
+  ],
+  "skill_load_calls": [
+    {
+      "turn": 0,
+      "tool_use_id": "call_860999a3e239454db606aca0",
+      "name": "confirm-destructive-pipeline",
+      "found": true,
+      "duplicate": false
+    },
+    {
+      "turn": 0,
+      "tool_use_id": "call_43abc3b942e54efa9aece32a",
+      "name": "cross-check-list-and-search",
+      "found": true,
+      "duplicate": false
+    },
+    {
+      "turn": 0,
+      "tool_use_id": "call_c9af6433db524b2c86f0b9f0",
+      "name": "clear-cache-after-pipe03",
+      "found": true,
+      "duplicate": false
+    }
+  ],
+  "artifact_files_copied": []
+}

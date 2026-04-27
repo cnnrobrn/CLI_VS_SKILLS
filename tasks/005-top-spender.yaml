@@ -1,0 +1,29 @@
+id: "005"
+title: "Find the user with the highest total spend"
+bucket: stateful
+prompt: |
+  Across the entire dataset, which user has the highest total spend
+  summed across all their orders? Give their id, name, email, and total.
+rule_check:
+  - id: listed_all_orders
+    assert: tool_called
+    match:
+      argv_regex: "^ctl (list|search).*orders.*--limit\\s+([1-9][0-9]{2,})"
+    weight: 3
+  - id: fetched_winner_user
+    assert: tool_called
+    match:
+      argv_regex: "^ctl get users u[0-9]{3}"
+    weight: 2
+  - id: no_bare_list_orders
+    assert: no_tool_called
+    match:
+      argv_regex: "^ctl list orders\\s*$"
+    weight: 1
+  - id: sequence_orders_then_user
+    assert: tool_sequence
+    sequence:
+      - { argv_regex: "^ctl (list|search).*orders" }
+      - { argv_regex: "^ctl get users u[0-9]{3}" }
+    weight: 1
+tags: [orders, users, stateful, aggregation, pagination, A1]

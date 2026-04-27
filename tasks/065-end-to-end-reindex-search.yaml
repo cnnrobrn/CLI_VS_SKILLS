@@ -1,0 +1,41 @@
+id: "065"
+title: "Make search fully trustworthy after a pipeline run"
+bucket: long-horizon
+setup: |
+  ./cli/bin/ctl pipeline run pipe-07
+prompt: |
+  After a pipeline run, make search fully trustworthy again. Pick a
+  representative record (user, order, product, ticket), verify that
+  search and list agree for each of those record types, and fix any
+  disagreement you find.
+rule_check:
+  - id: compared_search_vs_list
+    assert: tool_called
+    match:
+      argv_regex: "^ctl (list|search).*orders"
+    weight: 1
+  - id: reindexed
+    assert: tool_called
+    match:
+      argv_regex: "^ctl search --reindex"
+    weight: 2
+  - id: sequence_detect_then_reindex
+    assert: tool_sequence
+    sequence:
+      - { argv_regex: "^ctl search" }
+      - { argv_regex: "^ctl search --reindex" }
+    weight: 1
+  - id: verified_multiple_types
+    assert: tool_sequence
+    sequence:
+      - { argv_regex: "^ctl search --reindex" }
+      - { argv_regex: "^ctl search.*(orders|users|products|tickets)" }
+    weight: 2
+judge_rubric:
+  - id: per_resource_summary
+    criterion: "Final answer reports per-resource (at least 3 of users/orders/products/tickets) whether search and list now agree."
+    weight: 2
+judge_context: |
+  Ground truth (A6): pipe-07 leaves search index stale; --reindex
+  repairs. Judge grades breadth of verification across resource types.
+tags: [long-horizon, search, pipelines, A6, pipe-07]

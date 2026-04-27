@@ -1,0 +1,29 @@
+id: "011"
+title: "Follow a link from the troubleshooting page to the incident runbook"
+bucket: stateful
+prompt: |
+  Fetch /docs/troubleshooting. It links to one or more incident
+  runbooks. Fetch the runbook that covers the pipe-07 incident and
+  summarize what it says in 3 bullet points.
+rule_check:
+  - id: fetched_troubleshooting
+    assert: tool_called
+    match:
+      argv_regex: "^ctl fetch /?docs/troubleshooting"
+    weight: 2
+  - id: fetched_runbook
+    assert: tool_called
+    match:
+      argv_regex: "^ctl fetch /?runbook/incident-42"
+    weight: 2
+  - id: sequence_trouble_then_runbook
+    assert: tool_sequence
+    sequence:
+      - { argv_regex: "^ctl fetch /?docs/troubleshooting" }
+      - { argv_regex: "^ctl fetch /?runbook/incident-42" }
+    weight: 2
+  - id: final_mentions_pipe07
+    assert: final_text_regex
+    pattern: "pipe-?07"
+    weight: 1
+tags: [fetch, pages, stateful, A16, pipe-07]

@@ -1,0 +1,30 @@
+id: "022"
+title: "Pick the highest-priority open ticket and act on it"
+bucket: stateful
+prompt: |
+  Among open tickets, find the one with the highest priority (or the
+  longest-waiting if priorities tie). Identify the user, and list
+  their open tickets too.
+rule_check:
+  - id: listed_open_tickets
+    assert: tool_called
+    match:
+      argv_regex: "^ctl (list|search).*tickets.*open"
+    weight: 2
+  - id: fetched_user
+    assert: tool_called
+    match:
+      argv_regex: "^ctl get users u[0-9]{3}"
+    weight: 1
+  - id: listed_user_tickets
+    assert: tool_called
+    match:
+      argv_regex: "^ctl (list|search).*tickets.*u[0-9]{3}"
+    weight: 2
+  - id: sequence_tickets_then_user
+    assert: tool_sequence
+    sequence:
+      - { argv_regex: "^ctl (list|search).*tickets.*open" }
+      - { argv_regex: "^ctl (get users u[0-9]{3}|(list|search).*tickets.*u[0-9]{3})" }
+    weight: 1
+tags: [tickets, users, stateful, priority]

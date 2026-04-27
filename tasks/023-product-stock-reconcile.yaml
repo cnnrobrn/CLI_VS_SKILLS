@@ -1,0 +1,28 @@
+id: "023"
+title: "Reconcile a product's stock discrepancy"
+bucket: stateful
+prompt: |
+  Run pipe-09 (reconcile-inventory) and make sure the result is
+  trustworthy. Report any discrepancies found and look up the full
+  product record for each flagged product.
+rule_check:
+  - id: ran_with_verify
+    assert: tool_called
+    match:
+      argv_regex: "^ctl pipeline run pipe-09 --verify"
+    weight: 3
+  - id: fetched_all_three
+    assert: tool_called
+    match:
+      argv_regex: "^ctl get products p014|^ctl get products p037|^ctl get products p061"
+    weight: 2
+  - id: final_mentions_all_three
+    assert: final_text_regex
+    pattern: "p014.*(p037|p061)|p037.*(p014|p061)|p061.*(p014|p037)"
+    weight: 2
+  - id: no_plain_reconcile_only
+    assert: no_tool_called
+    match:
+      argv_regex: "^ctl pipeline run pipe-09\\s*$"
+    weight: 1
+tags: [pipelines, products, stateful, A11, pipe-09]

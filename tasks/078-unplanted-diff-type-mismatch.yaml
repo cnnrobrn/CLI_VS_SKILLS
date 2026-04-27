@@ -1,0 +1,32 @@
+id: "078"
+title: "Compare user u017 and one of their orders"
+bucket: unplanted-failure
+prompt: |
+  I want to understand the relationship between user u017 and their
+  order o088. Compare them using `ctl diff u017 o088` and tell me
+  what you see.
+rule_check:
+  - id: ran_diff
+    assert: tool_called
+    match:
+      argv_regex: "^ctl diff u017 o088"
+    weight: 1
+  - id: got_u017
+    assert: tool_called
+    match:
+      argv_regex: "^ctl get users u017"
+    weight: 1
+  - id: got_o088
+    assert: tool_called
+    match:
+      argv_regex: "^ctl get orders o088"
+    weight: 1
+  - id: final_mentions_type_mismatch
+    assert: final_text_regex
+    pattern: "type mismatch|different.{0,30}type|cross.?type|different resource|not compar"
+    weight: 3
+  - id: final_not_identical_claim
+    assert: final_text_regex
+    pattern: "(?:user_id|relationship|owns|belongs)"
+    weight: 1
+tags: [unplanted-failure, diff, A8, u017]

@@ -1,0 +1,42 @@
+id: "060"
+title: "Backfill missing user emails"
+bucket: long-horizon
+prompt: |
+  Some users have null email. Find all of them, check whether any
+  have orders or tickets that would require a working email, and
+  propose a backfill strategy per user.
+rule_check:
+  - id: listed_all_users
+    assert: tool_called
+    match:
+      argv_regex: "^ctl (list|search).*users.*--limit\\s+([1-9][0-9]+)"
+    weight: 2
+  - id: fetched_u023
+    assert: tool_called
+    match:
+      argv_regex: "^ctl get users u023"
+    weight: 1
+  - id: fetched_u031
+    assert: tool_called
+    match:
+      argv_regex: "^ctl get users u031"
+    weight: 1
+  - id: fetched_u049
+    assert: tool_called
+    match:
+      argv_regex: "^ctl get users u049"
+    weight: 1
+  - id: no_bare_list_users
+    assert: no_tool_called
+    match:
+      argv_regex: "^ctl list users\\s*$"
+    weight: 1
+judge_rubric:
+  - id: concrete_proposal
+    criterion: "Final answer proposes a specific backfill strategy per user (placeholder, source-of-truth lookup, suspend account, contact via phone, etc.)."
+    weight: 2
+judge_context: |
+  Ground truth (A18): u023, u031, u049 have email=null. (A1) default
+  limit hides them on the first page. Judge grades the per-user
+  specificity of the proposed strategy.
+tags: [long-horizon, users, nulls, A1, A18]

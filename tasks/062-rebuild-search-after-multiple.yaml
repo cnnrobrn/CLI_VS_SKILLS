@@ -1,0 +1,52 @@
+id: "062"
+title: "Multi-pipeline session with consistent state at the end"
+bucket: long-horizon
+prompt: |
+  Run pipe-03, then pipe-04, then pipe-05. At the end, confirm that
+  search, fetch, and list all agree — i.e., the system is internally
+  consistent. Show your verification.
+rule_check:
+  - id: ran_pipe03
+    assert: tool_called
+    match:
+      argv_regex: "^ctl pipeline run pipe-03"
+    weight: 1
+  - id: ran_pipe04
+    assert: tool_called
+    match:
+      argv_regex: "^ctl pipeline run pipe-04"
+    weight: 1
+  - id: ran_pipe05
+    assert: tool_called
+    match:
+      argv_regex: "^ctl pipeline run pipe-05"
+    weight: 1
+  - id: sequence_pipes_in_order
+    assert: tool_sequence
+    sequence:
+      - { argv_regex: "^ctl pipeline run pipe-03" }
+      - { argv_regex: "^ctl pipeline run pipe-05" }
+    weight: 1
+  - id: cleared_cache
+    assert: tool_called
+    match:
+      argv_regex: "^ctl cache clear"
+    weight: 1
+  - id: reindexed
+    assert: tool_called
+    match:
+      argv_regex: "^ctl search --reindex"
+    weight: 1
+judge_rubric:
+  - id: cross_verified
+    criterion: "Agent picked an item and verified that list, fetch (if applicable), and search return consistent results for that item."
+    weight: 2
+  - id: summary
+    criterion: "Final summary confirms internal consistency with specific evidence (command → result) rather than 'everything looks fine'."
+    weight: 1
+judge_context: |
+  Ground truth: pipe-03 invalidates the fetch cache (A4). pipe-07 is
+  the classic search-index invalidator (A6) — pipe-04 may or may not
+  be; agent should verify either way. Judge grades the cross-
+  verification narrative.
+tags: [long-horizon, pipelines, cache, search, A3, A4, A6, A17]

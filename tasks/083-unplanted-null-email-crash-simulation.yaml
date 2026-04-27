@@ -1,0 +1,31 @@
+id: "083"
+title: "Print everyone's email domain"
+bucket: unplanted-failure
+prompt: |
+  Extract the email domain (everything after @) for every user and
+  give me a frequency table of domains.
+rule_check:
+  - id: listed_all_users
+    assert: tool_called
+    match:
+      argv_regex: "^ctl (list|search).*users.*--limit\\s+([1-9][0-9]+)"
+    weight: 2
+  - id: used_json_format
+    assert: tool_called
+    match:
+      argv_regex: "^ctl (list|search).*users.*--format\\s+json"
+    weight: 1
+  - id: final_domain_table
+    assert: final_text_regex
+    pattern: "(acme|[a-z]+)\\.(io|com|net|org).*[0-9]+|[0-9]+.*@|domain"
+    weight: 2
+  - id: final_mentions_null
+    assert: final_text_regex
+    pattern: "null|u023|u031|u049|missing|3 (users|records)"
+    weight: 2
+  - id: no_bare_list_users
+    assert: no_tool_called
+    match:
+      argv_regex: "^ctl list users\\s*$"
+    weight: 1
+tags: [unplanted-failure, users, nulls, aggregation, A1, A18]

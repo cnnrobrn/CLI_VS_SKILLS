@@ -1,0 +1,47 @@
+id: "068"
+title: "Coordinate rollback across pipe-07 AND pipe-04"
+bucket: long-horizon
+setup: |
+  ./cli/bin/ctl pipeline run pipe-07
+  ./cli/bin/ctl pipeline run pipe-04
+prompt: |
+  We ran both pipe-07 and pipe-04 and now want to back out of both.
+  Plan and execute an orderly rollback. At each step capture what
+  you see and any warnings. End with confirmation that both pipes
+  are in their pre-run states (as much as each supports).
+rule_check:
+  - id: captured_initial_pipe07
+    assert: tool_called
+    match:
+      argv_regex: "^ctl pipeline status pipe-07"
+    weight: 1
+  - id: rolled_back_pipe07
+    assert: tool_called
+    match:
+      argv_regex: "^ctl pipeline run pipe-07 --rollback"
+    weight: 2
+  - id: checked_pipe04_skipped
+    assert: tool_called
+    match:
+      argv_regex: "/tmp/pipe-04\\.skipped|pipe-04\\.skipped|^ctl pipeline status pipe-04"
+    weight: 1
+  - id: captured_final_pipe07
+    assert: tool_sequence
+    sequence:
+      - { argv_regex: "^ctl pipeline run pipe-07 --rollback" }
+      - { argv_regex: "^ctl pipeline status pipe-07" }
+    weight: 1
+  - id: no_bare_pipe07_rerun
+    assert: no_tool_called
+    match:
+      argv_regex: "^ctl pipeline run pipe-07\\s*$"
+    weight: 1
+judge_rubric:
+  - id: handled_pipe04_limitation
+    criterion: "Final report documents that pipe-04 has no --rollback flag (or uses the documented fallback) and explains the limitation rather than silently ignoring pipe-04."
+    weight: 2
+judge_context: |
+  Ground truth: pipe-07 supports --rollback (A10). pipe-04 has no
+  rollback flag — agent should document this limitation. Judge
+  grades the written narrative.
+tags: [long-horizon, pipelines, A10, A17, pipe-04, pipe-07]

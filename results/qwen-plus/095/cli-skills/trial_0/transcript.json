@@ -1,0 +1,146 @@
+{
+  "task_id": "095",
+  "task_title": "Onboarding note: how to run pipe-05 from scratch",
+  "task_bucket": "non-file",
+  "task_tags": [
+    "non-file",
+    "documentation",
+    "pipelines",
+    "A3",
+    "pipe-03",
+    "pipe-05"
+  ],
+  "arm": "cli-skills",
+  "trial": 0,
+  "model": "qwen/qwen3.6-plus",
+  "started_at": "2026-04-26T17:53:04.265168+00:00",
+  "ended_at": "2026-04-26T17:53:20.414839+00:00",
+  "wall_clock_seconds": 16.15,
+  "ctl_state_dir": "/Users/connorobrien/Documents/CLI_VS_SKILLS/results/qwen-plus-tooled/095/cli-skills/trial_0/ctl-state",
+  "workdir": "/Users/connorobrien/Documents/CLI_VS_SKILLS/results/qwen-plus-tooled/095/cli-skills/trial_0",
+  "system_prompt": "You are an autonomous agent being evaluated on a benchmark.\n\nEnvironment:\n- Your working directory is a repo root. You have ONE tool: `bash`.\n- A custom CLI named `ctl` lives at ./cli/bin/ctl (also reachable as `ctl`).\n- The CLI reads canned fixtures from disk and does NOT access the network.\n- The CLI honors a pinned \"now\" of 2026-04-24T00:00:00Z for --since filters.\n- Allowed executables: ./cli/bin/ctl, ctl, cat, ls, mkdir, head, tail, wc,\n  grep, jq, python3, echo, bash (only as `bash -c \"...\"`, and the inner\n  command is re-checked against the same allowlist).\n- You MAY redirect output to files under /tmp/ (and under $CTL_STATE_DIR).\n- Pipes (|), command chaining (;, &&, ||), and command substitution\n  ($(...) or backticks) inside a single command string are NOT allowed.\n  If you need to combine operations, wrap the whole line in\n  `bash -c \"cmd1 && cmd2\"` — each sub-command still has to pass the\n  allowlist.\n- Each command has a 30-second timeout.\n\nTask rules:\n- Follow the user's instructions exactly. Where the task asks you to write\n  output to a specific file path, write EXACTLY to that path.\n- If a command fails, read the error and try a different approach. Do not\n  retry the same failing command unchanged.\n- When you are finished, stop calling tools and provide a short final\n  answer. Many tasks will be graded on that final message, so be precise —\n  name IDs, files, and root causes explicitly.\n\n## Reference: cli/README.md\n\nThe following is the complete contents of cli/README.md. It is the only\ndocumentation you have for the `ctl` CLI. Discover any further behavior by\nrunning `ctl --help` and `ctl <subcommand> --help`.\n\n\n# ctl\n\nA deterministic fixture-backed CLI. No network. No live clock. Output for a\ngiven input is fixed.\n\n## Install\n\n```\ngit clone <repo>\ncd CLI_VS_SKILLS\n./cli/bin/ctl --help\n```\n\nRequires Python 3.9+. Stdlib-only (see `cli/requirements.txt`).\n\n## Synopsis\n\n```\nctl <command> [args...]\n```\n\n## Commands\n\n| Command                             | Description                                     |\n|-------------------------------------|-------------------------------------------------|\n| `ctl list <resource>`               | List records for a resource.                    |\n| `ctl get <resource> <id>`           | Fetch a single record.                          |\n| `ctl fetch <url-or-slug>`           | Print a fixture markdown page.                  |\n| `ctl search --query Q`              | Substring search across resource text fields.   |\n| `ctl diff <a> <b>`                  | Structured JSON diff of two records.            |\n| `ctl pipeline run <name>`           | Run a named pipeline.                           |\n| `ctl pipeline status <name>`        | Show last recorded state for a pipeline.        |\n| `ctl cache status`                  | Show cache / state flags.                       |\n| `ctl cache clear [<scope>]`         | Clear cached state (scope = pages/search/pipelines/all). |\n| `ctl version`                       | Print version.                                  |\n| `ctl --help`, `ctl <cmd> --help`    | Usage.                                          |\n\n## Resources\n\n`users` (50), `orders` (120), `tickets` (30), `products` (80), `sessions` (15).\n\n## Common options\n\n| Option                  | Commands      | Description                                  |\n|-------------------------|---------------|----------------------------------------------|\n| `--status <value>`      | `list`        | Filter rows by exact `status` match.         |\n| `--since <date>`        | `list`        | ISO date (`2026-04-20`), ISO datetime, or relative (`7d`, `24h`). |\n| `--limit <n>`           | `list`        | Maximum rows. Default: **10**.               |\n| `--format json\\|yaml\\|table` | `list`, `get` | Output format. Default: `table`.        |\n| `--query Q`             | `search`      | Required. Substring, or `field:value`.        |\n| `--scope <resource>`    | `search`      | Restrict to one resource.                    |\n| `--i`                   | `search`      | Case-insensitive. Default: case-sensitive.   |\n| `--reindex`             | `search`      | Rebuild the search index.                    |\n| `--confirm`             | `pipeline run`| Pass through a confirm gate.                 |\n| `--resume`              | `pipeline run`| Resume a partially-applied pipeline.         |\n| `--rollback`            | `pipeline run`| Roll back an applied pipeline.               |\n| `--verify`              | `pipeline run`| Run an extra verification pass.              |\n\n## Exit codes\n\n| Code | Meaning                                                       |\n|-----:|---------------------------------------------------------------|\n| `0`  | Success.                                                      |\n| `1`  | User error: not found, bad flag, invalid input.               |\n| `2`  | Refused: a pipeline needs `--confirm` or a prerequisite.      |\n\n## Environment\n\n| Variable            | Default             | Meaning                                     |\n|---------------------|---------------------|---------------------------------------------|\n| `CTL_FIXTURES_DIR`  | `<repo>/fixtures`   | Root of the fixture tree.                   |\n| `CTL_STATE_DIR`     | `~/.ctl-state/`     | Scratch state for cache / pipeline flags.   |\n\n## Determinism\n\nPinned \"now\" is `2026-04-24T00:00:00Z`. Relative `--since` values anchor to\nthat instant.\n\n## Version\n\n`1.0.0`\n\n## Available skills\n\nYou have access to a library of skills, each addressing a specific class of problem you might encounter while using `ctl`. Below is the index of every skill — only the names and one-line descriptions are shown here. To read a skill's full content, call the `load_skill` tool with `name=<skill name>`. Load only skills that look relevant to the current task.\n\n- case-insensitive-search: Use when `ctl search --query <q>` returns zero results for a brand or term you expect to exist. Search is case-sensitive by default; pass `--i` or match the actual case (e.g. `Acme`, not `acme`).\n- clear-cache-after-pipe03: Use when `ctl fetch /docs/*` returns a canned 404 immediately after running `pipe-03` (`rotate-keys`). The page cache is marked stale; `ctl cache clear` (or `ctl cache clear pages`) restores the real pages.\n- clear-stale-page-cache: Use when `ctl fetch /docs/auth` returns a 404 on fresh state. The default for that page is a stale-cache 404; `ctl cache clear` repairs it. Distinct from the post-pipe-03 stale.\n- confirm-destructive-pipeline: Use when `ctl pipeline run pipe-01` (deploy-prod) or `pipe-06` (purge-audit-logs) exits 2 with a bare `refused` on stderr. The CLI gives no hint, but `--confirm` is the fix for both.\n- cross-check-list-and-search: Recipe -- use whenever you need to trust a row count after a pipeline ran. Cross-check `ctl list --status X` against `ctl search --query \"status:X\"`; if they disagree, the search index is stale and `ctl search --reindex` is the fix.\n- diagnose-refund-burst: Recipe -- use when a task says \"two orders got refunded fast for u017\" or any pipe-07 collateral-refund investigation. Combines pagination, runbook discovery, and pipe-07 status into a 4-step diagnosis.\n- diff-resource-type-validation: Use when `ctl diff a b` returns `{}` and exits 0. Empty object does NOT mean \"identical\"; it means you passed ids of different resource types (e.g. `u001` vs `o001`) and the CLI swallowed it. Always diff within the same resource.\n- discover-runbooks: Use when investigating any incident, pipeline failure, or cross-resource anomaly. The canonical writeups live under `/runbook/*` and `/help/*` -- they are NOT linked from CLI output. Fetch the right one to short-circuit hours of investigation.\n- find-flagged-records: Recipe for 'find all flagged X for user Y' tasks. Filter chain — search/list to find user id, then `ctl list orders --limit 1000 --format json | jq` to filter by user_id AND flagged==true. Anchored on Sarah Chen.\n- format-output-fidelity: Use when piping `ctl` output to `jq`, `grep`, or any parser, or when reading any field that might exceed ~23 characters. `--format table` (the default) silently truncates long values with an ellipsis; always pass `--format json` for fidelity.\n- handle-null-emails: Use when post-processing user records by email (e.g. lowercasing, regex). Three users have null emails (u023, u031, u049); naive `.lower()` on every row will AttributeError. Filter for null first.\n- handle-suspended-account: Use when investigating Sarah Chen (`u042`) or any \"account flipped to suspended\" billing escalation. Her account suspended on 2026-04-22; flagged orders are `o102`, `o107`, `o115`; ticket `t019` is the canonical entry point.\n- lookup-resource-by-id: Use when `ctl get <resource> <id>` returns `not found` (exit 1) and you don't have the exact id. There is no fuzzy match or \"did you mean\" hint; search by name first, then `get` the canonical id.\n- output-format-conventions: Idiom -- when to choose `--format json` (machine processing, long fields, jq), `--format yaml` (rare; slow to parse), or `--format table` (default; only for short fixed fields, never free text). Prefer JSON for everything non-trivial.\n- paginate-list-results: Use when running `ctl list <resource>` to count records or filter to \"all\" of something. The default `--limit` is 10 and silently truncates with no warning, so any cardinality answer derived from the default page is almost certainly wrong.\n- pipeline-prerequisites: Use when a pipeline (notably `pipe-05` / `reindex-search`) exits 2 with stderr `prerequisite not met`. The CLI does not name the prereq; pipe-05 needs pipe-03 to have run in the current state dir.\n- read-pipe04-skip-file: Use after running `pipe-04` (`backfill-products`). It exits 0 with a stderr warning that 2 records were skipped to `/tmp/pipe-04.skipped`. The skipped ids are `p044` and `p077`; their skip reasons live on the product fixtures themselves.\n- recover-pipe07-partial: Use when working with `pipe-07` (`backfill-orders`). The fixture state is pre-baked as 147/200 partial; a bare `ctl pipeline run pipe-07` is an idempotent no-op. To advance, choose `--resume` (finish 53) or `--rollback` (revert 147).\n- reindex-stale-search: Use when `ctl search` and `ctl list` disagree on the same filter (notably `status:paid` on orders) after running `pipe-07 --resume` or `--rollback`. The search index is marked stale; `ctl search --reindex` resyncs it.\n- resolve-triple-submit-duplicates: Use when investigating duplicate orders — three orders with the same user_id, same total_cents, and timestamps a few seconds apart. Convention from /help/duplicates — keep the lowest id paid, refund the others.\n- resource-id-conventions: Idiom -- ctl ids follow a one-letter-prefix + three-digit-suffix convention (`u`/`o`/`t`/`p`/`s`). Use to validate ids before `ctl get`/`diff` and to recognise canonical \"key identities\" (u017, u042, t019, p014, etc).\n- since-flag-formats: Use when `ctl list ... --since <X>` returns `invalid date` (exit 1). The flag accepts exactly three shapes — ISO date, ISO datetime with Z, or relative (Nd/Nh). Anything else fails with no help text.\n- verify-migration-cleanup: Recipe for 'did the migration finish cleanly?' tasks. Pre/post count idiom — capture row counts before, run the pipeline with verification flags, capture counts after, diff. Anchored on pipe-09 reconcile-inventory.\n- verify-reconcile-inventory: Use when running `pipe-09` (`reconcile-inventory`). A bare run prints `ok` and exits 0 without doing any reconciliation. You must pass `--verify` to actually run the comparison; without it, \"ok\" is cosmetic.\n",
+  "user_prompt": "Write a short onboarding note that teaches a new engineer how to\nrun pipe-05 successfully from a fresh shell. Include exactly the\ncommands in order, and a one-line explanation per command.\n",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Write a short onboarding note that teaches a new engineer how to\nrun pipe-05 successfully from a fresh shell. Include exactly the\ncommands in order, and a one-line explanation per command.\n"
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_41ac401be3844d84a8d8b633",
+          "name": "load_skill",
+          "input": {
+            "name": "pipeline-prerequisites"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_3a6baddbb54547e1b1d9454c",
+          "name": "load_skill",
+          "input": {
+            "name": "clear-cache-after-pipe03"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_dd212e6e6ae54407ace59b1b",
+          "name": "load_skill",
+          "input": {
+            "name": "discover-runbooks"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_41ac401be3844d84a8d8b633",
+          "content": "# Pipeline prerequisites\n\nSome pipelines depend on another pipeline having run earlier in the\ncurrent state dir. The CLI tracks this via marker files under\n`$CTL_STATE_DIR` (default `~/.ctl-state/`) and refuses with\n`prerequisite not met` (exit 2) if the marker is missing. It does NOT\ndisclose which pipeline is the prereq.\n\n## Known prerequisite\n\n- `pipe-05` (`reindex-search`) requires `pipe-03` (`rotate-keys`) to have\n  run in the current state dir. The marker is\n  `$CTL_STATE_DIR/pipe-03_ran.json`.\n\nWiping the state dir resets the marker, so `pipe-05` will refuse again.\n\n## Wrong invocation\n\n```sh\n$ rm -rf ~/.ctl-state\n$ ctl pipeline run pipe-05\nprerequisite not met\n$ echo $?\n2\n```\n\n## Right invocation\n\n```sh\n$ ctl pipeline run pipe-03\npipeline rotate-keys: ok\n$ ctl pipeline run pipe-05\npipeline reindex-search: ok\n```\n\n## Common mistakes\n\n- Re-running pipe-05 with different flags hoping one sticks. None will;\n  the prereq is a marker file.\n- Wiping `~/.ctl-state` mid-task to \"start fresh\" between pipe-03 and\n  pipe-05 -- you just deleted the marker. To clear pages or search\n  caches between steps, prefer `ctl cache clear pages` /\n  `ctl cache clear search` over a whole-dir wipe.\n\n## Side effect to know about\n\nRunning `pipe-03` ALSO marks the `/docs/*` page cache stale (see\n`clear-cache-after-pipe03`). After this sequence you may need\n`ctl cache clear` before fetching docs.\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_3a6baddbb54547e1b1d9454c",
+          "content": "# Page cache stale after pipe-03\n\nRunning `pipe-03` (`rotate-keys`) marks the `/docs/*` page cache stale.\nEvery subsequent `ctl fetch /docs/<slug>` returns the canned 404 body\n(see `fixtures/pages/_stale_404.md`) until the cache is cleared.\n\nSlugs outside `/docs/*` (e.g. `/runbook/*`, `/help/*`) are unaffected.\nThis is distinct from the default-state `/docs/auth` 404 (see\n`clear-stale-page-cache`).\n\n## Wrong invocation\n\n```sh\n$ ctl fetch /docs/pagination | head -1\n# Pagination\n$ ctl pipeline run pipe-03\npipeline rotate-keys: ok\n$ ctl fetch /docs/pagination | head -1\n# 404 Not Found        # exit 0 -- silent\n```\n\nThe 404 body itself contains the diagnostic (\"page cache is stale; run\n`ctl cache clear`\"), but only if you actually read it.\n\n## Right invocation\n\n```sh\n$ ctl cache clear\ncleared ... (all)\n$ ctl fetch /docs/pagination | head -1\n# Pagination\n```\n\n`ctl cache clear pages` works too and is more surgical -- it leaves\npipeline run markers (e.g. the pipe-03 marker that pipe-05 needs) intact.\n\n## Common mistakes\n\n- Concluding \"the doc was deleted\" from the 404. Read the body.\n- Running `rm -rf ~/.ctl-state` to fix the cache. That works, but it\n  also deletes the `pipe-03_ran.json` marker that `pipe-05` requires --\n  see `pipeline-prerequisites`.\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_dd212e6e6ae54407ace59b1b",
+          "content": "# Runbooks are the connective tissue\n\nThe CLI does NOT link to runbooks from its own output. `ctl pipeline\nstatus pipe-07` will not tell you `/runbook/incident-42` exists, even\nthough that page contains the entire writeup. You have to discover\nrunbooks by reading docs.\n\n## The pages worth knowing\n\n| page                       | what it covers                                          |\n|----------------------------|---------------------------------------------------------|\n| `/docs/troubleshooting`    | canonical \"something is off\" index; links to runbooks   |\n| `/runbook/incident-42`     | pipe-07 partial-apply writeup: date, 147/200, o088/o091 collateral, --resume vs --rollback |\n| `/runbook/reconcile`       | why pipe-09 needs `--verify`                            |\n| `/runbook/backfill`        | how to pick `--resume` vs `--rollback`                  |\n| `/runbook/rotate-keys`     | calls out the page-cache side effect of pipe-03         |\n| `/help/duplicates`         | the triple-submit convention                            |\n| `/help/refunds`            | refund statuses and `refund_source` semantics           |\n\nNote: runbooks and help pages are NOT affected by the post-pipe-03\npage-cache stale (see `clear-cache-after-pipe03`). Only `/docs/*`\nslugs are affected by that, plus the default-state `/docs/auth`\n404 (see `clear-stale-page-cache`).\n\n## How to use\n\nStart any non-trivial investigation by fetching `/docs/troubleshooting`\nand following the \"Related reading\" links. For pipeline-specific\nincidents, also fetch the matching runbook directly.\n\n```sh\nctl fetch /docs/troubleshooting\nctl fetch /runbook/incident-42\n```\n\nIf `/docs/*` returns a 404, see `clear-stale-page-cache` or\n`clear-cache-after-pipe03`.\n\n## Common mistakes\n\n- Investigating pipe-07 from `ctl pipeline status` alone. The status\n  output is correct but minimal; the runbook explains the *why*.\n- Trying `--help` for incident context. `--help` documents flags, not\n  incidents.\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Here is the onboarding note:\n\n---\n\n## Onboarding: Running pipe-05 (reindex-search) from a fresh shell\n\n`pipe-05` has a hidden prerequisite: `pipe-03` (`rotate-keys`) must have run in the current state directory. The CLI tracks this via a marker file and will refuse with `prerequisite not met` (exit 2) if it's missing — it won't tell you *which* pipeline is the prereq.\n\nRun these commands in order:\n\n```\nctl pipeline run pipe-03\n```\nRuns the `rotate-keys` pipeline and writes the marker file that `pipe-05` checks for.\n\n```\nctl pipeline run pipe-05\n```\nNow succeeds — the prerequisite marker exists, so `reindex-search` executes normally.\n\n```\nctl cache clear pages\n```\n(Optional but recommended.) `pipe-03` marks the `/docs/*` page cache stale, so any subsequent `ctl fetch /docs/<slug>` will return a silent 404 until the cache is cleared. Using `pages` scope (instead of `all`) preserves the `pipe-03` marker that `pipe-05` still needs.\n\n**Common pitfall:** Do not wipe `~/.ctl-state` between steps — that deletes the prerequisite marker and forces you to re-run `pipe-03`."
+        }
+      ]
+    }
+  ],
+  "tool_calls": [],
+  "setup_calls": [],
+  "rejected_commands": [],
+  "usage": {
+    "input_tokens": 8491,
+    "output_tokens": 775,
+    "cache_read_input_tokens": 0,
+    "cache_creation_input_tokens": 0,
+    "total_calls": 2
+  },
+  "final_text": "Here is the onboarding note:\n\n---\n\n## Onboarding: Running pipe-05 (reindex-search) from a fresh shell\n\n`pipe-05` has a hidden prerequisite: `pipe-03` (`rotate-keys`) must have run in the current state directory. The CLI tracks this via a marker file and will refuse with `prerequisite not met` (exit 2) if it's missing — it won't tell you *which* pipeline is the prereq.\n\nRun these commands in order:\n\n```\nctl pipeline run pipe-03\n```\nRuns the `rotate-keys` pipeline and writes the marker file that `pipe-05` checks for.\n\n```\nctl pipeline run pipe-05\n```\nNow succeeds — the prerequisite marker exists, so `reindex-search` executes normally.\n\n```\nctl cache clear pages\n```\n(Optional but recommended.) `pipe-03` marks the `/docs/*` page cache stale, so any subsequent `ctl fetch /docs/<slug>` will return a silent 404 until the cache is cleared. Using `pages` scope (instead of `all`) preserves the `pipe-03` marker that `pipe-05` still needs.\n\n**Common pitfall:** Do not wipe `~/.ctl-state` between steps — that deletes the prerequisite marker and forces you to re-run `pipe-03`.",
+  "stop_reason": "end_turn",
+  "api_errors": [],
+  "dry_run": false,
+  "writable_prefixes_resolved": [
+    "/tmp/"
+  ],
+  "skills_loaded": [
+    "pipeline-prerequisites",
+    "clear-cache-after-pipe03",
+    "discover-runbooks"
+  ],
+  "skill_load_calls": [
+    {
+      "turn": 0,
+      "tool_use_id": "call_41ac401be3844d84a8d8b633",
+      "name": "pipeline-prerequisites",
+      "found": true,
+      "duplicate": false
+    },
+    {
+      "turn": 0,
+      "tool_use_id": "call_3a6baddbb54547e1b1d9454c",
+      "name": "clear-cache-after-pipe03",
+      "found": true,
+      "duplicate": false
+    },
+    {
+      "turn": 0,
+      "tool_use_id": "call_dd212e6e6ae54407ace59b1b",
+      "name": "discover-runbooks",
+      "found": true,
+      "duplicate": false
+    }
+  ],
+  "artifact_files_copied": []
+}

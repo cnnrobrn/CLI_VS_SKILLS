@@ -1,0 +1,28 @@
+id: "024"
+title: "Find a triple-submit duplicate and name which to keep"
+bucket: stateful
+prompt: |
+  Somewhere in the orders fixture there is a triple-submit: three
+  orders from the same user, same amount, timestamps within seconds.
+  Find them, and tell me which one to keep and which to refund per
+  the team convention.
+rule_check:
+  - id: listed_orders_paginated
+    assert: tool_called
+    match:
+      argv_regex: "^ctl (list|search).*orders.*--limit\\s+([1-9][0-9]+)"
+    weight: 2
+  - id: final_mentions_trio
+    assert: final_text_regex
+    pattern: "o067.*o068.*o069|o067.*o069.*o068"
+    weight: 3
+  - id: final_names_keeper
+    assert: final_text_regex
+    pattern: "keep.*o067|o067.*keep"
+    weight: 2
+  - id: no_bare_list_orders
+    assert: no_tool_called
+    match:
+      argv_regex: "^ctl list orders\\s*$"
+    weight: 1
+tags: [orders, stateful, A14, duplicates]

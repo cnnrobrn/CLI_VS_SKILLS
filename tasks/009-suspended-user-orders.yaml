@@ -1,0 +1,29 @@
+id: "009"
+title: "List orders belonging to the only suspended user"
+bucket: stateful
+prompt: |
+  There is exactly one user with status=suspended. Find them and list
+  every order they ever placed.
+rule_check:
+  - id: filtered_suspended_users
+    assert: tool_called
+    match:
+      argv_regex: "^ctl (list|search).*users.*suspended"
+    weight: 2
+  - id: listed_u042_orders_paginated
+    assert: tool_called
+    match:
+      argv_regex: "^ctl (list|search).*orders.*u042.*--limit\\s+([1-9][0-9]+)|^ctl (list|search).*orders.*--limit\\s+([1-9][0-9]+).*u042"
+    weight: 3
+  - id: sequence_users_then_orders
+    assert: tool_sequence
+    sequence:
+      - { argv_regex: "^ctl (list|search).*users" }
+      - { argv_regex: "^ctl (list|search).*orders.*u042" }
+    weight: 2
+  - id: no_unrelated_user_lookup
+    assert: no_tool_called
+    match:
+      argv_regex: "^ctl get users u(?!042)[0-9]{3}"
+    weight: 1
+tags: [users, orders, stateful, u042, A15, pagination]

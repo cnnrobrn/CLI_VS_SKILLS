@@ -1,0 +1,1540 @@
+{
+  "task_id": "035",
+  "task_title": "Which product draws the most complaints",
+  "task_bucket": "ambiguous",
+  "task_tags": [
+    "ambiguous",
+    "tickets",
+    "products",
+    "aggregation",
+    "reasoning"
+  ],
+  "arm": "cli-skills",
+  "trial": 0,
+  "model": "z-ai/glm-5.1",
+  "started_at": "2026-04-26T17:34:13.847607+00:00",
+  "ended_at": "2026-04-26T17:37:03.641595+00:00",
+  "wall_clock_seconds": 169.794,
+  "ctl_state_dir": "/Users/connorobrien/Documents/CLI_VS_SKILLS/results/zai-glm-tooled/035/cli-skills/trial_0/ctl-state",
+  "workdir": "/Users/connorobrien/Documents/CLI_VS_SKILLS/results/zai-glm-tooled/035/cli-skills/trial_0",
+  "system_prompt": "You are an autonomous agent being evaluated on a benchmark.\n\nEnvironment:\n- Your working directory is a repo root. You have ONE tool: `bash`.\n- A custom CLI named `ctl` lives at ./cli/bin/ctl (also reachable as `ctl`).\n- The CLI reads canned fixtures from disk and does NOT access the network.\n- The CLI honors a pinned \"now\" of 2026-04-24T00:00:00Z for --since filters.\n- Allowed executables: ./cli/bin/ctl, ctl, cat, ls, mkdir, head, tail, wc,\n  grep, jq, python3, echo, bash (only as `bash -c \"...\"`, and the inner\n  command is re-checked against the same allowlist).\n- You MAY redirect output to files under /tmp/ (and under $CTL_STATE_DIR).\n- Pipes (|), command chaining (;, &&, ||), and command substitution\n  ($(...) or backticks) inside a single command string are NOT allowed.\n  If you need to combine operations, wrap the whole line in\n  `bash -c \"cmd1 && cmd2\"` — each sub-command still has to pass the\n  allowlist.\n- Each command has a 30-second timeout.\n\nTask rules:\n- Follow the user's instructions exactly. Where the task asks you to write\n  output to a specific file path, write EXACTLY to that path.\n- If a command fails, read the error and try a different approach. Do not\n  retry the same failing command unchanged.\n- When you are finished, stop calling tools and provide a short final\n  answer. Many tasks will be graded on that final message, so be precise —\n  name IDs, files, and root causes explicitly.\n\n## Reference: cli/README.md\n\nThe following is the complete contents of cli/README.md. It is the only\ndocumentation you have for the `ctl` CLI. Discover any further behavior by\nrunning `ctl --help` and `ctl <subcommand> --help`.\n\n\n# ctl\n\nA deterministic fixture-backed CLI. No network. No live clock. Output for a\ngiven input is fixed.\n\n## Install\n\n```\ngit clone <repo>\ncd CLI_VS_SKILLS\n./cli/bin/ctl --help\n```\n\nRequires Python 3.9+. Stdlib-only (see `cli/requirements.txt`).\n\n## Synopsis\n\n```\nctl <command> [args...]\n```\n\n## Commands\n\n| Command                             | Description                                     |\n|-------------------------------------|-------------------------------------------------|\n| `ctl list <resource>`               | List records for a resource.                    |\n| `ctl get <resource> <id>`           | Fetch a single record.                          |\n| `ctl fetch <url-or-slug>`           | Print a fixture markdown page.                  |\n| `ctl search --query Q`              | Substring search across resource text fields.   |\n| `ctl diff <a> <b>`                  | Structured JSON diff of two records.            |\n| `ctl pipeline run <name>`           | Run a named pipeline.                           |\n| `ctl pipeline status <name>`        | Show last recorded state for a pipeline.        |\n| `ctl cache status`                  | Show cache / state flags.                       |\n| `ctl cache clear [<scope>]`         | Clear cached state (scope = pages/search/pipelines/all). |\n| `ctl version`                       | Print version.                                  |\n| `ctl --help`, `ctl <cmd> --help`    | Usage.                                          |\n\n## Resources\n\n`users` (50), `orders` (120), `tickets` (30), `products` (80), `sessions` (15).\n\n## Common options\n\n| Option                  | Commands      | Description                                  |\n|-------------------------|---------------|----------------------------------------------|\n| `--status <value>`      | `list`        | Filter rows by exact `status` match.         |\n| `--since <date>`        | `list`        | ISO date (`2026-04-20`), ISO datetime, or relative (`7d`, `24h`). |\n| `--limit <n>`           | `list`        | Maximum rows. Default: **10**.               |\n| `--format json\\|yaml\\|table` | `list`, `get` | Output format. Default: `table`.        |\n| `--query Q`             | `search`      | Required. Substring, or `field:value`.        |\n| `--scope <resource>`    | `search`      | Restrict to one resource.                    |\n| `--i`                   | `search`      | Case-insensitive. Default: case-sensitive.   |\n| `--reindex`             | `search`      | Rebuild the search index.                    |\n| `--confirm`             | `pipeline run`| Pass through a confirm gate.                 |\n| `--resume`              | `pipeline run`| Resume a partially-applied pipeline.         |\n| `--rollback`            | `pipeline run`| Roll back an applied pipeline.               |\n| `--verify`              | `pipeline run`| Run an extra verification pass.              |\n\n## Exit codes\n\n| Code | Meaning                                                       |\n|-----:|---------------------------------------------------------------|\n| `0`  | Success.                                                      |\n| `1`  | User error: not found, bad flag, invalid input.               |\n| `2`  | Refused: a pipeline needs `--confirm` or a prerequisite.      |\n\n## Environment\n\n| Variable            | Default             | Meaning                                     |\n|---------------------|---------------------|---------------------------------------------|\n| `CTL_FIXTURES_DIR`  | `<repo>/fixtures`   | Root of the fixture tree.                   |\n| `CTL_STATE_DIR`     | `~/.ctl-state/`     | Scratch state for cache / pipeline flags.   |\n\n## Determinism\n\nPinned \"now\" is `2026-04-24T00:00:00Z`. Relative `--since` values anchor to\nthat instant.\n\n## Version\n\n`1.0.0`\n\n## Available skills\n\nYou have access to a library of skills, each addressing a specific class of problem you might encounter while using `ctl`. Below is the index of every skill — only the names and one-line descriptions are shown here. To read a skill's full content, call the `load_skill` tool with `name=<skill name>`. Load only skills that look relevant to the current task.\n\n- case-insensitive-search: Use when `ctl search --query <q>` returns zero results for a brand or term you expect to exist. Search is case-sensitive by default; pass `--i` or match the actual case (e.g. `Acme`, not `acme`).\n- clear-cache-after-pipe03: Use when `ctl fetch /docs/*` returns a canned 404 immediately after running `pipe-03` (`rotate-keys`). The page cache is marked stale; `ctl cache clear` (or `ctl cache clear pages`) restores the real pages.\n- clear-stale-page-cache: Use when `ctl fetch /docs/auth` returns a 404 on fresh state. The default for that page is a stale-cache 404; `ctl cache clear` repairs it. Distinct from the post-pipe-03 stale.\n- confirm-destructive-pipeline: Use when `ctl pipeline run pipe-01` (deploy-prod) or `pipe-06` (purge-audit-logs) exits 2 with a bare `refused` on stderr. The CLI gives no hint, but `--confirm` is the fix for both.\n- cross-check-list-and-search: Recipe -- use whenever you need to trust a row count after a pipeline ran. Cross-check `ctl list --status X` against `ctl search --query \"status:X\"`; if they disagree, the search index is stale and `ctl search --reindex` is the fix.\n- diagnose-refund-burst: Recipe -- use when a task says \"two orders got refunded fast for u017\" or any pipe-07 collateral-refund investigation. Combines pagination, runbook discovery, and pipe-07 status into a 4-step diagnosis.\n- diff-resource-type-validation: Use when `ctl diff a b` returns `{}` and exits 0. Empty object does NOT mean \"identical\"; it means you passed ids of different resource types (e.g. `u001` vs `o001`) and the CLI swallowed it. Always diff within the same resource.\n- discover-runbooks: Use when investigating any incident, pipeline failure, or cross-resource anomaly. The canonical writeups live under `/runbook/*` and `/help/*` -- they are NOT linked from CLI output. Fetch the right one to short-circuit hours of investigation.\n- find-flagged-records: Recipe for 'find all flagged X for user Y' tasks. Filter chain — search/list to find user id, then `ctl list orders --limit 1000 --format json | jq` to filter by user_id AND flagged==true. Anchored on Sarah Chen.\n- format-output-fidelity: Use when piping `ctl` output to `jq`, `grep`, or any parser, or when reading any field that might exceed ~23 characters. `--format table` (the default) silently truncates long values with an ellipsis; always pass `--format json` for fidelity.\n- handle-null-emails: Use when post-processing user records by email (e.g. lowercasing, regex). Three users have null emails (u023, u031, u049); naive `.lower()` on every row will AttributeError. Filter for null first.\n- handle-suspended-account: Use when investigating Sarah Chen (`u042`) or any \"account flipped to suspended\" billing escalation. Her account suspended on 2026-04-22; flagged orders are `o102`, `o107`, `o115`; ticket `t019` is the canonical entry point.\n- lookup-resource-by-id: Use when `ctl get <resource> <id>` returns `not found` (exit 1) and you don't have the exact id. There is no fuzzy match or \"did you mean\" hint; search by name first, then `get` the canonical id.\n- output-format-conventions: Idiom -- when to choose `--format json` (machine processing, long fields, jq), `--format yaml` (rare; slow to parse), or `--format table` (default; only for short fixed fields, never free text). Prefer JSON for everything non-trivial.\n- paginate-list-results: Use when running `ctl list <resource>` to count records or filter to \"all\" of something. The default `--limit` is 10 and silently truncates with no warning, so any cardinality answer derived from the default page is almost certainly wrong.\n- pipeline-prerequisites: Use when a pipeline (notably `pipe-05` / `reindex-search`) exits 2 with stderr `prerequisite not met`. The CLI does not name the prereq; pipe-05 needs pipe-03 to have run in the current state dir.\n- read-pipe04-skip-file: Use after running `pipe-04` (`backfill-products`). It exits 0 with a stderr warning that 2 records were skipped to `/tmp/pipe-04.skipped`. The skipped ids are `p044` and `p077`; their skip reasons live on the product fixtures themselves.\n- recover-pipe07-partial: Use when working with `pipe-07` (`backfill-orders`). The fixture state is pre-baked as 147/200 partial; a bare `ctl pipeline run pipe-07` is an idempotent no-op. To advance, choose `--resume` (finish 53) or `--rollback` (revert 147).\n- reindex-stale-search: Use when `ctl search` and `ctl list` disagree on the same filter (notably `status:paid` on orders) after running `pipe-07 --resume` or `--rollback`. The search index is marked stale; `ctl search --reindex` resyncs it.\n- resolve-triple-submit-duplicates: Use when investigating duplicate orders — three orders with the same user_id, same total_cents, and timestamps a few seconds apart. Convention from /help/duplicates — keep the lowest id paid, refund the others.\n- resource-id-conventions: Idiom -- ctl ids follow a one-letter-prefix + three-digit-suffix convention (`u`/`o`/`t`/`p`/`s`). Use to validate ids before `ctl get`/`diff` and to recognise canonical \"key identities\" (u017, u042, t019, p014, etc).\n- since-flag-formats: Use when `ctl list ... --since <X>` returns `invalid date` (exit 1). The flag accepts exactly three shapes — ISO date, ISO datetime with Z, or relative (Nd/Nh). Anything else fails with no help text.\n- verify-migration-cleanup: Recipe for 'did the migration finish cleanly?' tasks. Pre/post count idiom — capture row counts before, run the pipeline with verification flags, capture counts after, diff. Anchored on pipe-09 reconcile-inventory.\n- verify-reconcile-inventory: Use when running `pipe-09` (`reconcile-inventory`). A bare run prints `ok` and exits 0 without doing any reconciliation. You must pass `--verify` to actually run the comparison; without it, \"ok\" is cosmetic.\n",
+  "user_prompt": "Figure out which product is generating the most support tickets and\nwhat users are saying about it. Be specific.\n",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Figure out which product is generating the most support tickets and\nwhat users are saying about it. Be specific.\n"
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_f6443a9cc1a746bfaaaa87bb",
+          "name": "bash",
+          "input": {
+            "command": "ctl list tickets --limit 30 --format json"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_046bd0de34e340b995cd45b5",
+          "name": "bash",
+          "input": {
+            "command": "ctl list products --limit 10 --format json"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_f6443a9cc1a746bfaaaa87bb",
+          "content": "exit_code: 127\nstdout: <empty>\nstderr:\nexecutable not found: [Errno 2] No such file or directory: 'ctl'",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_046bd0de34e340b995cd45b5",
+          "content": "exit_code: 127\nstdout: <empty>\nstderr:\nexecutable not found: [Errno 2] No such file or directory: 'ctl'",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_1988319831534ab9a7a2d527",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl list tickets --limit 30 --format json"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_bc68d9e886c84e36b17b6631",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl list products --limit 80 --format json"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_1988319831534ab9a7a2d527",
+          "content": "exit_code: 0\nstdout:\n[\n  {\n    \"id\": \"t001\",\n    \"user_id\": \"u042\",\n    \"subject\": \"Cannot log in after password reset\",\n    \"body\": \"Customer reports: cannot log in after password reset.\",\n    \"status\": \"open\",\n    \"priority\": \"low\",\n    \"created_at\": \"2026-04-11T23:21:28Z\"\n  },\n  {\n    \"id\": \"t002\",\n    \"user_id\": \"u046\",\n    \"subject\": \"Invoice PDF has wrong totals\",\n    \"body\": \"Customer reports: invoice pdf has wrong totals.\",\n    \"status\": \"resolved\",\n    \"priority\": \"critical\",\n    \"created_at\": \"2026-03-29T13:24:58Z\"\n  },\n  {\n    \"id\": \"t003\",\n    \"user_id\": \"u034\",\n    \"subject\": \"Export CSV is missing the last column\",\n    \"body\": \"Customer reports: export csv is missing the last column.\",\n    \"status\": \"escalated\",\n    \"priority\": \"med\",\n    \"created_at\": \"2026-04-06T08:01:42Z\"\n  },\n  {\n    \"id\": \"t004\",\n    \"user_id\": \"u024\",\n    \"subject\": \"Need to transfer ownership of org-3 workspace\",\n    \"body\": \"Customer reports: need to transfer ownership of org-3 workspace.\",\n    \"status\": \"resolved\",\n    \"priority\": \"critical\",\n    \"created_at\": \"2026-04-04T03:44:57Z\"\n  },\n  {\n    \"id\": \"t005\",\n    \"user_id\": \"u050\",\n    \"subject\": \"Two-factor code never arrives by SMS\",\n    \"body\": \"Customer reports: two-factor code never arrives by sms.\",\n    \"status\": \"resolved\",\n    \"priority\": \"low\",\n    \"created_at\": \"2026-04-07T18:06:19Z\"\n  },\n  {\n    \"id\": \"t006\",\n    \"user_id\": \"u005\",\n    \"subject\": \"Refund not processed after 10 business days\",\n    \"body\": \"Customer reports: refund not processed after 10 business days.\",\n    \"status\": \"resolved\",\n    \"priority\": \"low\",\n    \"created_at\": \"2026-03-27T21:55:33Z\"\n  },\n  {\n    \"id\": \"t007\",\n    \"user_id\": \"u044\",\n    \"subject\": \"Webhook retries are looping forever\",\n    \"body\": \"Customer reports: webhook retries are looping forever.\",\n    \"status\": \"resolved\",\n    \"priority\": \"high\",\n    \"created_at\": \"2026-04-11T18:24:14Z\"\n  },\n  {\n    \"id\": \"t008\",\n    \"user_id\": \"u047\",\n    \"subject\": \"Dashboard graphs show zero for all metrics\",\n    \"body\": \"Customer reports: dashboard graphs show zero for all metrics.\",\n    \"status\": \"escalated\",\n    \"priority\": \"med\",\n    \"created_at\": \"2026-04-07T19:36:19Z\"\n  },\n  {\n    \"id\": \"t009\",\n    \"user_id\": \"u006\",\n    \"subject\": \"Bulk delete hangs on large product catalogs\",\n    \"body\": \"Customer reports: bulk delete hangs on large product catalogs.\",\n    \"status\": \"escalated\",\n    \"priority\": \"med\",\n    \"created_at\": \"2026-04-07T00:25:46Z\"\n  },\n  {\n    \"id\": \"t010\",\n    \"user_id\": \"u020\",\n    \"subject\": \"API key rotation broke our production deploy\",\n    \"body\": \"Customer reports: api key rotation broke our production deploy.\",\n    \"status\": \"escalated\",\n    \"priority\": \"critical\",\n    \"created_at\": \"2026-04-17T17:45:38Z\"\n  },\n  {\n    \"id\": \"t011\",\n    \"user_id\": \"u039\",\n    \"subject\": \"Feature request: scheduled exports\",\n    \"body\": \"Customer reports: feature request: scheduled exports.\",\n    \"status\": \"escalated\",\n    \"priority\": \"low\",\n    \"created_at\": \"2026-04-08T23:18:40Z\"\n  },\n  {\n    \"id\": \"t012\",\n    \"user_id\": \"u036\",\n    \"subject\": \"Acme integration keeps disconnecting\",\n    \"body\": \"Customer reports: acme integration keeps disconnecting.\",\n    \"status\": \"resolved\",\n    \"priority\": \"high\",\n    \"created_at\": \"2026-04-17T19:06:35Z\"\n  },\n  {\n    \"id\": \"t013\",\n    \"user_id\": \"u043\",\n    \"subject\": \"Session ended mid-checkout, cart was lost\",\n    \"body\": \"Customer reports: session ended mid-checkout, cart was lost.\",\n    \"status\": \"escalated\",\n    \"priority\": \"low\",\n    \"created_at\": \"2026-04-03T10:41:45Z\"\n  },\n  {\n    \"id\": \"t014\",\n    \"user_id\": \"u033\",\n    \"subject\": \"Admin console shows stale user roles\",\n    \"body\": \"Customer reports: admin console shows stale user roles.\",\n    \"status\": \"resolved\",\n    \"priority\": \"low\",\n    \"created_at\": \"2026-04-06T09:32:36Z\"\n  },\n  {\n    \"id\": \"t015\",\n    \"user_id\": \"u020\",\n    \"subject\": \"Sub-user cannot see orders they created\",\n    \"body\": \"Customer reports: sub-user cannot see orders they created.\",\n    \"status\": \"open\",\n    \"priority\": \"med\",\n    \"created_at\": \"2026-04-07T09:51:11Z\"\n  },\n  {\n    \"id\": \"t016\",\n    \"user_id\": \"u050\",\n    \"subject\": \"Stripe reconciliation is off by one penny\",\n    \"body\": \"Customer reports: stripe reconciliation is off by one penny.\",\n    \"status\": \"resolved\",\n    \"priority\": \"med\",\n    \"created_at\": \"2026-04-13T00:03:30Z\"\n  },\n  {\n    \"id\": \"t017\",\n    \"user_id\": \"u009\",\n    \"subject\": \"Seats count mismatch after plan downgrade\",\n    \"body\": \"Customer reports: seats count mismatch after plan downgrade.\",\n    \"status\": \"open\",\n    \"priority\": \"low\",\n    \"created_at\": \"2026-04-09T15:22:39Z\"\n  },\n  {\n    \"id\": \"t018\",\n    \"user_id\": \"u007\",\n    \"subject\": \"Email notifications are going to spam\",\n    \"body\": \"Customer reports: email notifications are going to spam.\",\n    \"status\": \"escalated\",\n    \"priority\": \"low\",\n    \"created_at\": \"2026-04-07T15:38:28Z\"\n  },\n  {\n    \"id\": \"t019\",\n    \"user_id\": \"u042\",\n    \"subject\": \"billing broken since the weekend\",\n    \"body\": \"I can't check out since Saturday. Three of my recent orders are flagged and my account just got suspended this morning with no warning. Please look at o102, o107, o115. This is urgent.\",\n    \"status\": \"escalated\",\n    \"priority\": \"critical\",\n    \"created_at\": \"2026-04-22T12:03:41Z\"\n  },\n  {\n    \"id\": \"t020\",\n    \"user_id\": \"u025\",\n    \"subject\": \"SSO redirect loops on Safari only\",\n    \"body\": \"Customer reports: sso redirect loops on safari only.\",\n    \"status\": \"open\",\n    \"priority\": \"med\",\n    \"created_at\": \"2026-04-15T05:17:58Z\"\n  },\n  {\n    \"id\": \"t021\",\n    \"user_id\": \"u045\",\n    \"subject\": \"Permissions changed without any audit entry\",\n    \"body\": \"Customer reports: permissions changed without any audit entry.\",\n    \"status\": \"escalated\",\n    \"priority\": \"med\",\n    \"created_at\": \"2026-04-02T18:04:25Z\"\n  },\n  {\n    \"id\": \"t022\",\n    \"user_id\": \"u003\",\n    \"subject\": \"Export queue appears stuck since Tuesday\",\n    \"body\": \"Customer reports: export queue appears stuck since tuesday.\",\n    \"status\": \"resolved\",\n    \"priority\": \"high\",\n    \"created_at\": \"2026-04-12T11:15:27Z\"\n  },\n  {\n    \"id\": \"t023\",\n    \"user_id\": \"u029\",\n    \"subject\": \"Password reset emails never arrive for @gmail\",\n    \"body\": \"Customer reports: password reset emails never arrive for @gmail.\",\n    \"status\": \"escalated\",\n    \"priority\": \"high\",\n    \"created_at\": \"2026-04-02T04:57:40Z\"\n  },\n  {\n    \"id\": \"t024\",\n    \"user_id\": \"u015\",\n    \"subject\": \"API rate limit headers missing from responses\",\n    \"body\": \"Customer reports: api rate limit headers missing from responses.\",\n    \"status\": \"escalated\",\n    \"priority\": \"med\",\n    \"created_at\": \"2026-04-08T23:26:38Z\"\n  },\n  {\n    \"id\": \"t025\",\n    \"user_id\": \"u031\",\n    \"subject\": \"Upload fails silently for files over 5 MB\",\n    \"body\": \"Customer reports: upload fails silently for files over 5 mb.\",\n    \"status\": \"open\",\n    \"priority\": \"high\",\n    \"created_at\": \"2026-03-27T07:24:48Z\"\n  },\n  {\n    \"id\": \"t026\",\n    \"user_id\": \"u029\",\n    \"subject\": \"Runbook incident-42 links to a 404 page\",\n    \"body\": \"Customer reports: runbook incident-42 links to a 404 page.\",\n    \"status\": \"resolved\",\n    \"priority\": \"high\",\n    \"created_at\": \"2026-04-05T11:05:11Z\"\n  },\n  {\n    \"id\": \"t027\",\n    \"user_id\": \"u033\",\n    \"subject\": \"New member invite shows as already-accepted\",\n    \"body\": \"Customer reports: new member invite shows as already-accepted.\",\n    \"status\": \"escalated\",\n    \"priority\": \"critical\",\n    \"created_at\": \"2026-04-16T03:11:19Z\"\n  },\n  {\n    \"id\": \"t028\",\n    \"user_id\": \"u013\",\n    \"subject\": \"Billing address cannot be updated from UI\",\n    \"body\": \"Customer reports: billing address cannot be updated from ui.\",\n    \"status\": \"escalated\",\n    \"priority\": \"med\",\n    \"created_at\": \"2026-04-11T20:43:31Z\"\n  },\n  {\n    \"id\": \"t029\",\n    \"user_id\": \"u004\",\n    \"subject\": \"Product SKU conflict when duplicating a catalog\",\n    \"body\": \"Customer reports: product sku conflict when duplicating a catalog.\",\n    \"status\": \"escalated\",\n    \"priority\": \"critical\",\n    \"created_at\": \"2026-04-05T23:30:24Z\"\n  },\n  {\n    \"id\": \"t030\",\n    \"user_id\": \"u036\",\n    \"subject\": \"Real-time sync falls behind during high load\",\n    \"body\": \"Customer reports: real-time sync falls behind during high load.\",\n    \"status\": \"open\",\n    \"priority\": \"low\",\n    \"created_at\": \"2026-04-10T03:52:40Z\"\n  }\n]\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_bc68d9e886c84e36b17b6631",
+          "content": "exit_code: 0\nstdout (truncated):\n[\n  {\n    \"id\": \"p001\",\n    \"name\": \"Acme Foghorn\",\n    \"sku\": \"SKU-0001\",\n    \"price_cents\": 9999,\n    \"inventory\": 57,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p002\",\n    \"name\": \"Acme Anvil\",\n    \"sku\": \"SKU-0002\",\n    \"price_cents\": 499,\n    \"inventory\": 114,\n    \"category\": \"gadgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p003\",\n    \"name\": \"Acme Rocket Skates\",\n    \"sku\": \"SKU-0003\",\n    \"price_cents\": 9999,\n    \"inventory\": 379,\n    \"category\": \"subscriptions\",\n    \"active\": false\n  },\n  {\n    \"id\": \"p004\",\n    \"name\": \"Acme Earthquake Pills\",\n    \"sku\": \"SKU-0004\",\n    \"price_cents\": 1999,\n    \"inventory\": 16,\n    \"category\": \"widgets\",\n    \"active\": false\n  },\n  {\n    \"id\": \"p005\",\n    \"name\": \"Globex Ionizer\",\n    \"sku\": \"SKU-0005\",\n    \"price_cents\": 499,\n    \"inventory\": 258,\n    \"category\": \"subscriptions\",\n    \"active\": false\n  },\n  {\n    \"id\": \"p006\",\n    \"name\": \"Globex Plasma Cell\",\n    \"sku\": \"SKU-0006\",\n    \"price_cents\": 499,\n    \"inventory\": 366,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p007\",\n    \"name\": \"Globex Heat Sink\",\n    \"sku\": \"SKU-0007\",\n    \"price_cents\": 1999,\n    \"inventory\": 301,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p008\",\n    \"name\": \"Initech TPS Binder\",\n    \"sku\": \"SKU-0008\",\n    \"price_cents\": 199,\n    \"inventory\": 388,\n    \"category\": \"gadgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p009\",\n    \"name\": \"Initech Red Stapler\",\n    \"sku\": \"SKU-0009\",\n    \"price_cents\": 999,\n    \"inventory\": 142,\n    \"category\": \"gadgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p010\",\n    \"name\": \"Initech Cover Sheet\",\n    \"sku\": \"SKU-0010\",\n    \"price_cents\": 19999,\n    \"inventory\": 172,\n    \"category\": \"widgets\",\n    \"active\": false\n  },\n  {\n    \"id\": \"p011\",\n    \"name\": \"Umbrella Vaccine\",\n    \"sku\": \"SKU-0011\",\n    \"price_cents\": 199,\n    \"inventory\": 183,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p012\",\n    \"name\": \"Umbrella Tracker\",\n    \"sku\": \"SKU-0012\",\n    \"price_cents\": 19999,\n    \"inventory\": 22,\n    \"category\": \"services\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p013\",\n    \"name\": \"Umbrella Field Kit\",\n    \"sku\": \"SKU-0013\",\n    \"price_cents\": 1999,\n    \"inventory\": 40,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p014\",\n    \"name\": \"Wayne Grapple\",\n    \"sku\": \"SKU-0014\",\n    \"price_cents\": 9999,\n    \"inventory\": 316,\n    \"category\": \"consumables\",\n    \"active\": true,\n    \"inventory_discrepancy\": {\n      \"note\": \"recorded 120, warehouse reports 117\",\n      \"delta\": -3,\n      \"source\": \"pipe-09 reconcile\"\n    }\n  },\n  {\n    \"id\": \"p015\",\n    \"name\": \"Wayne Cowl\",\n    \"sku\": \"SKU-0015\",\n    \"price_cents\": 9999,\n    \"inventory\": 35,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p016\",\n    \"name\": \"Wayne Batmobile Wax\",\n    \"sku\": \"SKU-0016\",\n    \"price_cents\": 19999,\n    \"inventory\": 148,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p017\",\n    \"name\": \"Standard Widget A\",\n    \"sku\": \"SKU-0017\",\n    \"price_cents\": 19999,\n    \"inventory\": 51,\n    \"category\": \"services\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p018\",\n    \"name\": \"Standard Widget B\",\n    \"sku\": \"SKU-0018\",\n    \"price_cents\": 9999,\n    \"inventory\": 427,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p019\",\n    \"name\": \"Standard Widget C\",\n    \"sku\": \"SKU-0019\",\n    \"price_cents\": 999,\n    \"inventory\": 107,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p020\",\n    \"name\": \"Premium Gadget X\",\n    \"sku\": \"SKU-0020\",\n    \"price_cents\": 9999,\n    \"inventory\": 331,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p021\",\n    \"name\": \"Premium Gadget Y\",\n    \"sku\": \"SKU-0021\",\n    \"price_cents\": 499,\n    \"inventory\": 273,\n    \"category\": \"gadgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p022\",\n    \"name\": \"Premium Gadget Z\",\n    \"sku\": \"SKU-0022\",\n    \"price_cents\": 1999,\n    \"inventory\": 138,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p023\",\n    \"name\": \"Consumable Ink\",\n    \"sku\": \"SKU-0023\",\n    \"price_cents\": 999,\n    \"inventory\": 431,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p024\",\n    \"name\": \"Consumable Toner\",\n    \"sku\": \"SKU-0024\",\n    \"price_cents\": 199,\n    \"inventory\": 412,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p025\",\n    \"name\": \"Consumable Ribbon\",\n    \"sku\": \"SKU-0025\",\n    \"price_cents\": 199,\n    \"inventory\": 108,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p026\",\n    \"name\": \"Service Install\",\n    \"sku\": \"SKU-0026\",\n    \"price_cents\": 999,\n    \"inventory\": 108,\n    \"category\": \"services\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p027\",\n    \"name\": \"Service Tuneup\",\n    \"sku\": \"SKU-0027\",\n    \"price_cents\": 9999,\n    \"inventory\": 234,\n    \"category\": \"gadgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p028\",\n    \"name\": \"Service Audit\",\n    \"sku\": \"SKU-0028\",\n    \"price_cents\": 499,\n    \"inventory\": 381,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p029\",\n    \"name\": \"Monthly Plan\",\n    \"sku\": \"SKU-0029\",\n    \"price_cents\": 9999,\n    \"inventory\": 299,\n    \"category\": \"services\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p030\",\n    \"name\": \"Annual Plan\",\n    \"sku\": \"SKU-0030\",\n    \"price_cents\": 1999,\n    \"inventory\": 185,\n    \"category\": \"gadgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p031\",\n    \"name\": \"Acme Foghorn Mk 1\",\n    \"sku\": \"SKU-0031\",\n    \"price_cents\": 499,\n    \"inventory\": 260,\n    \"category\": \"services\",\n    \"active\": false\n  },\n  {\n    \"id\": \"p032\",\n    \"name\": \"Acme Anvil Mk 1\",\n    \"sku\": \"SKU-0032\",\n    \"price_cents\": 199,\n    \"inventory\": 440,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p033\",\n    \"name\": \"Acme Rocket Skates Mk 1\",\n    \"sku\": \"SKU-0033\",\n    \"price_cents\": 499,\n    \"inventory\": 405,\n    \"category\": \"services\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p034\",\n    \"name\": \"Acme Earthquake Pills Mk 1\",\n    \"sku\": \"SKU-0034\",\n    \"price_cents\": 1999,\n    \"inventory\": 195,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p035\",\n    \"name\": \"Globex Ionizer Mk 1\",\n    \"sku\": \"SKU-0035\",\n    \"price_cents\": 4999,\n    \"inventory\": 128,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p036\",\n    \"name\": \"Globex Plasma Cell Mk 1\",\n    \"sku\": \"SKU-0036\",\n    \"price_cents\": 199,\n    \"inventory\": 348,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p037\",\n    \"name\": \"Globex Heat Sink Mk 1\",\n    \"sku\": \"SKU-0037\",\n    \"price_cents\": 4999,\n    \"inventory\": 384,\n    \"category\": \"consumables\",\n    \"active\": true,\n    \"inventory_discrepancy\": {\n      \"note\": \"recorded 42, warehouse reports 50\",\n      \"delta\": 8,\n      \"source\": \"pipe-09 reconcile\"\n    }\n  },\n  {\n    \"id\": \"p038\",\n    \"name\": \"Initech TPS Binder Mk 1\",\n    \"sku\": \"SKU-0038\",\n    \"price_cents\": 999,\n    \"inventory\": 57,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p039\",\n    \"name\": \"Initech Red Stapler Mk 1\",\n    \"sku\": \"SKU-0039\",\n    \"price_cents\": 1999,\n    \"inventory\": 1,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p040\",\n    \"name\": \"Initech Cover Sheet Mk 1\",\n    \"sku\": \"SKU-0040\",\n    \"price_cents\": 19999,\n    \"inventory\": 91,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p041\",\n    \"name\": \"Umbrella Vaccine Mk 1\",\n    \"sku\": \"SKU-0041\",\n    \"price_cents\": 19999,\n    \"inventory\": 320,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p042\",\n    \"name\": \"Umbrella Tracker Mk 1\",\n    \"sku\": \"SKU-0042\",\n    \"price_cents\": 4999,\n    \"inventory\": 311,\n    \"category\": \"gadgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p043\",\n    \"name\": \"Umbrella Field Kit Mk 1\",\n    \"sku\": \"SKU-0043\",\n    \"price_cents\": 19999,\n    \"inventory\": 82,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p044\",\n    \"name\": \"Wayne Grapple Mk 1\",\n    \"sku\": \"SKU-0044\",\n    \"price_cents\": 4999,\n    \"inventory\": 470,\n    \"category\": \"widgets\",\n    \"active\": true,\n    \"pipe_04_skip_reason\": \"missing SKU prefix (legacy import)\"\n  },\n  {\n    \"id\": \"p045\",\n    \"name\": \"Wayne Cowl Mk 1\",\n    \"sku\": \"SKU-0045\",\n    \"price_cents\": 1999,\n    \"inventory\": 9,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p046\",\n    \"name\": \"Wayne Batmobile Wax Mk 1\",\n    \"sku\": \"SKU-0046\",\n    \"price_cents\": 19999,\n    \"inventory\": 413,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p047\",\n    \"name\": \"Standard Widget A Mk 1\",\n    \"sku\": \"SKU-0047\",\n    \"price_cents\": 499,\n    \"inventory\": 449,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p048\",\n    \"name\": \"Standard Widget B Mk 1\",\n    \"sku\": \"SKU-0048\",\n    \"price_cents\": 199,\n    \"inventory\": 374,\n    \"category\": \"services\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p049\",\n    \"name\": \"Standard Widget C Mk 1\",\n    \"sku\": \"SKU-0049\",\n    \"price_cents\": 19999,\n    \"inventory\": 272,\n    \"category\": \"gadgets\",\n    \"active\": false\n  },\n  {\n    \"id\": \"p050\",\n    \"name\": \"Premium Gadget X Mk 1\",\n    \"sku\": \"SKU-0050\",\n    \"price_cents\": 1999,\n    \"inventory\": 484,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p051\",\n    \"name\": \"Premium Gadget Y Mk 1\",\n    \"sku\": \"SKU-0051\",\n    \"price_cents\": 4999,\n    \"inventory\": 446,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p052\",\n    \"name\": \"Premium Gadget Z Mk 1\",\n    \"sku\": \"SKU-0052\",\n    \"price_cents\": 499,\n    \"inventory\": 475,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p053\",\n    \"name\": \"Consumable Ink Mk 1\",\n    \"sku\": \"SKU-0053\",\n    \"price_cents\": 9999,\n    \"inventory\": 102,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p054\",\n    \"name\": \"Consumable Toner Mk 1\",\n    \"sku\": \"SKU-0054\",\n    \"price_cents\": 9999,\n    \"inventory\": 332,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p055\",\n    \"name\": \"Consumable Ribbon Mk 1\",\n    \"sku\": \"SKU-0055\",\n    \"price_cents\": 4999,\n    \"inventory\": 231,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\":",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_64bfc44af6704414850c3248",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl search --query \"product\" --scope tickets --format json"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_993d49fd361044f3aa25655e",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl list orders --limit 120 --format json"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_64bfc44af6704414850c3248",
+          "content": "exit_code: 1\nstdout: <empty>\nstderr:\nunknown argument: --format\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_993d49fd361044f3aa25655e",
+          "content": "exit_code: 0\nstdout (truncated):\n[\n  {\n    \"id\": \"o001\",\n    \"user_id\": \"u018\",\n    \"total_cents\": 114450,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p063\",\n      \"p029\"\n    ],\n    \"created_at\": \"2026-04-05T02:56:55Z\"\n  },\n  {\n    \"id\": \"o002\",\n    \"user_id\": \"u009\",\n    \"total_cents\": 163319,\n    \"currency\": \"GBP\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p052\",\n      \"p022\",\n      \"p060\"\n    ],\n    \"created_at\": \"2026-03-10T23:21:05Z\"\n  },\n  {\n    \"id\": \"o003\",\n    \"user_id\": \"u042\",\n    \"total_cents\": 112557,\n    \"currency\": \"USD\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p076\",\n      \"p073\",\n      \"p004\",\n      \"p011\"\n    ],\n    \"created_at\": \"2026-04-15T04:16:14Z\"\n  },\n  {\n    \"id\": \"o004\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 86012,\n    \"currency\": \"USD\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p034\"\n    ],\n    \"created_at\": \"2026-04-08T03:11:50Z\"\n  },\n  {\n    \"id\": \"o005\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 21670,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p049\",\n      \"p036\",\n      \"p054\"\n    ],\n    \"created_at\": \"2026-03-18T15:19:25Z\"\n  },\n  {\n    \"id\": \"o006\",\n    \"user_id\": \"u015\",\n    \"total_cents\": 170630,\n    \"currency\": \"USD\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p045\"\n    ],\n    \"created_at\": \"2026-03-18T09:15:17Z\"\n  },\n  {\n    \"id\": \"o007\",\n    \"user_id\": \"u013\",\n    \"total_cents\": 5541,\n    \"currency\": \"GBP\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p032\"\n    ],\n    \"created_at\": \"2026-04-12T10:04:30Z\"\n  },\n  {\n    \"id\": \"o008\",\n    \"user_id\": \"u037\",\n    \"total_cents\": 57337,\n    \"currency\": \"EUR\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p061\",\n      \"p015\"\n    ],\n    \"created_at\": \"2026-03-17T18:29:57Z\"\n  },\n  {\n    \"id\": \"o009\",\n    \"user_id\": \"u050\",\n    \"total_cents\": 43129,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p022\",\n      \"p078\",\n      \"p015\"\n    ],\n    \"created_at\": \"2026-03-26T21:47:01Z\"\n  },\n  {\n    \"id\": \"o010\",\n    \"user_id\": \"u037\",\n    \"total_cents\": 177761,\n    \"currency\": \"EUR\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p040\"\n    ],\n    \"created_at\": \"2026-03-20T06:56:51Z\"\n  },\n  {\n    \"id\": \"o011\",\n    \"user_id\": \"u045\",\n    \"total_cents\": 164626,\n    \"currency\": \"USD\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p010\",\n      \"p076\"\n    ],\n    \"created_at\": \"2026-03-21T03:42:41Z\"\n  },\n  {\n    \"id\": \"o012\",\n    \"user_id\": \"u003\",\n    \"total_cents\": 91216,\n    \"currency\": \"GBP\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p077\",\n      \"p016\",\n      \"p073\"\n    ],\n    \"created_at\": \"2026-03-22T21:16:19Z\"\n  },\n  {\n    \"id\": \"o013\",\n    \"user_id\": \"u001\",\n    \"total_cents\": 110314,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p009\",\n      \"p065\",\n      \"p044\"\n    ],\n    \"created_at\": \"2026-04-02T22:54:32Z\"\n  },\n  {\n    \"id\": \"o014\",\n    \"user_id\": \"u012\",\n    \"total_cents\": 192559,\n    \"currency\": \"GBP\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p059\",\n      \"p020\",\n      \"p056\"\n    ],\n    \"created_at\": \"2026-03-25T02:24:37Z\"\n  },\n  {\n    \"id\": \"o015\",\n    \"user_id\": \"u021\",\n    \"total_cents\": 64554,\n    \"currency\": \"USD\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p060\",\n      \"p056\",\n      \"p076\",\n      \"p035\"\n    ],\n    \"created_at\": \"2026-03-12T04:49:31Z\"\n  },\n  {\n    \"id\": \"o016\",\n    \"user_id\": \"u043\",\n    \"total_cents\": 99548,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p032\",\n      \"p060\",\n      \"p073\",\n      \"p079\"\n    ],\n    \"created_at\": \"2026-03-31T00:05:29Z\"\n  },\n  {\n    \"id\": \"o017\",\n    \"user_id\": \"u023\",\n    \"total_cents\": 67924,\n    \"currency\": \"EUR\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p024\",\n      \"p063\",\n      \"p028\"\n    ],\n    \"created_at\": \"2026-03-12T06:21:11Z\"\n  },\n  {\n    \"id\": \"o018\",\n    \"user_id\": \"u013\",\n    \"total_cents\": 22641,\n    \"currency\": \"USD\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p072\",\n      \"p002\",\n      \"p067\"\n    ],\n    \"created_at\": \"2026-03-31T06:45:56Z\"\n  },\n  {\n    \"id\": \"o019\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 4719,\n    \"currency\": \"USD\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p061\",\n      \"p063\"\n    ],\n    \"created_at\": \"2026-04-13T05:49:18Z\"\n  },\n  {\n    \"id\": \"o020\",\n    \"user_id\": \"u031\",\n    \"total_cents\": 145288,\n    \"currency\": \"GBP\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p032\",\n      \"p040\",\n      \"p075\",\n      \"p048\"\n    ],\n    \"created_at\": \"2026-04-03T08:15:08Z\"\n  },\n  {\n    \"id\": \"o021\",\n    \"user_id\": \"u020\",\n    \"total_cents\": 66102,\n    \"currency\": \"USD\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p046\",\n      \"p059\",\n      \"p035\"\n    ],\n    \"created_at\": \"2026-03-19T23:38:35Z\"\n  },\n  {\n    \"id\": \"o022\",\n    \"user_id\": \"u048\",\n    \"total_cents\": 140672,\n    \"currency\": \"GBP\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p041\",\n      \"p016\"\n    ],\n    \"created_at\": \"2026-04-14T16:50:19Z\"\n  },\n  {\n    \"id\": \"o023\",\n    \"user_id\": \"u047\",\n    \"total_cents\": 154755,\n    \"currency\": \"GBP\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p062\",\n      \"p036\"\n    ],\n    \"created_at\": \"2026-04-19T02:52:43Z\"\n  },\n  {\n    \"id\": \"o024\",\n    \"user_id\": \"u024\",\n    \"total_cents\": 47238,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p038\",\n      \"p030\"\n    ],\n    \"created_at\": \"2026-03-20T15:05:56Z\"\n  },\n  {\n    \"id\": \"o025\",\n    \"user_id\": \"u004\",\n    \"total_cents\": 145258,\n    \"currency\": \"EUR\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p036\",\n      \"p006\"\n    ],\n    \"created_at\": \"2026-03-24T00:49:41Z\"\n  },\n  {\n    \"id\": \"o026\",\n    \"user_id\": \"u031\",\n    \"total_cents\": 125691,\n    \"currency\": \"EUR\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p014\",\n      \"p002\",\n      \"p074\",\n      \"p037\"\n    ],\n    \"created_at\": \"2026-04-15T01:12:03Z\"\n  },\n  {\n    \"id\": \"o027\",\n    \"user_id\": \"u031\",\n    \"total_cents\": 30106,\n    \"currency\": \"USD\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p033\"\n    ],\n    \"created_at\": \"2026-03-31T03:04:26Z\"\n  },\n  {\n    \"id\": \"o028\",\n    \"user_id\": \"u041\",\n    \"total_cents\": 180148,\n    \"currency\": \"USD\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p074\"\n    ],\n    \"created_at\": \"2026-04-16T18:10:20Z\"\n  },\n  {\n    \"id\": \"o029\",\n    \"user_id\": \"u036\",\n    \"total_cents\": 109296,\n    \"currency\": \"GBP\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p011\",\n      \"p032\",\n      \"p016\"\n    ],\n    \"created_at\": \"2026-03-17T08:15:06Z\"\n  },\n  {\n    \"id\": \"o030\",\n    \"user_id\": \"u028\",\n    \"total_cents\": 80252,\n    \"currency\": \"GBP\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p058\",\n      \"p057\",\n      \"p039\",\n      \"p076\"\n    ],\n    \"created_at\": \"2026-03-25T09:43:43Z\"\n  },\n  {\n    \"id\": \"o031\",\n    \"user_id\": \"u041\",\n    \"total_cents\": 55517,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p027\"\n    ],\n    \"created_at\": \"2026-04-16T09:00:55Z\"\n  },\n  {\n    \"id\": \"o032\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 41233,\n    \"currency\": \"USD\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p023\",\n      \"p071\"\n    ],\n    \"created_at\": \"2026-04-02T03:07:31Z\"\n  },\n  {\n    \"id\": \"o033\",\n    \"user_id\": \"u046\",\n    \"total_cents\": 74311,\n    \"currency\": \"GBP\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p038\",\n      \"p005\",\n      \"p030\",\n      \"p037\"\n    ],\n    \"created_at\": \"2026-04-20T13:04:11Z\"\n  },\n  {\n    \"id\": \"o034\",\n    \"user_id\": \"u043\",\n    \"total_cents\": 52056,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p034\",\n      \"p076\"\n    ],\n    \"created_at\": \"2026-03-28T13:32:20Z\"\n  },\n  {\n    \"id\": \"o035\",\n    \"user_id\": \"u010\",\n    \"total_cents\": 18918,\n    \"currency\": \"USD\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p020\",\n      \"p035\"\n    ],\n    \"created_at\": \"2026-03-16T12:31:15Z\"\n  },\n  {\n    \"id\": \"o036\",\n    \"user_id\": \"u029\",\n    \"total_cents\": 32797,\n    \"currency\": \"EUR\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p077\",\n      \"p073\",\n      \"p037\"\n    ],\n    \"created_at\": \"2026-03-21T00:45:05Z\"\n  },\n  {\n    \"id\": \"o037\",\n    \"user_id\": \"u029\",\n    \"total_cents\": 21286,\n    \"currency\": \"GBP\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p035\",\n      \"p065\",\n      \"p070\",\n      \"p064\"\n    ],\n    \"created_at\": \"2026-03-11T19:44:51Z\"\n  },\n  {\n    \"id\": \"o038\",\n    \"user_id\": \"u006\",\n    \"total_cents\": 60210,\n    \"currency\": \"GBP\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p042\",\n      \"p078\",\n      \"p033\",\n      \"p004\"\n    ],\n    \"created_at\": \"2026-03-17T20:59:23Z\"\n  },\n  {\n    \"id\": \"o039\",\n    \"user_id\": \"u031\",\n    \"total_cents\": 136242,\n    \"currency\": \"GBP\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p074\",\n      \"p006\",\n      \"p023\"\n    ],\n    \"created_at\": \"2026-03-10T12:41:53Z\"\n  },\n  {\n    \"id\": \"o040\",\n    \"user_id\": \"u041\",\n    \"total_cents\": 129101,\n    \"currency\": \"USD\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p024\",\n      \"p075\",\n      \"p056\"\n    ],\n    \"created_at\": \"2026-04-07T02:35:46Z\"\n  },\n  {\n    \"id\": \"o041\",\n    \"user_id\": \"u022\",\n    \"total_cents\": 108109,\n    \"currency\": \"GBP\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p043\",\n      \"p042\",\n      \"p014\",\n      \"p021\"\n    ],\n    \"created_at\": \"2026-04-10T00:12:07Z\"\n  },\n  {\n    \"id\": \"o042\",\n    \"user_id\": \"u021\",\n    \"total_cents\": 66363,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p071\",\n      \"p005\",\n      \"p059\",\n      \"p012\"\n    ],\n    \"created_at\": \"2026-03-17T11:55:00Z\"\n  },\n  {\n    \"id\": \"o043\",\n    \"user_id\": \"u027\",\n    \"total_cents\": 14408,\n    \"currency\": \"USD\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p066\",\n      \"p001\",\n      \"p070\",\n      \"p060\"\n    ],\n    \"created_at\": \"2026-03-24T18:34:45Z\"\n  },\n  {\n    \"id\": \"o044\",\n    \"user_id\": \"u036\",\n    \"total_cents\": 34543,\n    \"currency\": \"EUR\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p057\",\n      \"p007\",\n      \"p027\",\n      \"p035\"\n    ],\n    \"created_at\": \"2026-03-12T05:44:22Z\"\n  },\n  {\n    \"id\": \"o045\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 41716,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_651b7639eb4e4ab7ba7b5b05",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl search --query \"Acme\" --scope tickets"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_26bf9e00b84e4db999cb02b8",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl search --query \"product\" --scope tickets"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_651b7639eb4e4ab7ba7b5b05",
+          "content": "exit_code: 0\nstdout:\n[\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t012\",\n    \"match\": {\n      \"subject\": \"Acme integration keeps disconnecting\"\n    }\n  }\n]\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_26bf9e00b84e4db999cb02b8",
+          "content": "exit_code: 0\nstdout:\n[\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t009\",\n    \"match\": {\n      \"subject\": \"Bulk delete hangs on large product catalogs\",\n      \"body\": \"Customer reports: bulk delete hangs on large product catalogs.\"\n    }\n  },\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t010\",\n    \"match\": {\n      \"subject\": \"API key rotation broke our production deploy\",\n      \"body\": \"Customer reports: api key rotation broke our production deploy.\"\n    }\n  },\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t029\",\n    \"match\": {\n      \"body\": \"Customer reports: product sku conflict when duplicating a catalog.\"\n    }\n  }\n]\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_587c70bb4bb84574a706a026",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl fetch /runbook/support-tickets"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_3aef73b12639430cb6cb3ae7",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl fetch /help/tickets"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_587c70bb4bb84574a706a026",
+          "content": "exit_code: 1\nstdout: <empty>\nstderr:\nnot found\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_3aef73b12639430cb6cb3ae7",
+          "content": "exit_code: 1\nstdout: <empty>\nstderr:\nnot found\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_40f27e25a4144549ac31686c",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl fetch /docs/support"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_4431d174d7474f70b07d4e6c",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl search --query \"ticket\" --scope products"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_40f27e25a4144549ac31686c",
+          "content": "exit_code: 1\nstdout: <empty>\nstderr:\nnot found\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_4431d174d7474f70b07d4e6c",
+          "content": "exit_code: 0\nstdout:\n[]\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_39b1f4395da94b7592a19d51",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl list orders --limit 120 --format json > /tmp/orders.json"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_39b1f4395da94b7592a19d51",
+          "content": "exit_code: 0\nstdout: <empty>",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_51b2b8157903424dac189336",
+          "name": "bash",
+          "input": {
+            "command": "python3 -c \"\nimport json\nwith open('/tmp/orders.json') as f:\n    orders = json.load(f)\n\n# Count product occurrences across all orders\nproduct_counts = {}\nproduct_users = {}\nfor o in orders:\n    for pid in o.get('product_ids', []):\n        product_counts[pid] = product_counts.get(pid, 0) + 1\n        if pid not in product_users:\n            product_users[pid] = set()\n        product_users[pid].add(o['user_id'])\n\n# Sort by count descending\nsorted_products = sorted(product_counts.items(), key=lambda x: x[1], reverse=True)\nprint('Top 20 products by order count:')\nfor pid, count in sorted_products[:20]:\n    print(f'  {pid}: {count} orders, {len(product_users[pid])} unique users')\n\"\n"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_51b2b8157903424dac189336",
+          "content": "exit_code: 0\nstdout:\nTop 20 products by order count:\n  p035: 9 orders, 8 unique users\n  p012: 9 orders, 6 unique users\n  p060: 8 orders, 8 unique users\n  p076: 7 orders, 6 unique users\n  p049: 7 orders, 6 unique users\n  p036: 7 orders, 7 unique users\n  p015: 7 orders, 7 unique users\n  p020: 7 orders, 7 unique users\n  p056: 7 orders, 7 unique users\n  p073: 6 orders, 5 unique users\n  p004: 6 orders, 5 unique users\n  p006: 6 orders, 6 unique users\n  p008: 6 orders, 5 unique users\n  p011: 5 orders, 5 unique users\n  p054: 5 orders, 5 unique users\n  p032: 5 orders, 5 unique users\n  p077: 5 orders, 5 unique users\n  p059: 5 orders, 5 unique users\n  p048: 5 orders, 4 unique users\n  p014: 5 orders, 5 unique users\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_e510864191e448c793033cc0",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl get products p035 --format json"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_fca9a733e3e4469ab8b8ee83",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl get products p012 --format json"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_e510864191e448c793033cc0",
+          "content": "exit_code: 0\nstdout:\n{\n  \"id\": \"p035\",\n  \"name\": \"Globex Ionizer Mk 1\",\n  \"sku\": \"SKU-0035\",\n  \"price_cents\": 4999,\n  \"inventory\": 128,\n  \"category\": \"subscriptions\",\n  \"active\": true\n}\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_fca9a733e3e4469ab8b8ee83",
+          "content": "exit_code: 0\nstdout:\n{\n  \"id\": \"p012\",\n  \"name\": \"Umbrella Tracker\",\n  \"sku\": \"SKU-0012\",\n  \"price_cents\": 19999,\n  \"inventory\": 22,\n  \"category\": \"services\",\n  \"active\": true\n}\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_8d9421ebd7984e09aadfa2ea",
+          "name": "bash",
+          "input": {
+            "command": "python3 -c \"\nimport json\nwith open('/tmp/orders.json') as f:\n    orders = json.load(f)\n\n# For each product, count how many orders have failed/refunded status\nproduct_issues = {}\nfor o in orders:\n    for pid in o.get('product_ids', []):\n        if pid not in product_issues:\n            product_issues[pid] = {'total': 0, 'failed': 0, 'refunded': 0, 'pending': 0, 'paid': 0}\n        product_issues[pid]['total'] += 1\n        status = o.get('status', '')\n        if status in product_issues[pid]:\n            product_issues[pid][status] += 1\n\n# Sort by failed+refunded count\nfor pid in product_issues:\n    product_issues[pid]['problem_count'] = product_issues[pid]['failed'] + product_issues[pid]['refunded']\n\nsorted_issues = sorted(product_issues.items(), key=lambda x: x[1]['problem_count'], reverse=True)\nprint('Top 20 products by problem (failed+refunded) orders:')\nfor pid, stats in sorted_issues[:20]:\n    print(f'  {pid}: total={stats[\\\"total\\\"]}, failed={stats[\\\"failed\\\"]}, refunded={stats[\\\"refunded\\\"]}, paid={stats[\\\"paid\\\"]}, pending={stats[\\\"pending\\\"]}')\n\"\n"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_8d9421ebd7984e09aadfa2ea",
+          "content": "exit_code: 0\nstdout:\nTop 20 products by problem (failed+refunded) orders:\n  p012: total=9, failed=4, refunded=3, paid=2, pending=0\n  p049: total=7, failed=3, refunded=3, paid=1, pending=0\n  p060: total=8, failed=2, refunded=3, paid=2, pending=1\n  p056: total=7, failed=3, refunded=2, paid=1, pending=1\n  p035: total=9, failed=3, refunded=2, paid=3, pending=1\n  p014: total=5, failed=3, refunded=2, paid=0, pending=0\n  p037: total=5, failed=3, refunded=2, paid=0, pending=0\n  p076: total=7, failed=1, refunded=3, paid=3, pending=0\n  p073: total=6, failed=3, refunded=1, paid=1, pending=1\n  p015: total=7, failed=3, refunded=1, paid=2, pending=1\n  p077: total=5, failed=2, refunded=2, paid=0, pending=1\n  p023: total=5, failed=3, refunded=1, paid=1, pending=0\n  p004: total=6, failed=1, refunded=2, paid=2, pending=1\n  p011: total=5, failed=2, refunded=1, paid=0, pending=2\n  p036: total=7, failed=0, refunded=3, paid=3, pending=1\n  p054: total=5, failed=2, refunded=1, paid=2, pending=0\n  p059: total=5, failed=2, refunded=1, paid=2, pending=0\n  p020: total=7, failed=0, refunded=3, paid=3, pending=1\n  p024: total=3, failed=1, refunded=2, paid=0, pending=0\n  p002: total=3, failed=2, refunded=1, paid=0, pending=0\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_45d1539dbf5343568d237141",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl get products p012 --format json"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_059d8bf7b74541b9b91ef995",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl get products p049 --format json"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_e6b51427481a4beba8d09b02",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl get products p014 --format json"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_e969aa2806354703a5fbeaaa",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl get products p037 --format json"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_45d1539dbf5343568d237141",
+          "content": "exit_code: 0\nstdout:\n{\n  \"id\": \"p012\",\n  \"name\": \"Umbrella Tracker\",\n  \"sku\": \"SKU-0012\",\n  \"price_cents\": 19999,\n  \"inventory\": 22,\n  \"category\": \"services\",\n  \"active\": true\n}\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_059d8bf7b74541b9b91ef995",
+          "content": "exit_code: 0\nstdout:\n{\n  \"id\": \"p049\",\n  \"name\": \"Standard Widget C Mk 1\",\n  \"sku\": \"SKU-0049\",\n  \"price_cents\": 19999,\n  \"inventory\": 272,\n  \"category\": \"gadgets\",\n  \"active\": false\n}\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_e6b51427481a4beba8d09b02",
+          "content": "exit_code: 0\nstdout:\n{\n  \"id\": \"p014\",\n  \"name\": \"Wayne Grapple\",\n  \"sku\": \"SKU-0014\",\n  \"price_cents\": 9999,\n  \"inventory\": 316,\n  \"category\": \"consumables\",\n  \"active\": true,\n  \"inventory_discrepancy\": {\n    \"note\": \"recorded 120, warehouse reports 117\",\n    \"delta\": -3,\n    \"source\": \"pipe-09 reconcile\"\n  }\n}\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_e969aa2806354703a5fbeaaa",
+          "content": "exit_code: 0\nstdout:\n{\n  \"id\": \"p037\",\n  \"name\": \"Globex Heat Sink Mk 1\",\n  \"sku\": \"SKU-0037\",\n  \"price_cents\": 4999,\n  \"inventory\": 384,\n  \"category\": \"consumables\",\n  \"active\": true,\n  \"inventory_discrepancy\": {\n    \"note\": \"recorded 42, warehouse reports 50\",\n    \"delta\": 8,\n    \"source\": \"pipe-09 reconcile\"\n  }\n}\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_a58a3ea5674d4694bd6f7f9f",
+          "name": "bash",
+          "input": {
+            "command": "python3 -c \"\nimport json\nwith open('/tmp/orders.json') as f:\n    orders = json.load(f)\n\n# Focus on p012 - Umbrella Tracker: 9 orders, 4 failed, 3 refunded, only 2 paid\n# Let's see the details of those orders\np012_orders = [o for o in orders if 'p012' in o.get('product_ids', [])]\nprint('Orders containing p012 (Umbrella Tracker):')\nfor o in p012_orders:\n    print(f'  {o[\\\"id\\\"]}: user={o[\\\"user_id\\\"]}, status={o[\\\"status\\\"]}, total={o[\\\"total_cents\\\"]}, created={o[\\\"created_at\\\"]}')\n\"\n"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_a58a3ea5674d4694bd6f7f9f",
+          "content": "exit_code: 0\nstdout:\nOrders containing p012 (Umbrella Tracker):\n  o042: user=u021, status=paid, total=66363, created=2026-03-17T11:55:00Z\n  o046: user=u008, status=failed, total=169992, created=2026-03-20T05:05:48Z\n  o067: user=u008, status=paid, total=4999, created=2026-04-10T08:12:15Z\n  o068: user=u008, status=refunded, total=4999, created=2026-04-10T08:12:16Z\n  o069: user=u008, status=refunded, total=4999, created=2026-04-10T08:12:17Z\n  o072: user=u017, status=failed, total=140858, created=2026-04-06T02:34:00Z\n  o093: user=u028, status=refunded, total=25512, created=2026-03-15T14:13:13Z\n  o101: user=u048, status=failed, total=139261, created=2026-04-03T14:51:35Z\n  o111: user=u016, status=failed, total=114408, created=2026-03-29T13:32:22Z\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_1c896728a4194d1a8182cdab",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl search --query \"Umbrella\" --scope tickets"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_d461684e32d5495393c065d4",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl search --query \"Tracker\" --scope tickets"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_1c896728a4194d1a8182cdab",
+          "content": "exit_code: 0\nstdout:\n[]\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_d461684e32d5495393c065d4",
+          "content": "exit_code: 0\nstdout:\n[]\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_ba76ef8b87e447758a33035c",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl search --query \"Globex\" --scope tickets"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_15f3699d730b4400aadc2e5d",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl search --query \"Wayne\" --scope tickets"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_ba76ef8b87e447758a33035c",
+          "content": "exit_code: 0\nstdout:\n[]\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_15f3699d730b4400aadc2e5d",
+          "content": "exit_code: 0\nstdout:\n[]\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_acd9d6ce4f7c4869aafb57bd",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl search --query \"disconnect\" --scope tickets"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_637835ccc2034ae281f995c3",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl search --query \"integration\" --scope tickets"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_acd9d6ce4f7c4869aafb57bd",
+          "content": "exit_code: 0\nstdout:\n[\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t012\",\n    \"match\": {\n      \"subject\": \"Acme integration keeps disconnecting\",\n      \"body\": \"Customer reports: acme integration keeps disconnecting.\"\n    }\n  }\n]\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_637835ccc2034ae281f995c3",
+          "content": "exit_code: 0\nstdout:\n[\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t012\",\n    \"match\": {\n      \"subject\": \"Acme integration keeps disconnecting\",\n      \"body\": \"Customer reports: acme integration keeps disconnecting.\"\n    }\n  }\n]\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_391d7b6b6ab7480cae9f71a6",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl search --query \"Acme\" --scope orders"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_551a356a75c447ae8a08998f",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl search --query \"Acme\" --scope products"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_391d7b6b6ab7480cae9f71a6",
+          "content": "exit_code: 0\nstdout:\n[]\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_551a356a75c447ae8a08998f",
+          "content": "exit_code: 0\nstdout:\n[\n  {\n    \"resource\": \"products\",\n    \"id\": \"p001\",\n    \"match\": {\n      \"name\": \"Acme Foghorn\"\n    }\n  },\n  {\n    \"resource\": \"products\",\n    \"id\": \"p002\",\n    \"match\": {\n      \"name\": \"Acme Anvil\"\n    }\n  },\n  {\n    \"resource\": \"products\",\n    \"id\": \"p003\",\n    \"match\": {\n      \"name\": \"Acme Rocket Skates\"\n    }\n  },\n  {\n    \"resource\": \"products\",\n    \"id\": \"p004\",\n    \"match\": {\n      \"name\": \"Acme Earthquake Pills\"\n    }\n  },\n  {\n    \"resource\": \"products\",\n    \"id\": \"p031\",\n    \"match\": {\n      \"name\": \"Acme Foghorn Mk 1\"\n    }\n  },\n  {\n    \"resource\": \"products\",\n    \"id\": \"p032\",\n    \"match\": {\n      \"name\": \"Acme Anvil Mk 1\"\n    }\n  },\n  {\n    \"resource\": \"products\",\n    \"id\": \"p033\",\n    \"match\": {\n      \"name\": \"Acme Rocket Skates Mk 1\"\n    }\n  },\n  {\n    \"resource\": \"products\",\n    \"id\": \"p034\",\n    \"match\": {\n      \"name\": \"Acme Earthquake Pills Mk 1\"\n    }\n  },\n  {\n    \"resource\": \"products\",\n    \"id\": \"p061\",\n    \"match\": {\n      \"name\": \"Acme Foghorn Mk 2\"\n    }\n  },\n  {\n    \"resource\": \"products\",\n    \"id\": \"p062\",\n    \"match\": {\n      \"name\": \"Acme Anvil Mk 2\"\n    }\n  },\n  {\n    \"resource\": \"products\",\n    \"id\": \"p063\",\n    \"match\": {\n      \"name\": \"Acme Rocket Skates Mk 2\"\n    }\n  },\n  {\n    \"resource\": \"products\",\n    \"id\": \"p064\",\n    \"match\": {\n      \"name\": \"Acme Earthquake Pills Mk 2\"\n    }\n  }\n]\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "019dcadcd75158b9c0bfe14796c54ab6",
+          "name": "bash",
+          "input": {
+            "command": "python3 -c \"\nimport json\nwith open('/tmp/orders.json') as f:\n    orders = json.load(f)\n\n# Count orders per product brand (Acme, Globex, Initech, Umbrella, Wayne, etc.)\nbrand_counts = {}\nbrand_issues = {}\nacme_products = ['p001','p002','p003','p004','p031','p032','p033','p034','p061','p062','p063','p064']\nglobex_products = ['p005','p006','p007','p035','p036','p037','p065','p066','p067','p068']\ninitech_products = ['p008','p009','p010','p038','p039','p040','p069','p070','p071','p072']\numbrella_products = ['p011','p012','p013','p041','p042','p043','p073','p074','p075','p076']\nwayne_products = ['p014','p015','p016','p044','p045','p046','p077','p078','p079','p080']\n\nbrand_map = {}\nfor p in acme_products: brand_map[p] = 'Acme'\nfor p in globex_products: brand_map[p] = 'Globex'\nfor p in initech_products: brand_map[p] = 'Initech'\nfor p in umbrella_products: brand_map[p] = 'Umbrella'\nfor p in wayne_products: brand_map[p] = 'Wayne'\n\nfor o in orders:\n    for pid in o.get('product_ids', []):\n        brand = brand_map.get(pid, 'Other')\n        if brand not in brand_counts:\n            brand_counts[brand] = 0\n            brand_issues[brand] = {'failed': 0, 'refunded': 0}\n        brand_counts[brand] += 1\n        if o['status'] == 'failed':\n            brand_issues[brand]['failed'] += 1\n        elif o['status'] == 'refunded':\n            brand_issues[brand]['refunded'] += 1\n\nfor brand in sorted(brand_counts.keys()):\n    print(f'{brand}: {brand_counts[brand]} order-items, failed={brand_issues[brand][\\\"failed\\\"]}, refunded={brand_issues[brand][\\\"refunded\\\"]}')\n\"\n"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "019dcadcd75158b9c0bfe14796c54ab6",
+          "content": "exit_code: 0\nstdout:\nAcme: 41 order-items, failed=8, refunded=15\nGlobex: 45 order-items, failed=14, refunded=11\nInitech: 38 order-items, failed=10, refunded=10\nOther: 100 order-items, failed=27, refunded=28\nUmbrella: 45 order-items, failed=19, refunded=12\nWayne: 41 order-items, failed=12, refunded=12\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_f9b607abe8fe4ad9b705743c",
+          "name": "bash",
+          "input": {
+            "command": "python3 -c \"\nimport json\nwith open('/tmp/orders.json') as f:\n    orders = json.load(f)\n\n# Focus on Umbrella products - highest failure rate\numbrella_products = ['p011','p012','p013','p041','p042','p043','p073','p074','p075','p076']\n\n# Count per individual Umbrella product\nup_counts = {}\nfor o in orders:\n    for pid in o.get('product_ids', []):\n        if pid in umbrella_products:\n            if pid not in up_counts:\n                up_counts[pid] = {'total': 0, 'failed': 0, 'refunded': 0, 'paid': 0, 'pending': 0}\n            up_counts[pid]['total'] += 1\n            up_counts[pid][o['status']] = up_counts[pid].get(o['status'], 0) + 1\n\nfor pid in sorted(up_counts.keys()):\n    print(f'{pid}: {up_counts[pid]}')\n\"\n"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_f9b607abe8fe4ad9b705743c",
+          "content": "exit_code: 0\nstdout:\np011: {'total': 5, 'failed': 2, 'refunded': 1, 'paid': 0, 'pending': 2}\np012: {'total': 9, 'failed': 4, 'refunded': 3, 'paid': 2, 'pending': 0}\np013: {'total': 1, 'failed': 0, 'refunded': 1, 'paid': 0, 'pending': 0}\np041: {'total': 3, 'failed': 1, 'refunded': 0, 'paid': 1, 'pending': 1}\np042: {'total': 4, 'failed': 2, 'refunded': 1, 'paid': 1, 'pending': 0}\np043: {'total': 2, 'failed': 2, 'refunded': 0, 'paid': 0, 'pending': 0}\np073: {'total': 6, 'failed': 3, 'refunded': 1, 'paid': 1, 'pending': 1}\np074: {'total': 5, 'failed': 2, 'refunded': 1, 'paid': 1, 'pending': 1}\np075: {'total': 3, 'failed': 2, 'refunded': 1, 'paid': 0, 'pending': 0}\np076: {'total': 7, 'failed': 1, 'refunded': 3, 'paid': 3, 'pending': 0}\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_9ae726cace2a4cacb6663900",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl get products p076 --format json"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_9ed148c50c754c53b33530f9",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl get products p073 --format json"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_9ae726cace2a4cacb6663900",
+          "content": "exit_code: 0\nstdout:\n{\n  \"id\": \"p076\",\n  \"name\": \"Wayne Batmobile Wax Mk 2\",\n  \"sku\": \"SKU-0076\",\n  \"price_cents\": 1999,\n  \"inventory\": 79,\n  \"category\": \"gadgets\",\n  \"active\": true\n}\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_9ed148c50c754c53b33530f9",
+          "content": "exit_code: 0\nstdout:\n{\n  \"id\": \"p073\",\n  \"name\": \"Umbrella Field Kit Mk 2\",\n  \"sku\": \"SKU-0073\",\n  \"price_cents\": 199,\n  \"inventory\": 84,\n  \"category\": \"services\",\n  \"active\": false\n}\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_cae16c7cc2eb48a1a6811284",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl get products p074 --format json"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_665032683c524805930ec9a9",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl get products p075 --format json"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_cae16c7cc2eb48a1a6811284",
+          "content": "exit_code: 0\nstdout:\n{\n  \"id\": \"p074\",\n  \"name\": \"Wayne Grapple Mk 2\",\n  \"sku\": \"SKU-0074\",\n  \"price_cents\": 1999,\n  \"inventory\": 135,\n  \"category\": \"services\",\n  \"active\": true\n}\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_665032683c524805930ec9a9",
+          "content": "exit_code: 0\nstdout:\n{\n  \"id\": \"p075\",\n  \"name\": \"Wayne Cowl Mk 2\",\n  \"sku\": \"SKU-0075\",\n  \"price_cents\": 9999,\n  \"inventory\": 490,\n  \"category\": \"subscriptions\",\n  \"active\": true\n}\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_8a503b2e36c841839a26c261",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl list products --limit 80 --format json > /tmp/products.json"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_8a503b2e36c841839a26c261",
+          "content": "exit_code: 0\nstdout: <empty>",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_ae67b68c3c0f49e2b2c55b3e",
+          "name": "bash",
+          "input": {
+            "command": "python3 -c \"\nimport json\nwith open('/tmp/products.json') as f:\n    products = json.load(f)\n\n# Build a map of product id -> name\npmap = {p['id']: p['name'] for p in products}\n\n# Now let's look at all products and their order issue rates\nwith open('/tmp/orders.json') as f:\n    orders = json.load(f)\n\nproduct_stats = {}\nfor o in orders:\n    for pid in o.get('product_ids', []):\n        if pid not in product_stats:\n            product_stats[pid] = {'total': 0, 'failed': 0, 'refunded': 0, 'paid': 0, 'pending': 0}\n        product_stats[pid]['total'] += 1\n        product_stats[pid][o['status']] = product_stats[pid].get(o['status'], 0) + 1\n\n# Calculate problem rate for products with >= 5 orders\nresults = []\nfor pid, stats in product_stats.items():\n    if stats['total'] >= 5:\n        problem_rate = (stats['failed'] + stats['refunded']) / stats['total']\n        results.append((pid, pmap.get(pid, '???'), stats, problem_rate))\n\nresults.sort(key=lambda x: x[3], reverse=True)\nprint('Products with >=5 orders, sorted by problem rate (failed+refunded / total):')\nfor pid, name, stats, rate in results[:15]:\n    print(f'  {pid} ({name}): total={stats[\\\"total\\\"]}, failed={stats[\\\"failed\\\"]}, refunded={stats[\\\"refunded\\\"]}, paid={stats[\\\"paid\\\"]}, problem_rate={rate:.1%}')\n\"\n"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_ae67b68c3c0f49e2b2c55b3e",
+          "content": "ERROR: command rejected by harness allowlist.\nreason: redirect target 'name' must start with one of ['/tmp/']\nAllowed executables: ./cli/bin/ctl, ctl, cat, ls, mkdir, head, tail, wc, grep, jq, python3, echo, bash (as `bash -c \"...\"`). Redirects (>, >>) must target /tmp/ or $CTL_STATE_DIR. Command substitution (backticks, $()) and process substitution are never allowed.",
+          "is_error": true
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_132cd1d28cb5433b89ac32e8",
+          "name": "bash",
+          "input": {
+            "command": "python3 -c \"\nimport json\nwith open('/tmp/products.json') as f:\n    products = json.load(f)\npmap = {p['id']: p['name'] for p in products}\nwith open('/tmp/orders.json') as f:\n    orders = json.load(f)\nproduct_stats = {}\nfor o in orders:\n    for pid in o.get('product_ids', []):\n        if pid not in product_stats:\n            product_stats[pid] = {'total': 0, 'failed': 0, 'refunded': 0, 'paid': 0, 'pending': 0}\n        product_stats[pid]['total'] += 1\n        product_stats[pid][o['status']] = product_stats[pid].get(o['status'], 0) + 1\nresults = []\nfor pid, stats in product_stats.items():\n    if stats['total'] >= 5:\n        problem_rate = (stats['failed'] + stats['refunded']) / stats['total']\n        results.append((pid, pmap.get(pid, 'unknown'), stats, problem_rate))\nresults.sort(key=lambda x: x[3], reverse=True)\nprint('Products with >=5 orders, sorted by problem rate:')\nfor pid, pname, stats, rate in results[:15]:\n    print(f'  {pid} ({pname}): total={stats[\\\"total\\\"]}, failed={stats[\\\"failed\\\"]}, refunded={stats[\\\"refunded\\\"]}, paid={stats[\\\"paid\\\"]}, problem_rate={rate:.1%}')\n\"\n"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_132cd1d28cb5433b89ac32e8",
+          "content": "ERROR: command rejected by harness allowlist.\nreason: redirect target '=' must start with one of ['/tmp/']\nAllowed executables: ./cli/bin/ctl, ctl, cat, ls, mkdir, head, tail, wc, grep, jq, python3, echo, bash (as `bash -c \"...\"`). Redirects (>, >>) must target /tmp/ or $CTL_STATE_DIR. Command substitution (backticks, $()) and process substitution are never allowed.",
+          "is_error": true
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_e66280a3bb094d6abbc3f409",
+          "name": "bash",
+          "input": {
+            "command": "bash -c 'python3 -c \"\nimport json\nwith open(\\\"/tmp/products.json\\\") as f:\n    products = json.load(f)\npmap = {p[\\\"id\\\"]: p[\\\"name\\\"] for p in products}\nwith open(\\\"/tmp/orders.json\\\") as f:\n    orders = json.load(f)\nproduct_stats = {}\nfor o in orders:\n    for pid in o.get(\\\"product_ids\\\", []):\n        if pid not in product_stats:\n            product_stats[pid] = {\\\"total\\\": 0, \\\"failed\\\": 0, \\\"refunded\\\": 0, \\\"paid\\\": 0, \\\"pending\\\": 0}\n        product_stats[pid][\\\"total\\\"] += 1\n        product_stats[pid][o[\\\"status\\\"]] = product_stats[pid].get(o[\\\"status\\\"], 0) + 1\nresults = []\nfor pid, stats in product_stats.items():\n    if stats[\\\"total\\\"] >= 5:\n        problem_rate = (stats[\\\"failed\\\"] + stats[\\\"refunded\\\"]) / stats[\\\"total\\\"]\n        results.append((pid, pmap.get(pid, \\\"unknown\\\"), stats, problem_rate))\nresults.sort(key=lambda x: x[3], reverse=True)\nprint(\\\"Products with >=5 orders, sorted by problem rate:\\\")\nfor pid, pname, stats, rate in results[:15]:\n    print(f\\\"  {pid} ({pname}): total={stats[chr(116)+chr(111)+chr(116)+chr(97)+chr(108)]}, failed={stats[chr(102)+chr(97)+chr(105)+chr(108)+chr(101)+chr(100)]}, refunded={stats[chr(114)+chr(101)+chr(102)+chr(117)+chr(110)+chr(100)+chr(101)+chr(100)]}, paid={stats[chr(112)+chr(97)+chr(105)+chr(100)]}, problem_rate={rate:.1%}\\\")\n\"'"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_e66280a3bb094d6abbc3f409",
+          "content": "ERROR: command rejected by harness allowlist.\nreason: redirect target '=' must start with one of ['/tmp/']\nAllowed executables: ./cli/bin/ctl, ctl, cat, ls, mkdir, head, tail, wc, grep, jq, python3, echo, bash (as `bash -c \"...\"`). Redirects (>, >>) must target /tmp/ or $CTL_STATE_DIR. Command substitution (backticks, $()) and process substitution are never allowed.",
+          "is_error": true
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_2c904e14d7694cf3ae5c6e09",
+          "name": "bash",
+          "input": {
+            "command": "python3 /tmp/analyze.py"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_2c904e14d7694cf3ae5c6e09",
+          "content": "exit_code: 0\nstdout: <empty>",
+          "is_error": false
+        }
+      ]
+    }
+  ],
+  "tool_calls": [
+    {
+      "turn": 0,
+      "tool_use_id": "call_f6443a9cc1a746bfaaaa87bb",
+      "command": "ctl list tickets --limit 30 --format json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 127,
+      "stdout": "",
+      "stderr": "executable not found: [Errno 2] No such file or directory: 'ctl'",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 7,
+      "timed_out": false
+    },
+    {
+      "turn": 0,
+      "tool_use_id": "call_046bd0de34e340b995cd45b5",
+      "command": "ctl list products --limit 10 --format json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 127,
+      "stdout": "",
+      "stderr": "executable not found: [Errno 2] No such file or directory: 'ctl'",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 6,
+      "timed_out": false
+    },
+    {
+      "turn": 1,
+      "tool_use_id": "call_1988319831534ab9a7a2d527",
+      "command": "./cli/bin/ctl list tickets --limit 30 --format json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[\n  {\n    \"id\": \"t001\",\n    \"user_id\": \"u042\",\n    \"subject\": \"Cannot log in after password reset\",\n    \"body\": \"Customer reports: cannot log in after password reset.\",\n    \"status\": \"open\",\n    \"priority\": \"low\",\n    \"created_at\": \"2026-04-11T23:21:28Z\"\n  },\n  {\n    \"id\": \"t002\",\n    \"user_id\": \"u046\",\n    \"subject\": \"Invoice PDF has wrong totals\",\n    \"body\": \"Customer reports: invoice pdf has wrong totals.\",\n    \"status\": \"resolved\",\n    \"priority\": \"critical\",\n    \"created_at\": \"2026-03-29T13:24:58Z\"\n  },\n  {\n    \"id\": \"t003\",\n    \"user_id\": \"u034\",\n    \"subject\": \"Export CSV is missing the last column\",\n    \"body\": \"Customer reports: export csv is missing the last column.\",\n    \"status\": \"escalated\",\n    \"priority\": \"med\",\n    \"created_at\": \"2026-04-06T08:01:42Z\"\n  },\n  {\n    \"id\": \"t004\",\n    \"user_id\": \"u024\",\n    \"subject\": \"Need to transfer ownership of org-3 workspace\",\n    \"body\": \"Customer reports: need to transfer ownership of org-3 workspace.\",\n    \"status\": \"resolved\",\n    \"priority\": \"critical\",\n    \"created_at\": \"2026-04-04T03:44:57Z\"\n  },\n  {\n    \"id\": \"t005\",\n    \"user_id\": \"u050\",\n    \"subject\": \"Two-factor code never arrives by SMS\",\n    \"body\": \"Customer reports: two-factor code never arrives by sms.\",\n    \"status\": \"resolved\",\n    \"priority\": \"low\",\n    \"created_at\": \"2026-04-07T18:06:19Z\"\n  },\n  {\n    \"id\": \"t006\",\n    \"user_id\": \"u005\",\n    \"subject\": \"Refund not processed after 10 business days\",\n    \"body\": \"Customer reports: refund not processed after 10 business days.\",\n    \"status\": \"resolved\",\n    \"priority\": \"low\",\n    \"created_at\": \"2026-03-27T21:55:33Z\"\n  },\n  {\n    \"id\": \"t007\",\n    \"user_id\": \"u044\",\n    \"subject\": \"Webhook retries are looping forever\",\n    \"body\": \"Customer reports: webhook retries are looping forever.\",\n    \"status\": \"resolved\",\n    \"priority\": \"high\",\n    \"created_at\": \"2026-04-11T18:24:14Z\"\n  },\n  {\n    \"id\": \"t008\",\n    \"user_id\": \"u047\",\n    \"subject\": \"Dashboard graphs show zero for all metrics\",\n    \"body\": \"Customer reports: dashboard graphs show zero for all metrics.\",\n    \"status\": \"escalated\",\n    \"priority\": \"med\",\n    \"created_at\": \"2026-04-07T19:36:19Z\"\n  },\n  {\n    \"id\": \"t009\",\n    \"user_id\": \"u006\",\n    \"subject\": \"Bulk delete hangs on large product catalogs\",\n    \"body\": \"Customer reports: bulk delete hangs on large product catalogs.\",\n    \"status\": \"escalated\",\n    \"priority\": \"med\",\n    \"created_at\": \"2026-04-07T00:25:46Z\"\n  },\n  {\n    \"id\": \"t010\",\n    \"user_id\": \"u020\",\n    \"subject\": \"API key rotation broke our production deploy\",\n    \"body\": \"Customer reports: api key rotation broke our production deploy.\",\n    \"status\": \"escalated\",\n    \"priority\": \"critical\",\n    \"created_at\": \"2026-04-17T17:45:38Z\"\n  },\n  {\n    \"id\": \"t011\",\n    \"user_id\": \"u039\",\n    \"subject\": \"Feature request: scheduled exports\",\n    \"body\": \"Customer reports: feature request: scheduled exports.\",\n    \"status\": \"escalated\",\n    \"priority\": \"low\",\n    \"created_at\": \"2026-04-08T23:18:40Z\"\n  },\n  {\n    \"id\": \"t012\",\n    \"user_id\": \"u036\",\n    \"subject\": \"Acme integration keeps disconnecting\",\n    \"body\": \"Customer reports: acme integration keeps disconnecting.\",\n    \"status\": \"resolved\",\n    \"priority\": \"high\",\n    \"created_at\": \"2026-04-17T19:06:35Z\"\n  },\n  {\n    \"id\": \"t013\",\n    \"user_id\": \"u043\",\n    \"subject\": \"Session ended mid-checkout, cart was lost\",\n    \"body\": \"Customer reports: session ended mid-checkout, cart was lost.\",\n    \"status\": \"escalated\",\n    \"priority\": \"low\",\n    \"created_at\": \"2026-04-03T10:41:45Z\"\n  },\n  {\n    \"id\": \"t014\",\n    \"user_id\": \"u033\",\n    \"subject\": \"Admin console shows stale user roles\",\n    \"body\": \"Customer reports: admin console shows stale user roles.\",\n    \"status\": \"resolved\",\n    \"priority\": \"low\",\n    \"created_at\": \"2026-04-06T09:32:36Z\"\n  },\n  {\n    \"id\": \"t015\",\n    \"user_id\": \"u020\",\n    \"subject\": \"Sub-user cannot see orders they created\",\n    \"body\": \"Customer reports: sub-user cannot see orders they created.\",\n    \"status\": \"open\",\n    \"priority\": \"med\",\n    \"created_at\": \"2026-04-07T09:51:11Z\"\n  },\n  {\n    \"id\": \"t016\",\n    \"user_id\": \"u050\",\n    \"subject\": \"Stripe reconciliation is off by one penny\",\n    \"body\": \"Customer reports: stripe reconciliation is off by one penny.\",\n    \"status\": \"resolved\",\n    \"priority\": \"med\",\n    \"created_at\": \"2026-04-13T00:03:30Z\"\n  },\n  {\n    \"id\": \"t017\",\n    \"user_id\": \"u009\",\n    \"subject\": \"Seats count mismatch after plan downgrade\",\n    \"body\": \"Customer reports: seats count mismatch after plan downgrade.\",\n    \"status\": \"open\",\n    \"priority\": \"low\",\n    \"created_at\": \"2026-04-09T15:22:39Z\"\n  },\n  {\n    \"id\": \"t018\",\n    \"user_id\": \"u007\",\n    \"subject\": \"Email notifications are going to spam\",\n    \"body\": \"Customer reports: email notifications are going to spam.\",\n    \"status\": \"escalated\",\n    \"priority\": \"low\",\n    \"created_at\": \"2026-04-07T15:38:28Z\"\n  },\n  {\n    \"id\": \"t019\",\n    \"user_id\": \"u042\",\n    \"subject\": \"billing broken since the weekend\",\n    \"body\": \"I can't check out since Saturday. Three of my recent orders are flagged and my account just got suspended this morning with no warning. Please look at o102, o107, o115. This is urgent.\",\n    \"status\": \"escalated\",\n    \"priority\": \"critical\",\n    \"created_at\": \"2026-04-22T12:03:41Z\"\n  },\n  {\n    \"id\": \"t020\",\n    \"user_id\": \"u025\",\n    \"subject\": \"SSO redirect loops on Safari only\",\n    \"body\": \"Customer reports: sso redirect loops on safari only.\",\n    \"status\": \"open\",\n    \"priority\": \"med\",\n    \"created_at\": \"2026-04-15T05:17:58Z\"\n  },\n  {\n    \"id\": \"t021\",\n    \"user_id\": \"u045\",\n    \"subject\": \"Permissions changed without any audit entry\",\n    \"body\": \"Customer reports: permissions changed without any audit entry.\",\n    \"status\": \"escalated\",\n    \"priority\": \"med\",\n    \"created_at\": \"2026-04-02T18:04:25Z\"\n  },\n  {\n    \"id\": \"t022\",\n    \"user_id\": \"u003\",\n    \"subject\": \"Export queue appears stuck since Tuesday\",\n    \"body\": \"Customer reports: export queue appears stuck since tuesday.\",\n    \"status\": \"resolved\",\n    \"priority\": \"high\",\n    \"created_at\": \"2026-04-12T11:15:27Z\"\n  },\n  {\n    \"id\": \"t023\",\n    \"user_id\": \"u029\",\n    \"subject\": \"Password reset emails never arrive for @gmail\",\n    \"body\": \"Customer reports: password reset emails never arrive for @gmail.\",\n    \"status\": \"escalated\",\n    \"priority\": \"high\",\n    \"created_at\": \"2026-04-02T04:57:40Z\"\n  },\n  {\n    \"id\": \"t024\",\n    \"user_id\": \"u015\",\n    \"subject\": \"API rate limit headers missing from responses\",\n    \"body\": \"Customer reports: api rate limit headers missing from responses.\",\n    \"status\": \"escalated\",\n    \"priority\": \"med\",\n    \"created_at\": \"2026-04-08T23:26:38Z\"\n  },\n  {\n    \"id\": \"t025\",\n    \"user_id\": \"u031\",\n    \"subject\": \"Upload fails silently for files over 5 MB\",\n    \"body\": \"Customer reports: upload fails silently for files over 5 mb.\",\n    \"status\": \"open\",\n    \"priority\": \"high\",\n    \"created_at\": \"2026-03-27T07:24:48Z\"\n  },\n  {\n    \"id\": \"t026\",\n    \"user_id\": \"u029\",\n    \"subject\": \"Runbook incident-42 links to a 404 page\",\n    \"body\": \"Customer reports: runbook incident-42 links to a 404 page.\",\n    \"status\": \"resolved\",\n    \"priority\": \"high\",\n    \"created_at\": \"2026-04-05T11:05:11Z\"\n  },\n  {\n    \"id\": \"t027\",\n    \"user_id\": \"u033\",\n    \"subject\": \"New member invite shows as already-accepted\",\n    \"body\": \"Customer reports: new member invite shows as already-accepted.\",\n    \"status\": \"escalated\",\n    \"priority\": \"critical\",\n    \"created_at\": \"2026-04-16T03:11:19Z\"\n  },\n  {\n    \"id\": \"t028\",\n    \"user_id\": \"u013\",\n    \"subject\": \"Billing address cannot be updated from UI\",\n    \"body\": \"Customer reports: billing address cannot be updated from ui.\",\n    \"status\": \"escalated\",\n    \"priority\": \"med\",\n    \"created_at\": \"2026-04-11T20:43:31Z\"\n  },\n  {\n    \"id\": \"t029\",\n    \"user_id\": \"u004\",\n    \"subject\": \"Product SKU conflict when duplicating a catalog\",\n    \"body\": \"Customer reports: product sku conflict when duplicating a catalog.\",\n    \"status\": \"escalated\",\n    \"priority\": \"critical\",\n    \"created_at\": \"2026-04-05T23:30:24Z\"\n  },\n  {\n    \"id\": \"t030\",\n    \"user_id\": \"u036\",\n    \"subject\": \"Real-time sync falls behind during high load\",\n    \"body\": \"Customer reports: real-time sync falls behind during high load.\",\n    \"status\": \"open\",\n    \"priority\": \"low\",\n    \"created_at\": \"2026-04-10T03:52:40Z\"\n  }\n]\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 49,
+      "timed_out": false
+    },
+    {
+      "turn": 1,
+      "tool_use_id": "call_bc68d9e886c84e36b17b6631",
+      "command": "./cli/bin/ctl list products --limit 80 --format json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[\n  {\n    \"id\": \"p001\",\n    \"name\": \"Acme Foghorn\",\n    \"sku\": \"SKU-0001\",\n    \"price_cents\": 9999,\n    \"inventory\": 57,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p002\",\n    \"name\": \"Acme Anvil\",\n    \"sku\": \"SKU-0002\",\n    \"price_cents\": 499,\n    \"inventory\": 114,\n    \"category\": \"gadgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p003\",\n    \"name\": \"Acme Rocket Skates\",\n    \"sku\": \"SKU-0003\",\n    \"price_cents\": 9999,\n    \"inventory\": 379,\n    \"category\": \"subscriptions\",\n    \"active\": false\n  },\n  {\n    \"id\": \"p004\",\n    \"name\": \"Acme Earthquake Pills\",\n    \"sku\": \"SKU-0004\",\n    \"price_cents\": 1999,\n    \"inventory\": 16,\n    \"category\": \"widgets\",\n    \"active\": false\n  },\n  {\n    \"id\": \"p005\",\n    \"name\": \"Globex Ionizer\",\n    \"sku\": \"SKU-0005\",\n    \"price_cents\": 499,\n    \"inventory\": 258,\n    \"category\": \"subscriptions\",\n    \"active\": false\n  },\n  {\n    \"id\": \"p006\",\n    \"name\": \"Globex Plasma Cell\",\n    \"sku\": \"SKU-0006\",\n    \"price_cents\": 499,\n    \"inventory\": 366,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p007\",\n    \"name\": \"Globex Heat Sink\",\n    \"sku\": \"SKU-0007\",\n    \"price_cents\": 1999,\n    \"inventory\": 301,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p008\",\n    \"name\": \"Initech TPS Binder\",\n    \"sku\": \"SKU-0008\",\n    \"price_cents\": 199,\n    \"inventory\": 388,\n    \"category\": \"gadgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p009\",\n    \"name\": \"Initech Red Stapler\",\n    \"sku\": \"SKU-0009\",\n    \"price_cents\": 999,\n    \"inventory\": 142,\n    \"category\": \"gadgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p010\",\n    \"name\": \"Initech Cover Sheet\",\n    \"sku\": \"SKU-0010\",\n    \"price_cents\": 19999,\n    \"inventory\": 172,\n    \"category\": \"widgets\",\n    \"active\": false\n  },\n  {\n    \"id\": \"p011\",\n    \"name\": \"Umbrella Vaccine\",\n    \"sku\": \"SKU-0011\",\n    \"price_cents\": 199,\n    \"inventory\": 183,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p012\",\n    \"name\": \"Umbrella Tracker\",\n    \"sku\": \"SKU-0012\",\n    \"price_cents\": 19999,\n    \"inventory\": 22,\n    \"category\": \"services\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p013\",\n    \"name\": \"Umbrella Field Kit\",\n    \"sku\": \"SKU-0013\",\n    \"price_cents\": 1999,\n    \"inventory\": 40,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p014\",\n    \"name\": \"Wayne Grapple\",\n    \"sku\": \"SKU-0014\",\n    \"price_cents\": 9999,\n    \"inventory\": 316,\n    \"category\": \"consumables\",\n    \"active\": true,\n    \"inventory_discrepancy\": {\n      \"note\": \"recorded 120, warehouse reports 117\",\n      \"delta\": -3,\n      \"source\": \"pipe-09 reconcile\"\n    }\n  },\n  {\n    \"id\": \"p015\",\n    \"name\": \"Wayne Cowl\",\n    \"sku\": \"SKU-0015\",\n    \"price_cents\": 9999,\n    \"inventory\": 35,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p016\",\n    \"name\": \"Wayne Batmobile Wax\",\n    \"sku\": \"SKU-0016\",\n    \"price_cents\": 19999,\n    \"inventory\": 148,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p017\",\n    \"name\": \"Standard Widget A\",\n    \"sku\": \"SKU-0017\",\n    \"price_cents\": 19999,\n    \"inventory\": 51,\n    \"category\": \"services\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p018\",\n    \"name\": \"Standard Widget B\",\n    \"sku\": \"SKU-0018\",\n    \"price_cents\": 9999,\n    \"inventory\": 427,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p019\",\n    \"name\": \"Standard Widget C\",\n    \"sku\": \"SKU-0019\",\n    \"price_cents\": 999,\n    \"inventory\": 107,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p020\",\n    \"name\": \"Premium Gadget X\",\n    \"sku\": \"SKU-0020\",\n    \"price_cents\": 9999,\n    \"inventory\": 331,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p021\",\n    \"name\": \"Premium Gadget Y\",\n    \"sku\": \"SKU-0021\",\n    \"price_cents\": 499,\n    \"inventory\": 273,\n    \"category\": \"gadgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p022\",\n    \"name\": \"Premium Gadget Z\",\n    \"sku\": \"SKU-0022\",\n    \"price_cents\": 1999,\n    \"inventory\": 138,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p023\",\n    \"name\": \"Consumable Ink\",\n    \"sku\": \"SKU-0023\",\n    \"price_cents\": 999,\n    \"inventory\": 431,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p024\",\n    \"name\": \"Consumable Toner\",\n    \"sku\": \"SKU-0024\",\n    \"price_cents\": 199,\n    \"inventory\": 412,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p025\",\n    \"name\": \"Consumable Ribbon\",\n    \"sku\": \"SKU-0025\",\n    \"price_cents\": 199,\n    \"inventory\": 108,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p026\",\n    \"name\": \"Service Install\",\n    \"sku\": \"SKU-0026\",\n    \"price_cents\": 999,\n    \"inventory\": 108,\n    \"category\": \"services\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p027\",\n    \"name\": \"Service Tuneup\",\n    \"sku\": \"SKU-0027\",\n    \"price_cents\": 9999,\n    \"inventory\": 234,\n    \"category\": \"gadgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p028\",\n    \"name\": \"Service Audit\",\n    \"sku\": \"SKU-0028\",\n    \"price_cents\": 499,\n    \"inventory\": 381,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p029\",\n    \"name\": \"Monthly Plan\",\n    \"sku\": \"SKU-0029\",\n    \"price_cents\": 9999,\n    \"inventory\": 299,\n    \"category\": \"services\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p030\",\n    \"name\": \"Annual Plan\",\n    \"sku\": \"SKU-0030\",\n    \"price_cents\": 1999,\n    \"inventory\": 185,\n    \"category\": \"gadgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p031\",\n    \"name\": \"Acme Foghorn Mk 1\",\n    \"sku\": \"SKU-0031\",\n    \"price_cents\": 499,\n    \"inventory\": 260,\n    \"category\": \"services\",\n    \"active\": false\n  },\n  {\n    \"id\": \"p032\",\n    \"name\": \"Acme Anvil Mk 1\",\n    \"sku\": \"SKU-0032\",\n    \"price_cents\": 199,\n    \"inventory\": 440,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p033\",\n    \"name\": \"Acme Rocket Skates Mk 1\",\n    \"sku\": \"SKU-0033\",\n    \"price_cents\": 499,\n    \"inventory\": 405,\n    \"category\": \"services\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p034\",\n    \"name\": \"Acme Earthquake Pills Mk 1\",\n    \"sku\": \"SKU-0034\",\n    \"price_cents\": 1999,\n    \"inventory\": 195,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p035\",\n    \"name\": \"Globex Ionizer Mk 1\",\n    \"sku\": \"SKU-0035\",\n    \"price_cents\": 4999,\n    \"inventory\": 128,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p036\",\n    \"name\": \"Globex Plasma Cell Mk 1\",\n    \"sku\": \"SKU-0036\",\n    \"price_cents\": 199,\n    \"inventory\": 348,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p037\",\n    \"name\": \"Globex Heat Sink Mk 1\",\n    \"sku\": \"SKU-0037\",\n    \"price_cents\": 4999,\n    \"inventory\": 384,\n    \"category\": \"consumables\",\n    \"active\": true,\n    \"inventory_discrepancy\": {\n      \"note\": \"recorded 42, warehouse reports 50\",\n      \"delta\": 8,\n      \"source\": \"pipe-09 reconcile\"\n    }\n  },\n  {\n    \"id\": \"p038\",\n    \"name\": \"Initech TPS Binder Mk 1\",\n    \"sku\": \"SKU-0038\",\n    \"price_cents\": 999,\n    \"inventory\": 57,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p039\",\n    \"name\": \"Initech Red Stapler Mk 1\",\n    \"sku\": \"SKU-0039\",\n    \"price_cents\": 1999,\n    \"inventory\": 1,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p040\",\n    \"name\": \"Initech Cover Sheet Mk 1\",\n    \"sku\": \"SKU-0040\",\n    \"price_cents\": 19999,\n    \"inventory\": 91,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p041\",\n    \"name\": \"Umbrella Vaccine Mk 1\",\n    \"sku\": \"SKU-0041\",\n    \"price_cents\": 19999,\n    \"inventory\": 320,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p042\",\n    \"name\": \"Umbrella Tracker Mk 1\",\n    \"sku\": \"SKU-0042\",\n    \"price_cents\": 4999,\n    \"inventory\": 311,\n    \"category\": \"gadgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p043\",\n    \"name\": \"Umbrella Field Kit Mk 1\",\n    \"sku\": \"SKU-0043\",\n    \"price_cents\": 19999,\n    \"inventory\": 82,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p044\",\n    \"name\": \"Wayne Grapple Mk 1\",\n    \"sku\": \"SKU-0044\",\n    \"price_cents\": 4999,\n    \"inventory\": 470,\n    \"category\": \"widgets\",\n    \"active\": true,\n    \"pipe_04_skip_reason\": \"missing SKU prefix (legacy import)\"\n  },\n  {\n    \"id\": \"p045\",\n    \"name\": \"Wayne Cowl Mk 1\",\n    \"sku\": \"SKU-0045\",\n    \"price_cents\": 1999,\n    \"inventory\": 9,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p046\",\n    \"name\": \"Wayne Batmobile Wax Mk 1\",\n    \"sku\": \"SKU-0046\",\n    \"price_cents\": 19999,\n    \"inventory\": 413,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p047\",\n    \"name\": \"Standard Widget A Mk 1\",\n    \"sku\": \"SKU-0047\",\n    \"price_cents\": 499,\n    \"inventory\": 449,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p048\",\n    \"name\": \"Standard Widget B Mk 1\",\n    \"sku\": \"SKU-0048\",\n    \"price_cents\": 199,\n    \"inventory\": 374,\n    \"category\": \"services\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p049\",\n    \"name\": \"Standard Widget C Mk 1\",\n    \"sku\": \"SKU-0049\",\n    \"price_cents\": 19999,\n    \"inventory\": 272,\n    \"category\": \"gadgets\",\n    \"active\": false\n  },\n  {\n    \"id\": \"p050\",\n    \"name\": \"Premium Gadget X Mk 1\",\n    \"sku\": \"SKU-0050\",\n    \"price_cents\": 1999,\n    \"inventory\": 484,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p051\",\n    \"name\": \"Premium Gadget Y Mk 1\",\n    \"sku\": \"SKU-0051\",\n    \"price_cents\": 4999,\n    \"inventory\": 446,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p052\",\n    \"name\": \"Premium Gadget Z Mk 1\",\n    \"sku\": \"SKU-0052\",\n    \"price_cents\": 499,\n    \"inventory\": 475,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p053\",\n    \"name\": \"Consumable Ink Mk 1\",\n    \"sku\": \"SKU-0053\",\n    \"price_cents\": 9999,\n    \"inventory\": 102,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p054\",\n    \"name\": \"Consumable Toner Mk 1\",\n    \"sku\": \"SKU-0054\",\n    \"price_cents\": 9999,\n    \"inventory\": 332,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p055\",\n    \"name\": \"Consumable Ribbon Mk 1\",\n    \"sku\": \"SKU-0055\",\n    \"price_cents\": 4999,\n    \"inventory\": 231,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\":",
+      "stderr": "",
+      "stdout_truncated": true,
+      "stderr_truncated": false,
+      "wall_clock_ms": 26,
+      "timed_out": false
+    },
+    {
+      "turn": 2,
+      "tool_use_id": "call_64bfc44af6704414850c3248",
+      "command": "./cli/bin/ctl search --query \"product\" --scope tickets --format json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "unknown argument: --format\n",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 50,
+      "timed_out": false
+    },
+    {
+      "turn": 2,
+      "tool_use_id": "call_993d49fd361044f3aa25655e",
+      "command": "./cli/bin/ctl list orders --limit 120 --format json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[\n  {\n    \"id\": \"o001\",\n    \"user_id\": \"u018\",\n    \"total_cents\": 114450,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p063\",\n      \"p029\"\n    ],\n    \"created_at\": \"2026-04-05T02:56:55Z\"\n  },\n  {\n    \"id\": \"o002\",\n    \"user_id\": \"u009\",\n    \"total_cents\": 163319,\n    \"currency\": \"GBP\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p052\",\n      \"p022\",\n      \"p060\"\n    ],\n    \"created_at\": \"2026-03-10T23:21:05Z\"\n  },\n  {\n    \"id\": \"o003\",\n    \"user_id\": \"u042\",\n    \"total_cents\": 112557,\n    \"currency\": \"USD\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p076\",\n      \"p073\",\n      \"p004\",\n      \"p011\"\n    ],\n    \"created_at\": \"2026-04-15T04:16:14Z\"\n  },\n  {\n    \"id\": \"o004\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 86012,\n    \"currency\": \"USD\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p034\"\n    ],\n    \"created_at\": \"2026-04-08T03:11:50Z\"\n  },\n  {\n    \"id\": \"o005\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 21670,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p049\",\n      \"p036\",\n      \"p054\"\n    ],\n    \"created_at\": \"2026-03-18T15:19:25Z\"\n  },\n  {\n    \"id\": \"o006\",\n    \"user_id\": \"u015\",\n    \"total_cents\": 170630,\n    \"currency\": \"USD\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p045\"\n    ],\n    \"created_at\": \"2026-03-18T09:15:17Z\"\n  },\n  {\n    \"id\": \"o007\",\n    \"user_id\": \"u013\",\n    \"total_cents\": 5541,\n    \"currency\": \"GBP\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p032\"\n    ],\n    \"created_at\": \"2026-04-12T10:04:30Z\"\n  },\n  {\n    \"id\": \"o008\",\n    \"user_id\": \"u037\",\n    \"total_cents\": 57337,\n    \"currency\": \"EUR\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p061\",\n      \"p015\"\n    ],\n    \"created_at\": \"2026-03-17T18:29:57Z\"\n  },\n  {\n    \"id\": \"o009\",\n    \"user_id\": \"u050\",\n    \"total_cents\": 43129,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p022\",\n      \"p078\",\n      \"p015\"\n    ],\n    \"created_at\": \"2026-03-26T21:47:01Z\"\n  },\n  {\n    \"id\": \"o010\",\n    \"user_id\": \"u037\",\n    \"total_cents\": 177761,\n    \"currency\": \"EUR\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p040\"\n    ],\n    \"created_at\": \"2026-03-20T06:56:51Z\"\n  },\n  {\n    \"id\": \"o011\",\n    \"user_id\": \"u045\",\n    \"total_cents\": 164626,\n    \"currency\": \"USD\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p010\",\n      \"p076\"\n    ],\n    \"created_at\": \"2026-03-21T03:42:41Z\"\n  },\n  {\n    \"id\": \"o012\",\n    \"user_id\": \"u003\",\n    \"total_cents\": 91216,\n    \"currency\": \"GBP\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p077\",\n      \"p016\",\n      \"p073\"\n    ],\n    \"created_at\": \"2026-03-22T21:16:19Z\"\n  },\n  {\n    \"id\": \"o013\",\n    \"user_id\": \"u001\",\n    \"total_cents\": 110314,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p009\",\n      \"p065\",\n      \"p044\"\n    ],\n    \"created_at\": \"2026-04-02T22:54:32Z\"\n  },\n  {\n    \"id\": \"o014\",\n    \"user_id\": \"u012\",\n    \"total_cents\": 192559,\n    \"currency\": \"GBP\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p059\",\n      \"p020\",\n      \"p056\"\n    ],\n    \"created_at\": \"2026-03-25T02:24:37Z\"\n  },\n  {\n    \"id\": \"o015\",\n    \"user_id\": \"u021\",\n    \"total_cents\": 64554,\n    \"currency\": \"USD\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p060\",\n      \"p056\",\n      \"p076\",\n      \"p035\"\n    ],\n    \"created_at\": \"2026-03-12T04:49:31Z\"\n  },\n  {\n    \"id\": \"o016\",\n    \"user_id\": \"u043\",\n    \"total_cents\": 99548,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p032\",\n      \"p060\",\n      \"p073\",\n      \"p079\"\n    ],\n    \"created_at\": \"2026-03-31T00:05:29Z\"\n  },\n  {\n    \"id\": \"o017\",\n    \"user_id\": \"u023\",\n    \"total_cents\": 67924,\n    \"currency\": \"EUR\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p024\",\n      \"p063\",\n      \"p028\"\n    ],\n    \"created_at\": \"2026-03-12T06:21:11Z\"\n  },\n  {\n    \"id\": \"o018\",\n    \"user_id\": \"u013\",\n    \"total_cents\": 22641,\n    \"currency\": \"USD\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p072\",\n      \"p002\",\n      \"p067\"\n    ],\n    \"created_at\": \"2026-03-31T06:45:56Z\"\n  },\n  {\n    \"id\": \"o019\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 4719,\n    \"currency\": \"USD\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p061\",\n      \"p063\"\n    ],\n    \"created_at\": \"2026-04-13T05:49:18Z\"\n  },\n  {\n    \"id\": \"o020\",\n    \"user_id\": \"u031\",\n    \"total_cents\": 145288,\n    \"currency\": \"GBP\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p032\",\n      \"p040\",\n      \"p075\",\n      \"p048\"\n    ],\n    \"created_at\": \"2026-04-03T08:15:08Z\"\n  },\n  {\n    \"id\": \"o021\",\n    \"user_id\": \"u020\",\n    \"total_cents\": 66102,\n    \"currency\": \"USD\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p046\",\n      \"p059\",\n      \"p035\"\n    ],\n    \"created_at\": \"2026-03-19T23:38:35Z\"\n  },\n  {\n    \"id\": \"o022\",\n    \"user_id\": \"u048\",\n    \"total_cents\": 140672,\n    \"currency\": \"GBP\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p041\",\n      \"p016\"\n    ],\n    \"created_at\": \"2026-04-14T16:50:19Z\"\n  },\n  {\n    \"id\": \"o023\",\n    \"user_id\": \"u047\",\n    \"total_cents\": 154755,\n    \"currency\": \"GBP\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p062\",\n      \"p036\"\n    ],\n    \"created_at\": \"2026-04-19T02:52:43Z\"\n  },\n  {\n    \"id\": \"o024\",\n    \"user_id\": \"u024\",\n    \"total_cents\": 47238,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p038\",\n      \"p030\"\n    ],\n    \"created_at\": \"2026-03-20T15:05:56Z\"\n  },\n  {\n    \"id\": \"o025\",\n    \"user_id\": \"u004\",\n    \"total_cents\": 145258,\n    \"currency\": \"EUR\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p036\",\n      \"p006\"\n    ],\n    \"created_at\": \"2026-03-24T00:49:41Z\"\n  },\n  {\n    \"id\": \"o026\",\n    \"user_id\": \"u031\",\n    \"total_cents\": 125691,\n    \"currency\": \"EUR\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p014\",\n      \"p002\",\n      \"p074\",\n      \"p037\"\n    ],\n    \"created_at\": \"2026-04-15T01:12:03Z\"\n  },\n  {\n    \"id\": \"o027\",\n    \"user_id\": \"u031\",\n    \"total_cents\": 30106,\n    \"currency\": \"USD\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p033\"\n    ],\n    \"created_at\": \"2026-03-31T03:04:26Z\"\n  },\n  {\n    \"id\": \"o028\",\n    \"user_id\": \"u041\",\n    \"total_cents\": 180148,\n    \"currency\": \"USD\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p074\"\n    ],\n    \"created_at\": \"2026-04-16T18:10:20Z\"\n  },\n  {\n    \"id\": \"o029\",\n    \"user_id\": \"u036\",\n    \"total_cents\": 109296,\n    \"currency\": \"GBP\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p011\",\n      \"p032\",\n      \"p016\"\n    ],\n    \"created_at\": \"2026-03-17T08:15:06Z\"\n  },\n  {\n    \"id\": \"o030\",\n    \"user_id\": \"u028\",\n    \"total_cents\": 80252,\n    \"currency\": \"GBP\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p058\",\n      \"p057\",\n      \"p039\",\n      \"p076\"\n    ],\n    \"created_at\": \"2026-03-25T09:43:43Z\"\n  },\n  {\n    \"id\": \"o031\",\n    \"user_id\": \"u041\",\n    \"total_cents\": 55517,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p027\"\n    ],\n    \"created_at\": \"2026-04-16T09:00:55Z\"\n  },\n  {\n    \"id\": \"o032\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 41233,\n    \"currency\": \"USD\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p023\",\n      \"p071\"\n    ],\n    \"created_at\": \"2026-04-02T03:07:31Z\"\n  },\n  {\n    \"id\": \"o033\",\n    \"user_id\": \"u046\",\n    \"total_cents\": 74311,\n    \"currency\": \"GBP\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p038\",\n      \"p005\",\n      \"p030\",\n      \"p037\"\n    ],\n    \"created_at\": \"2026-04-20T13:04:11Z\"\n  },\n  {\n    \"id\": \"o034\",\n    \"user_id\": \"u043\",\n    \"total_cents\": 52056,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p034\",\n      \"p076\"\n    ],\n    \"created_at\": \"2026-03-28T13:32:20Z\"\n  },\n  {\n    \"id\": \"o035\",\n    \"user_id\": \"u010\",\n    \"total_cents\": 18918,\n    \"currency\": \"USD\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p020\",\n      \"p035\"\n    ],\n    \"created_at\": \"2026-03-16T12:31:15Z\"\n  },\n  {\n    \"id\": \"o036\",\n    \"user_id\": \"u029\",\n    \"total_cents\": 32797,\n    \"currency\": \"EUR\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p077\",\n      \"p073\",\n      \"p037\"\n    ],\n    \"created_at\": \"2026-03-21T00:45:05Z\"\n  },\n  {\n    \"id\": \"o037\",\n    \"user_id\": \"u029\",\n    \"total_cents\": 21286,\n    \"currency\": \"GBP\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p035\",\n      \"p065\",\n      \"p070\",\n      \"p064\"\n    ],\n    \"created_at\": \"2026-03-11T19:44:51Z\"\n  },\n  {\n    \"id\": \"o038\",\n    \"user_id\": \"u006\",\n    \"total_cents\": 60210,\n    \"currency\": \"GBP\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p042\",\n      \"p078\",\n      \"p033\",\n      \"p004\"\n    ],\n    \"created_at\": \"2026-03-17T20:59:23Z\"\n  },\n  {\n    \"id\": \"o039\",\n    \"user_id\": \"u031\",\n    \"total_cents\": 136242,\n    \"currency\": \"GBP\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p074\",\n      \"p006\",\n      \"p023\"\n    ],\n    \"created_at\": \"2026-03-10T12:41:53Z\"\n  },\n  {\n    \"id\": \"o040\",\n    \"user_id\": \"u041\",\n    \"total_cents\": 129101,\n    \"currency\": \"USD\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p024\",\n      \"p075\",\n      \"p056\"\n    ],\n    \"created_at\": \"2026-04-07T02:35:46Z\"\n  },\n  {\n    \"id\": \"o041\",\n    \"user_id\": \"u022\",\n    \"total_cents\": 108109,\n    \"currency\": \"GBP\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p043\",\n      \"p042\",\n      \"p014\",\n      \"p021\"\n    ],\n    \"created_at\": \"2026-04-10T00:12:07Z\"\n  },\n  {\n    \"id\": \"o042\",\n    \"user_id\": \"u021\",\n    \"total_cents\": 66363,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p071\",\n      \"p005\",\n      \"p059\",\n      \"p012\"\n    ],\n    \"created_at\": \"2026-03-17T11:55:00Z\"\n  },\n  {\n    \"id\": \"o043\",\n    \"user_id\": \"u027\",\n    \"total_cents\": 14408,\n    \"currency\": \"USD\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p066\",\n      \"p001\",\n      \"p070\",\n      \"p060\"\n    ],\n    \"created_at\": \"2026-03-24T18:34:45Z\"\n  },\n  {\n    \"id\": \"o044\",\n    \"user_id\": \"u036\",\n    \"total_cents\": 34543,\n    \"currency\": \"EUR\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p057\",\n      \"p007\",\n      \"p027\",\n      \"p035\"\n    ],\n    \"created_at\": \"2026-03-12T05:44:22Z\"\n  },\n  {\n    \"id\": \"o045\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 41716,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"",
+      "stderr": "",
+      "stdout_truncated": true,
+      "stderr_truncated": false,
+      "wall_clock_ms": 25,
+      "timed_out": false
+    },
+    {
+      "turn": 3,
+      "tool_use_id": "call_651b7639eb4e4ab7ba7b5b05",
+      "command": "./cli/bin/ctl search --query \"Acme\" --scope tickets",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t012\",\n    \"match\": {\n      \"subject\": \"Acme integration keeps disconnecting\"\n    }\n  }\n]\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 50,
+      "timed_out": false
+    },
+    {
+      "turn": 3,
+      "tool_use_id": "call_26bf9e00b84e4db999cb02b8",
+      "command": "./cli/bin/ctl search --query \"product\" --scope tickets",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t009\",\n    \"match\": {\n      \"subject\": \"Bulk delete hangs on large product catalogs\",\n      \"body\": \"Customer reports: bulk delete hangs on large product catalogs.\"\n    }\n  },\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t010\",\n    \"match\": {\n      \"subject\": \"API key rotation broke our production deploy\",\n      \"body\": \"Customer reports: api key rotation broke our production deploy.\"\n    }\n  },\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t029\",\n    \"match\": {\n      \"body\": \"Customer reports: product sku conflict when duplicating a catalog.\"\n    }\n  }\n]\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 26,
+      "timed_out": false
+    },
+    {
+      "turn": 4,
+      "tool_use_id": "call_587c70bb4bb84574a706a026",
+      "command": "./cli/bin/ctl fetch /runbook/support-tickets",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "not found\n",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 26,
+      "timed_out": false
+    },
+    {
+      "turn": 4,
+      "tool_use_id": "call_3aef73b12639430cb6cb3ae7",
+      "command": "./cli/bin/ctl fetch /help/tickets",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "not found\n",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 22,
+      "timed_out": false
+    },
+    {
+      "turn": 5,
+      "tool_use_id": "call_40f27e25a4144549ac31686c",
+      "command": "./cli/bin/ctl fetch /docs/support",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "not found\n",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 55,
+      "timed_out": false
+    },
+    {
+      "turn": 5,
+      "tool_use_id": "call_4431d174d7474f70b07d4e6c",
+      "command": "./cli/bin/ctl search --query \"ticket\" --scope products",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[]\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 24,
+      "timed_out": false
+    },
+    {
+      "turn": 6,
+      "tool_use_id": "call_39b1f4395da94b7592a19d51",
+      "command": "./cli/bin/ctl list orders --limit 120 --format json > /tmp/orders.json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 53,
+      "timed_out": false
+    },
+    {
+      "turn": 7,
+      "tool_use_id": "call_51b2b8157903424dac189336",
+      "command": "python3 -c \"\nimport json\nwith open('/tmp/orders.json') as f:\n    orders = json.load(f)\n\n# Count product occurrences across all orders\nproduct_counts = {}\nproduct_users = {}\nfor o in orders:\n    for pid in o.get('product_ids', []):\n        product_counts[pid] = product_counts.get(pid, 0) + 1\n        if pid not in product_users:\n            product_users[pid] = set()\n        product_users[pid].add(o['user_id'])\n\n# Sort by count descending\nsorted_products = sorted(product_counts.items(), key=lambda x: x[1], reverse=True)\nprint('Top 20 products by order count:')\nfor pid, count in sorted_products[:20]:\n    print(f'  {pid}: {count} orders, {len(product_users[pid])} unique users')\n\"\n",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "Top 20 products by order count:\n  p035: 9 orders, 8 unique users\n  p012: 9 orders, 6 unique users\n  p060: 8 orders, 8 unique users\n  p076: 7 orders, 6 unique users\n  p049: 7 orders, 6 unique users\n  p036: 7 orders, 7 unique users\n  p015: 7 orders, 7 unique users\n  p020: 7 orders, 7 unique users\n  p056: 7 orders, 7 unique users\n  p073: 6 orders, 5 unique users\n  p004: 6 orders, 5 unique users\n  p006: 6 orders, 6 unique users\n  p008: 6 orders, 5 unique users\n  p011: 5 orders, 5 unique users\n  p054: 5 orders, 5 unique users\n  p032: 5 orders, 5 unique users\n  p077: 5 orders, 5 unique users\n  p059: 5 orders, 5 unique users\n  p048: 5 orders, 4 unique users\n  p014: 5 orders, 5 unique users\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 45,
+      "timed_out": false
+    },
+    {
+      "turn": 8,
+      "tool_use_id": "call_e510864191e448c793033cc0",
+      "command": "./cli/bin/ctl get products p035 --format json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "{\n  \"id\": \"p035\",\n  \"name\": \"Globex Ionizer Mk 1\",\n  \"sku\": \"SKU-0035\",\n  \"price_cents\": 4999,\n  \"inventory\": 128,\n  \"category\": \"subscriptions\",\n  \"active\": true\n}\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 59,
+      "timed_out": false
+    },
+    {
+      "turn": 8,
+      "tool_use_id": "call_fca9a733e3e4469ab8b8ee83",
+      "command": "./cli/bin/ctl get products p012 --format json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "{\n  \"id\": \"p012\",\n  \"name\": \"Umbrella Tracker\",\n  \"sku\": \"SKU-0012\",\n  \"price_cents\": 19999,\n  \"inventory\": 22,\n  \"category\": \"services\",\n  \"active\": true\n}\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 27,
+      "timed_out": false
+    },
+    {
+      "turn": 9,
+      "tool_use_id": "call_8d9421ebd7984e09aadfa2ea",
+      "command": "python3 -c \"\nimport json\nwith open('/tmp/orders.json') as f:\n    orders = json.load(f)\n\n# For each product, count how many orders have failed/refunded status\nproduct_issues = {}\nfor o in orders:\n    for pid in o.get('product_ids', []):\n        if pid not in product_issues:\n            product_issues[pid] = {'total': 0, 'failed': 0, 'refunded': 0, 'pending': 0, 'paid': 0}\n        product_issues[pid]['total'] += 1\n        status = o.get('status', '')\n        if status in product_issues[pid]:\n            product_issues[pid][status] += 1\n\n# Sort by failed+refunded count\nfor pid in product_issues:\n    product_issues[pid]['problem_count'] = product_issues[pid]['failed'] + product_issues[pid]['refunded']\n\nsorted_issues = sorted(product_issues.items(), key=lambda x: x[1]['problem_count'], reverse=True)\nprint('Top 20 products by problem (failed+refunded) orders:')\nfor pid, stats in sorted_issues[:20]:\n    print(f'  {pid}: total={stats[\\\"total\\\"]}, failed={stats[\\\"failed\\\"]}, refunded={stats[\\\"refunded\\\"]}, paid={stats[\\\"paid\\\"]}, pending={stats[\\\"pending\\\"]}')\n\"\n",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "Top 20 products by problem (failed+refunded) orders:\n  p012: total=9, failed=4, refunded=3, paid=2, pending=0\n  p049: total=7, failed=3, refunded=3, paid=1, pending=0\n  p060: total=8, failed=2, refunded=3, paid=2, pending=1\n  p056: total=7, failed=3, refunded=2, paid=1, pending=1\n  p035: total=9, failed=3, refunded=2, paid=3, pending=1\n  p014: total=5, failed=3, refunded=2, paid=0, pending=0\n  p037: total=5, failed=3, refunded=2, paid=0, pending=0\n  p076: total=7, failed=1, refunded=3, paid=3, pending=0\n  p073: total=6, failed=3, refunded=1, paid=1, pending=1\n  p015: total=7, failed=3, refunded=1, paid=2, pending=1\n  p077: total=5, failed=2, refunded=2, paid=0, pending=1\n  p023: total=5, failed=3, refunded=1, paid=1, pending=0\n  p004: total=6, failed=1, refunded=2, paid=2, pending=1\n  p011: total=5, failed=2, refunded=1, paid=0, pending=2\n  p036: total=7, failed=0, refunded=3, paid=3, pending=1\n  p054: total=5, failed=2, refunded=1, paid=2, pending=0\n  p059: total=5, failed=2, refunded=1, paid=2, pending=0\n  p020: total=7, failed=0, refunded=3, paid=3, pending=1\n  p024: total=3, failed=1, refunded=2, paid=0, pending=0\n  p002: total=3, failed=2, refunded=1, paid=0, pending=0\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 25,
+      "timed_out": false
+    },
+    {
+      "turn": 10,
+      "tool_use_id": "call_45d1539dbf5343568d237141",
+      "command": "./cli/bin/ctl get products p012 --format json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "{\n  \"id\": \"p012\",\n  \"name\": \"Umbrella Tracker\",\n  \"sku\": \"SKU-0012\",\n  \"price_cents\": 19999,\n  \"inventory\": 22,\n  \"category\": \"services\",\n  \"active\": true\n}\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 50,
+      "timed_out": false
+    },
+    {
+      "turn": 10,
+      "tool_use_id": "call_059d8bf7b74541b9b91ef995",
+      "command": "./cli/bin/ctl get products p049 --format json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "{\n  \"id\": \"p049\",\n  \"name\": \"Standard Widget C Mk 1\",\n  \"sku\": \"SKU-0049\",\n  \"price_cents\": 19999,\n  \"inventory\": 272,\n  \"category\": \"gadgets\",\n  \"active\": false\n}\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 25,
+      "timed_out": false
+    },
+    {
+      "turn": 10,
+      "tool_use_id": "call_e6b51427481a4beba8d09b02",
+      "command": "./cli/bin/ctl get products p014 --format json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "{\n  \"id\": \"p014\",\n  \"name\": \"Wayne Grapple\",\n  \"sku\": \"SKU-0014\",\n  \"price_cents\": 9999,\n  \"inventory\": 316,\n  \"category\": \"consumables\",\n  \"active\": true,\n  \"inventory_discrepancy\": {\n    \"note\": \"recorded 120, warehouse reports 117\",\n    \"delta\": -3,\n    \"source\": \"pipe-09 reconcile\"\n  }\n}\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 22,
+      "timed_out": false
+    },
+    {
+      "turn": 10,
+      "tool_use_id": "call_e969aa2806354703a5fbeaaa",
+      "command": "./cli/bin/ctl get products p037 --format json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "{\n  \"id\": \"p037\",\n  \"name\": \"Globex Heat Sink Mk 1\",\n  \"sku\": \"SKU-0037\",\n  \"price_cents\": 4999,\n  \"inventory\": 384,\n  \"category\": \"consumables\",\n  \"active\": true,\n  \"inventory_discrepancy\": {\n    \"note\": \"recorded 42, warehouse reports 50\",\n    \"delta\": 8,\n    \"source\": \"pipe-09 reconcile\"\n  }\n}\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 21,
+      "timed_out": false
+    },
+    {
+      "turn": 11,
+      "tool_use_id": "call_a58a3ea5674d4694bd6f7f9f",
+      "command": "python3 -c \"\nimport json\nwith open('/tmp/orders.json') as f:\n    orders = json.load(f)\n\n# Focus on p012 - Umbrella Tracker: 9 orders, 4 failed, 3 refunded, only 2 paid\n# Let's see the details of those orders\np012_orders = [o for o in orders if 'p012' in o.get('product_ids', [])]\nprint('Orders containing p012 (Umbrella Tracker):')\nfor o in p012_orders:\n    print(f'  {o[\\\"id\\\"]}: user={o[\\\"user_id\\\"]}, status={o[\\\"status\\\"]}, total={o[\\\"total_cents\\\"]}, created={o[\\\"created_at\\\"]}')\n\"\n",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "Orders containing p012 (Umbrella Tracker):\n  o042: user=u021, status=paid, total=66363, created=2026-03-17T11:55:00Z\n  o046: user=u008, status=failed, total=169992, created=2026-03-20T05:05:48Z\n  o067: user=u008, status=paid, total=4999, created=2026-04-10T08:12:15Z\n  o068: user=u008, status=refunded, total=4999, created=2026-04-10T08:12:16Z\n  o069: user=u008, status=refunded, total=4999, created=2026-04-10T08:12:17Z\n  o072: user=u017, status=failed, total=140858, created=2026-04-06T02:34:00Z\n  o093: user=u028, status=refunded, total=25512, created=2026-03-15T14:13:13Z\n  o101: user=u048, status=failed, total=139261, created=2026-04-03T14:51:35Z\n  o111: user=u016, status=failed, total=114408, created=2026-03-29T13:32:22Z\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 40,
+      "timed_out": false
+    },
+    {
+      "turn": 12,
+      "tool_use_id": "call_1c896728a4194d1a8182cdab",
+      "command": "./cli/bin/ctl search --query \"Umbrella\" --scope tickets",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[]\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 36,
+      "timed_out": false
+    },
+    {
+      "turn": 12,
+      "tool_use_id": "call_d461684e32d5495393c065d4",
+      "command": "./cli/bin/ctl search --query \"Tracker\" --scope tickets",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[]\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 22,
+      "timed_out": false
+    },
+    {
+      "turn": 13,
+      "tool_use_id": "call_ba76ef8b87e447758a33035c",
+      "command": "./cli/bin/ctl search --query \"Globex\" --scope tickets",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[]\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 31,
+      "timed_out": false
+    },
+    {
+      "turn": 13,
+      "tool_use_id": "call_15f3699d730b4400aadc2e5d",
+      "command": "./cli/bin/ctl search --query \"Wayne\" --scope tickets",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[]\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 23,
+      "timed_out": false
+    },
+    {
+      "turn": 14,
+      "tool_use_id": "call_acd9d6ce4f7c4869aafb57bd",
+      "command": "./cli/bin/ctl search --query \"disconnect\" --scope tickets",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t012\",\n    \"match\": {\n      \"subject\": \"Acme integration keeps disconnecting\",\n      \"body\": \"Customer reports: acme integration keeps disconnecting.\"\n    }\n  }\n]\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 51,
+      "timed_out": false
+    },
+    {
+      "turn": 14,
+      "tool_use_id": "call_637835ccc2034ae281f995c3",
+      "command": "./cli/bin/ctl search --query \"integration\" --scope tickets",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t012\",\n    \"match\": {\n      \"subject\": \"Acme integration keeps disconnecting\",\n      \"body\": \"Customer reports: acme integration keeps disconnecting.\"\n    }\n  }\n]\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 25,
+      "timed_out": false
+    },
+    {
+      "turn": 15,
+      "tool_use_id": "call_391d7b6b6ab7480cae9f71a6",
+      "command": "./cli/bin/ctl search --query \"Acme\" --scope orders",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[]\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 51,
+      "timed_out": false
+    },
+    {
+      "turn": 15,
+      "tool_use_id": "call_551a356a75c447ae8a08998f",
+      "command": "./cli/bin/ctl search --query \"Acme\" --scope products",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[\n  {\n    \"resource\": \"products\",\n    \"id\": \"p001\",\n    \"match\": {\n      \"name\": \"Acme Foghorn\"\n    }\n  },\n  {\n    \"resource\": \"products\",\n    \"id\": \"p002\",\n    \"match\": {\n      \"name\": \"Acme Anvil\"\n    }\n  },\n  {\n    \"resource\": \"products\",\n    \"id\": \"p003\",\n    \"match\": {\n      \"name\": \"Acme Rocket Skates\"\n    }\n  },\n  {\n    \"resource\": \"products\",\n    \"id\": \"p004\",\n    \"match\": {\n      \"name\": \"Acme Earthquake Pills\"\n    }\n  },\n  {\n    \"resource\": \"products\",\n    \"id\": \"p031\",\n    \"match\": {\n      \"name\": \"Acme Foghorn Mk 1\"\n    }\n  },\n  {\n    \"resource\": \"products\",\n    \"id\": \"p032\",\n    \"match\": {\n      \"name\": \"Acme Anvil Mk 1\"\n    }\n  },\n  {\n    \"resource\": \"products\",\n    \"id\": \"p033\",\n    \"match\": {\n      \"name\": \"Acme Rocket Skates Mk 1\"\n    }\n  },\n  {\n    \"resource\": \"products\",\n    \"id\": \"p034\",\n    \"match\": {\n      \"name\": \"Acme Earthquake Pills Mk 1\"\n    }\n  },\n  {\n    \"resource\": \"products\",\n    \"id\": \"p061\",\n    \"match\": {\n      \"name\": \"Acme Foghorn Mk 2\"\n    }\n  },\n  {\n    \"resource\": \"products\",\n    \"id\": \"p062\",\n    \"match\": {\n      \"name\": \"Acme Anvil Mk 2\"\n    }\n  },\n  {\n    \"resource\": \"products\",\n    \"id\": \"p063\",\n    \"match\": {\n      \"name\": \"Acme Rocket Skates Mk 2\"\n    }\n  },\n  {\n    \"resource\": \"products\",\n    \"id\": \"p064\",\n    \"match\": {\n      \"name\": \"Acme Earthquake Pills Mk 2\"\n    }\n  }\n]\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 25,
+      "timed_out": false
+    },
+    {
+      "turn": 16,
+      "tool_use_id": "019dcadcd75158b9c0bfe14796c54ab6",
+      "command": "python3 -c \"\nimport json\nwith open('/tmp/orders.json') as f:\n    orders = json.load(f)\n\n# Count orders per product brand (Acme, Globex, Initech, Umbrella, Wayne, etc.)\nbrand_counts = {}\nbrand_issues = {}\nacme_products = ['p001','p002','p003','p004','p031','p032','p033','p034','p061','p062','p063','p064']\nglobex_products = ['p005','p006','p007','p035','p036','p037','p065','p066','p067','p068']\ninitech_products = ['p008','p009','p010','p038','p039','p040','p069','p070','p071','p072']\numbrella_products = ['p011','p012','p013','p041','p042','p043','p073','p074','p075','p076']\nwayne_products = ['p014','p015','p016','p044','p045','p046','p077','p078','p079','p080']\n\nbrand_map = {}\nfor p in acme_products: brand_map[p] = 'Acme'\nfor p in globex_products: brand_map[p] = 'Globex'\nfor p in initech_products: brand_map[p] = 'Initech'\nfor p in umbrella_products: brand_map[p] = 'Umbrella'\nfor p in wayne_products: brand_map[p] = 'Wayne'\n\nfor o in orders:\n    for pid in o.get('product_ids', []):\n        brand = brand_map.get(pid, 'Other')\n        if brand not in brand_counts:\n            brand_counts[brand] = 0\n            brand_issues[brand] = {'failed': 0, 'refunded': 0}\n        brand_counts[brand] += 1\n        if o['status'] == 'failed':\n            brand_issues[brand]['failed'] += 1\n        elif o['status'] == 'refunded':\n            brand_issues[brand]['refunded'] += 1\n\nfor brand in sorted(brand_counts.keys()):\n    print(f'{brand}: {brand_counts[brand]} order-items, failed={brand_issues[brand][\\\"failed\\\"]}, refunded={brand_issues[brand][\\\"refunded\\\"]}')\n\"\n",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "Acme: 41 order-items, failed=8, refunded=15\nGlobex: 45 order-items, failed=14, refunded=11\nInitech: 38 order-items, failed=10, refunded=10\nOther: 100 order-items, failed=27, refunded=28\nUmbrella: 45 order-items, failed=19, refunded=12\nWayne: 41 order-items, failed=12, refunded=12\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 30,
+      "timed_out": false
+    },
+    {
+      "turn": 17,
+      "tool_use_id": "call_f9b607abe8fe4ad9b705743c",
+      "command": "python3 -c \"\nimport json\nwith open('/tmp/orders.json') as f:\n    orders = json.load(f)\n\n# Focus on Umbrella products - highest failure rate\numbrella_products = ['p011','p012','p013','p041','p042','p043','p073','p074','p075','p076']\n\n# Count per individual Umbrella product\nup_counts = {}\nfor o in orders:\n    for pid in o.get('product_ids', []):\n        if pid in umbrella_products:\n            if pid not in up_counts:\n                up_counts[pid] = {'total': 0, 'failed': 0, 'refunded': 0, 'paid': 0, 'pending': 0}\n            up_counts[pid]['total'] += 1\n            up_counts[pid][o['status']] = up_counts[pid].get(o['status'], 0) + 1\n\nfor pid in sorted(up_counts.keys()):\n    print(f'{pid}: {up_counts[pid]}')\n\"\n",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "p011: {'total': 5, 'failed': 2, 'refunded': 1, 'paid': 0, 'pending': 2}\np012: {'total': 9, 'failed': 4, 'refunded': 3, 'paid': 2, 'pending': 0}\np013: {'total': 1, 'failed': 0, 'refunded': 1, 'paid': 0, 'pending': 0}\np041: {'total': 3, 'failed': 1, 'refunded': 0, 'paid': 1, 'pending': 1}\np042: {'total': 4, 'failed': 2, 'refunded': 1, 'paid': 1, 'pending': 0}\np043: {'total': 2, 'failed': 2, 'refunded': 0, 'paid': 0, 'pending': 0}\np073: {'total': 6, 'failed': 3, 'refunded': 1, 'paid': 1, 'pending': 1}\np074: {'total': 5, 'failed': 2, 'refunded': 1, 'paid': 1, 'pending': 1}\np075: {'total': 3, 'failed': 2, 'refunded': 1, 'paid': 0, 'pending': 0}\np076: {'total': 7, 'failed': 1, 'refunded': 3, 'paid': 3, 'pending': 0}\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 41,
+      "timed_out": false
+    },
+    {
+      "turn": 18,
+      "tool_use_id": "call_9ae726cace2a4cacb6663900",
+      "command": "./cli/bin/ctl get products p076 --format json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "{\n  \"id\": \"p076\",\n  \"name\": \"Wayne Batmobile Wax Mk 2\",\n  \"sku\": \"SKU-0076\",\n  \"price_cents\": 1999,\n  \"inventory\": 79,\n  \"category\": \"gadgets\",\n  \"active\": true\n}\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 40,
+      "timed_out": false
+    },
+    {
+      "turn": 18,
+      "tool_use_id": "call_9ed148c50c754c53b33530f9",
+      "command": "./cli/bin/ctl get products p073 --format json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "{\n  \"id\": \"p073\",\n  \"name\": \"Umbrella Field Kit Mk 2\",\n  \"sku\": \"SKU-0073\",\n  \"price_cents\": 199,\n  \"inventory\": 84,\n  \"category\": \"services\",\n  \"active\": false\n}\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 24,
+      "timed_out": false
+    },
+    {
+      "turn": 19,
+      "tool_use_id": "call_cae16c7cc2eb48a1a6811284",
+      "command": "./cli/bin/ctl get products p074 --format json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "{\n  \"id\": \"p074\",\n  \"name\": \"Wayne Grapple Mk 2\",\n  \"sku\": \"SKU-0074\",\n  \"price_cents\": 1999,\n  \"inventory\": 135,\n  \"category\": \"services\",\n  \"active\": true\n}\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 35,
+      "timed_out": false
+    },
+    {
+      "turn": 19,
+      "tool_use_id": "call_665032683c524805930ec9a9",
+      "command": "./cli/bin/ctl get products p075 --format json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "{\n  \"id\": \"p075\",\n  \"name\": \"Wayne Cowl Mk 2\",\n  \"sku\": \"SKU-0075\",\n  \"price_cents\": 9999,\n  \"inventory\": 490,\n  \"category\": \"subscriptions\",\n  \"active\": true\n}\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 25,
+      "timed_out": false
+    },
+    {
+      "turn": 20,
+      "tool_use_id": "call_8a503b2e36c841839a26c261",
+      "command": "./cli/bin/ctl list products --limit 80 --format json > /tmp/products.json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 55,
+      "timed_out": false
+    },
+    {
+      "turn": 21,
+      "tool_use_id": "call_ae67b68c3c0f49e2b2c55b3e",
+      "command": "python3 -c \"\nimport json\nwith open('/tmp/products.json') as f:\n    products = json.load(f)\n\n# Build a map of product id -> name\npmap = {p['id']: p['name'] for p in products}\n\n# Now let's look at all products and their order issue rates\nwith open('/tmp/orders.json') as f:\n    orders = json.load(f)\n\nproduct_stats = {}\nfor o in orders:\n    for pid in o.get('product_ids', []):\n        if pid not in product_stats:\n            product_stats[pid] = {'total': 0, 'failed': 0, 'refunded': 0, 'paid': 0, 'pending': 0}\n        product_stats[pid]['total'] += 1\n        product_stats[pid][o['status']] = product_stats[pid].get(o['status'], 0) + 1\n\n# Calculate problem rate for products with >= 5 orders\nresults = []\nfor pid, stats in product_stats.items():\n    if stats['total'] >= 5:\n        problem_rate = (stats['failed'] + stats['refunded']) / stats['total']\n        results.append((pid, pmap.get(pid, '???'), stats, problem_rate))\n\nresults.sort(key=lambda x: x[3], reverse=True)\nprint('Products with >=5 orders, sorted by problem rate (failed+refunded / total):')\nfor pid, name, stats, rate in results[:15]:\n    print(f'  {pid} ({name}): total={stats[\\\"total\\\"]}, failed={stats[\\\"failed\\\"]}, refunded={stats[\\\"refunded\\\"]}, paid={stats[\\\"paid\\\"]}, problem_rate={rate:.1%}')\n\"\n",
+      "allowed": false,
+      "rejection_reason": "redirect target 'name' must start with one of ['/tmp/']",
+      "exit_code": null,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 0,
+      "timed_out": false
+    },
+    {
+      "turn": 22,
+      "tool_use_id": "call_132cd1d28cb5433b89ac32e8",
+      "command": "python3 -c \"\nimport json\nwith open('/tmp/products.json') as f:\n    products = json.load(f)\npmap = {p['id']: p['name'] for p in products}\nwith open('/tmp/orders.json') as f:\n    orders = json.load(f)\nproduct_stats = {}\nfor o in orders:\n    for pid in o.get('product_ids', []):\n        if pid not in product_stats:\n            product_stats[pid] = {'total': 0, 'failed': 0, 'refunded': 0, 'paid': 0, 'pending': 0}\n        product_stats[pid]['total'] += 1\n        product_stats[pid][o['status']] = product_stats[pid].get(o['status'], 0) + 1\nresults = []\nfor pid, stats in product_stats.items():\n    if stats['total'] >= 5:\n        problem_rate = (stats['failed'] + stats['refunded']) / stats['total']\n        results.append((pid, pmap.get(pid, 'unknown'), stats, problem_rate))\nresults.sort(key=lambda x: x[3], reverse=True)\nprint('Products with >=5 orders, sorted by problem rate:')\nfor pid, pname, stats, rate in results[:15]:\n    print(f'  {pid} ({pname}): total={stats[\\\"total\\\"]}, failed={stats[\\\"failed\\\"]}, refunded={stats[\\\"refunded\\\"]}, paid={stats[\\\"paid\\\"]}, problem_rate={rate:.1%}')\n\"\n",
+      "allowed": false,
+      "rejection_reason": "redirect target '=' must start with one of ['/tmp/']",
+      "exit_code": null,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 0,
+      "timed_out": false
+    },
+    {
+      "turn": 23,
+      "tool_use_id": "call_e66280a3bb094d6abbc3f409",
+      "command": "bash -c 'python3 -c \"\nimport json\nwith open(\\\"/tmp/products.json\\\") as f:\n    products = json.load(f)\npmap = {p[\\\"id\\\"]: p[\\\"name\\\"] for p in products}\nwith open(\\\"/tmp/orders.json\\\") as f:\n    orders = json.load(f)\nproduct_stats = {}\nfor o in orders:\n    for pid in o.get(\\\"product_ids\\\", []):\n        if pid not in product_stats:\n            product_stats[pid] = {\\\"total\\\": 0, \\\"failed\\\": 0, \\\"refunded\\\": 0, \\\"paid\\\": 0, \\\"pending\\\": 0}\n        product_stats[pid][\\\"total\\\"] += 1\n        product_stats[pid][o[\\\"status\\\"]] = product_stats[pid].get(o[\\\"status\\\"], 0) + 1\nresults = []\nfor pid, stats in product_stats.items():\n    if stats[\\\"total\\\"] >= 5:\n        problem_rate = (stats[\\\"failed\\\"] + stats[\\\"refunded\\\"]) / stats[\\\"total\\\"]\n        results.append((pid, pmap.get(pid, \\\"unknown\\\"), stats, problem_rate))\nresults.sort(key=lambda x: x[3], reverse=True)\nprint(\\\"Products with >=5 orders, sorted by problem rate:\\\")\nfor pid, pname, stats, rate in results[:15]:\n    print(f\\\"  {pid} ({pname}): total={stats[chr(116)+chr(111)+chr(116)+chr(97)+chr(108)]}, failed={stats[chr(102)+chr(97)+chr(105)+chr(108)+chr(101)+chr(100)]}, refunded={stats[chr(114)+chr(101)+chr(102)+chr(117)+chr(110)+chr(100)+chr(101)+chr(100)]}, paid={stats[chr(112)+chr(97)+chr(105)+chr(100)]}, problem_rate={rate:.1%}\\\")\n\"'",
+      "allowed": false,
+      "rejection_reason": "redirect target '=' must start with one of ['/tmp/']",
+      "exit_code": null,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 0,
+      "timed_out": false
+    },
+    {
+      "turn": 24,
+      "tool_use_id": "call_2c904e14d7694cf3ae5c6e09",
+      "command": "python3 /tmp/analyze.py",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 52,
+      "timed_out": false
+    }
+  ],
+  "setup_calls": [],
+  "rejected_commands": [
+    {
+      "command": "python3 -c \"\nimport json\nwith open('/tmp/products.json') as f:\n    products = json.load(f)\n\n# Build a map of product id -> name\npmap = {p['id']: p['name'] for p in products}\n\n# Now let's look at all products and their order issue rates\nwith open('/tmp/orders.json') as f:\n    orders = json.load(f)\n\nproduct_stats = {}\nfor o in orders:\n    for pid in o.get('product_ids', []):\n        if pid not in product_stats:\n            product_stats[pid] = {'total': 0, 'failed': 0, 'refunded': 0, 'paid': 0, 'pending': 0}\n        product_stats[pid]['total'] += 1\n        product_stats[pid][o['status']] = product_stats[pid].get(o['status'], 0) + 1\n\n# Calculate problem rate for products with >= 5 orders\nresults = []\nfor pid, stats in product_stats.items():\n    if stats['total'] >= 5:\n        problem_rate = (stats['failed'] + stats['refunded']) / stats['total']\n        results.append((pid, pmap.get(pid, '???'), stats, problem_rate))\n\nresults.sort(key=lambda x: x[3], reverse=True)\nprint('Products with >=5 orders, sorted by problem rate (failed+refunded / total):')\nfor pid, name, stats, rate in results[:15]:\n    print(f'  {pid} ({name}): total={stats[\\\"total\\\"]}, failed={stats[\\\"failed\\\"]}, refunded={stats[\\\"refunded\\\"]}, paid={stats[\\\"paid\\\"]}, problem_rate={rate:.1%}')\n\"\n",
+      "reason": "redirect target 'name' must start with one of ['/tmp/']"
+    },
+    {
+      "command": "python3 -c \"\nimport json\nwith open('/tmp/products.json') as f:\n    products = json.load(f)\npmap = {p['id']: p['name'] for p in products}\nwith open('/tmp/orders.json') as f:\n    orders = json.load(f)\nproduct_stats = {}\nfor o in orders:\n    for pid in o.get('product_ids', []):\n        if pid not in product_stats:\n            product_stats[pid] = {'total': 0, 'failed': 0, 'refunded': 0, 'paid': 0, 'pending': 0}\n        product_stats[pid]['total'] += 1\n        product_stats[pid][o['status']] = product_stats[pid].get(o['status'], 0) + 1\nresults = []\nfor pid, stats in product_stats.items():\n    if stats['total'] >= 5:\n        problem_rate = (stats['failed'] + stats['refunded']) / stats['total']\n        results.append((pid, pmap.get(pid, 'unknown'), stats, problem_rate))\nresults.sort(key=lambda x: x[3], reverse=True)\nprint('Products with >=5 orders, sorted by problem rate:')\nfor pid, pname, stats, rate in results[:15]:\n    print(f'  {pid} ({pname}): total={stats[\\\"total\\\"]}, failed={stats[\\\"failed\\\"]}, refunded={stats[\\\"refunded\\\"]}, paid={stats[\\\"paid\\\"]}, problem_rate={rate:.1%}')\n\"\n",
+      "reason": "redirect target '=' must start with one of ['/tmp/']"
+    },
+    {
+      "command": "bash -c 'python3 -c \"\nimport json\nwith open(\\\"/tmp/products.json\\\") as f:\n    products = json.load(f)\npmap = {p[\\\"id\\\"]: p[\\\"name\\\"] for p in products}\nwith open(\\\"/tmp/orders.json\\\") as f:\n    orders = json.load(f)\nproduct_stats = {}\nfor o in orders:\n    for pid in o.get(\\\"product_ids\\\", []):\n        if pid not in product_stats:\n            product_stats[pid] = {\\\"total\\\": 0, \\\"failed\\\": 0, \\\"refunded\\\": 0, \\\"paid\\\": 0, \\\"pending\\\": 0}\n        product_stats[pid][\\\"total\\\"] += 1\n        product_stats[pid][o[\\\"status\\\"]] = product_stats[pid].get(o[\\\"status\\\"], 0) + 1\nresults = []\nfor pid, stats in product_stats.items():\n    if stats[\\\"total\\\"] >= 5:\n        problem_rate = (stats[\\\"failed\\\"] + stats[\\\"refunded\\\"]) / stats[\\\"total\\\"]\n        results.append((pid, pmap.get(pid, \\\"unknown\\\"), stats, problem_rate))\nresults.sort(key=lambda x: x[3], reverse=True)\nprint(\\\"Products with >=5 orders, sorted by problem rate:\\\")\nfor pid, pname, stats, rate in results[:15]:\n    print(f\\\"  {pid} ({pname}): total={stats[chr(116)+chr(111)+chr(116)+chr(97)+chr(108)]}, failed={stats[chr(102)+chr(97)+chr(105)+chr(108)+chr(101)+chr(100)]}, refunded={stats[chr(114)+chr(101)+chr(102)+chr(117)+chr(110)+chr(100)+chr(101)+chr(100)]}, paid={stats[chr(112)+chr(97)+chr(105)+chr(100)]}, problem_rate={rate:.1%}\\\")\n\"'",
+      "reason": "redirect target '=' must start with one of ['/tmp/']"
+    }
+  ],
+  "usage": {
+    "input_tokens": 393013,
+    "output_tokens": 3883,
+    "cache_read_input_tokens": 357248,
+    "cache_creation_input_tokens": 0,
+    "total_calls": 25
+  },
+  "final_text": "",
+  "stop_reason": "max_turns",
+  "api_errors": [],
+  "dry_run": false,
+  "writable_prefixes_resolved": [
+    "/tmp/"
+  ],
+  "skills_loaded": [],
+  "skill_load_calls": [],
+  "artifact_files_copied": []
+}

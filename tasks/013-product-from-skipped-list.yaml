@@ -1,0 +1,30 @@
+id: "013"
+title: "Investigate the first product that pipe-04 skipped"
+bucket: stateful
+setup: |
+  ./cli/bin/ctl pipeline run pipe-04
+prompt: |
+  Pipe-04 has finished running. Determine which products were skipped
+  and fetch the full record of the first skipped product. Report its
+  id, name, and the reason it was skipped.
+rule_check:
+  - id: read_skip_file
+    assert: tool_called
+    match:
+      argv_regex: "(cat|head|less|more|tail|xargs).*pipe-04\\.skipped|/tmp/pipe-04\\.skipped"
+    weight: 2
+  - id: fetched_p044
+    assert: tool_called
+    match:
+      argv_regex: "^ctl get products p044"
+    weight: 3
+  - id: final_mentions_skip_reason
+    assert: final_text_regex
+    pattern: "SKU|legacy|prefix"
+    weight: 1
+  - id: no_p077_as_first
+    assert: no_tool_called
+    match:
+      argv_regex: "^ctl get products p077.*-p044|^ctl get products p077\\s*$"
+    weight: 1
+tags: [products, pipelines, stateful, A17, pipe-04]

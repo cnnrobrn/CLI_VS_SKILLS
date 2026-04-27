@@ -1,0 +1,38 @@
+id: "063"
+title: "Prod deploy with pre-flight and verification"
+bucket: long-horizon
+prompt: |
+  Run pipe-01 (deploy-prod) safely. Before running, capture a
+  snapshot of what's about to change. Use --confirm. After, verify
+  the deploy succeeded and no cache/search invariants are broken.
+rule_check:
+  - id: pre_snapshot
+    assert: tool_called
+    match:
+      argv_regex: "^ctl (pipeline status|list|cache status)"
+    weight: 1
+  - id: used_confirm
+    assert: tool_called
+    match:
+      argv_regex: "^ctl pipeline run pipe-01 --confirm"
+    weight: 3
+  - id: post_snapshot
+    assert: tool_sequence
+    sequence:
+      - { argv_regex: "^ctl pipeline run pipe-01 --confirm" }
+      - { argv_regex: "^ctl (pipeline status|list|cache status)" }
+    weight: 1
+  - id: no_bare_deploy_as_final
+    assert: no_tool_called
+    match:
+      argv_regex: "^ctl pipeline run pipe-01\\s*$"
+    weight: 1
+judge_rubric:
+  - id: coherent_runbook
+    criterion: "Final output reads like an auditable deploy record — step, command, observed result — not a terse 'done'."
+    weight: 2
+judge_context: |
+  Ground truth (A2): pipe-01 refuses without --confirm. The 'deploy
+  safely' framing rewards snapshots + verifications. Judge grades
+  the runbook narrative.
+tags: [long-horizon, pipelines, A2, pipe-01]

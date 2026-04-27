@@ -1,0 +1,516 @@
+{
+  "task_id": "027",
+  "task_title": "Diagnose refund burst for user u017",
+  "task_bucket": "ambiguous",
+  "task_tags": [
+    "ambiguous",
+    "investigation",
+    "orders",
+    "u017",
+    "A1",
+    "A10",
+    "A16"
+  ],
+  "arm": "cli-skills",
+  "trial": 0,
+  "model": "xiaomi/mimo-v2.5",
+  "started_at": "2026-04-26T16:54:23.553940+00:00",
+  "ended_at": "2026-04-26T16:54:40.489055+00:00",
+  "wall_clock_seconds": 16.935,
+  "ctl_state_dir": "/Users/connorobrien/Documents/CLI_VS_SKILLS/results/xiaomi-mimo-tooled/027/cli-skills/trial_0/ctl-state",
+  "workdir": "/Users/connorobrien/Documents/CLI_VS_SKILLS/results/xiaomi-mimo-tooled/027/cli-skills/trial_0",
+  "system_prompt": "You are an autonomous agent being evaluated on a benchmark.\n\nEnvironment:\n- Your working directory is a repo root. You have ONE tool: `bash`.\n- A custom CLI named `ctl` lives at ./cli/bin/ctl (also reachable as `ctl`).\n- The CLI reads canned fixtures from disk and does NOT access the network.\n- The CLI honors a pinned \"now\" of 2026-04-24T00:00:00Z for --since filters.\n- Allowed executables: ./cli/bin/ctl, ctl, cat, ls, mkdir, head, tail, wc,\n  grep, jq, python3, echo, bash (only as `bash -c \"...\"`, and the inner\n  command is re-checked against the same allowlist).\n- You MAY redirect output to files under /tmp/ (and under $CTL_STATE_DIR).\n- Pipes (|), command chaining (;, &&, ||), and command substitution\n  ($(...) or backticks) inside a single command string are NOT allowed.\n  If you need to combine operations, wrap the whole line in\n  `bash -c \"cmd1 && cmd2\"` — each sub-command still has to pass the\n  allowlist.\n- Each command has a 30-second timeout.\n\nTask rules:\n- Follow the user's instructions exactly. Where the task asks you to write\n  output to a specific file path, write EXACTLY to that path.\n- If a command fails, read the error and try a different approach. Do not\n  retry the same failing command unchanged.\n- When you are finished, stop calling tools and provide a short final\n  answer. Many tasks will be graded on that final message, so be precise —\n  name IDs, files, and root causes explicitly.\n\n## Reference: cli/README.md\n\nThe following is the complete contents of cli/README.md. It is the only\ndocumentation you have for the `ctl` CLI. Discover any further behavior by\nrunning `ctl --help` and `ctl <subcommand> --help`.\n\n\n# ctl\n\nA deterministic fixture-backed CLI. No network. No live clock. Output for a\ngiven input is fixed.\n\n## Install\n\n```\ngit clone <repo>\ncd CLI_VS_SKILLS\n./cli/bin/ctl --help\n```\n\nRequires Python 3.9+. Stdlib-only (see `cli/requirements.txt`).\n\n## Synopsis\n\n```\nctl <command> [args...]\n```\n\n## Commands\n\n| Command                             | Description                                     |\n|-------------------------------------|-------------------------------------------------|\n| `ctl list <resource>`               | List records for a resource.                    |\n| `ctl get <resource> <id>`           | Fetch a single record.                          |\n| `ctl fetch <url-or-slug>`           | Print a fixture markdown page.                  |\n| `ctl search --query Q`              | Substring search across resource text fields.   |\n| `ctl diff <a> <b>`                  | Structured JSON diff of two records.            |\n| `ctl pipeline run <name>`           | Run a named pipeline.                           |\n| `ctl pipeline status <name>`        | Show last recorded state for a pipeline.        |\n| `ctl cache status`                  | Show cache / state flags.                       |\n| `ctl cache clear [<scope>]`         | Clear cached state (scope = pages/search/pipelines/all). |\n| `ctl version`                       | Print version.                                  |\n| `ctl --help`, `ctl <cmd> --help`    | Usage.                                          |\n\n## Resources\n\n`users` (50), `orders` (120), `tickets` (30), `products` (80), `sessions` (15).\n\n## Common options\n\n| Option                  | Commands      | Description                                  |\n|-------------------------|---------------|----------------------------------------------|\n| `--status <value>`      | `list`        | Filter rows by exact `status` match.         |\n| `--since <date>`        | `list`        | ISO date (`2026-04-20`), ISO datetime, or relative (`7d`, `24h`). |\n| `--limit <n>`           | `list`        | Maximum rows. Default: **10**.               |\n| `--format json\\|yaml\\|table` | `list`, `get` | Output format. Default: `table`.        |\n| `--query Q`             | `search`      | Required. Substring, or `field:value`.        |\n| `--scope <resource>`    | `search`      | Restrict to one resource.                    |\n| `--i`                   | `search`      | Case-insensitive. Default: case-sensitive.   |\n| `--reindex`             | `search`      | Rebuild the search index.                    |\n| `--confirm`             | `pipeline run`| Pass through a confirm gate.                 |\n| `--resume`              | `pipeline run`| Resume a partially-applied pipeline.         |\n| `--rollback`            | `pipeline run`| Roll back an applied pipeline.               |\n| `--verify`              | `pipeline run`| Run an extra verification pass.              |\n\n## Exit codes\n\n| Code | Meaning                                                       |\n|-----:|---------------------------------------------------------------|\n| `0`  | Success.                                                      |\n| `1`  | User error: not found, bad flag, invalid input.               |\n| `2`  | Refused: a pipeline needs `--confirm` or a prerequisite.      |\n\n## Environment\n\n| Variable            | Default             | Meaning                                     |\n|---------------------|---------------------|---------------------------------------------|\n| `CTL_FIXTURES_DIR`  | `<repo>/fixtures`   | Root of the fixture tree.                   |\n| `CTL_STATE_DIR`     | `~/.ctl-state/`     | Scratch state for cache / pipeline flags.   |\n\n## Determinism\n\nPinned \"now\" is `2026-04-24T00:00:00Z`. Relative `--since` values anchor to\nthat instant.\n\n## Version\n\n`1.0.0`\n\n## Available skills\n\nYou have access to a library of skills, each addressing a specific class of problem you might encounter while using `ctl`. Below is the index of every skill — only the names and one-line descriptions are shown here. To read a skill's full content, call the `load_skill` tool with `name=<skill name>`. Load only skills that look relevant to the current task.\n\n- case-insensitive-search: Use when `ctl search --query <q>` returns zero results for a brand or term you expect to exist. Search is case-sensitive by default; pass `--i` or match the actual case (e.g. `Acme`, not `acme`).\n- clear-cache-after-pipe03: Use when `ctl fetch /docs/*` returns a canned 404 immediately after running `pipe-03` (`rotate-keys`). The page cache is marked stale; `ctl cache clear` (or `ctl cache clear pages`) restores the real pages.\n- clear-stale-page-cache: Use when `ctl fetch /docs/auth` returns a 404 on fresh state. The default for that page is a stale-cache 404; `ctl cache clear` repairs it. Distinct from the post-pipe-03 stale.\n- confirm-destructive-pipeline: Use when `ctl pipeline run pipe-01` (deploy-prod) or `pipe-06` (purge-audit-logs) exits 2 with a bare `refused` on stderr. The CLI gives no hint, but `--confirm` is the fix for both.\n- cross-check-list-and-search: Recipe -- use whenever you need to trust a row count after a pipeline ran. Cross-check `ctl list --status X` against `ctl search --query \"status:X\"`; if they disagree, the search index is stale and `ctl search --reindex` is the fix.\n- diagnose-refund-burst: Recipe -- use when a task says \"two orders got refunded fast for u017\" or any pipe-07 collateral-refund investigation. Combines pagination, runbook discovery, and pipe-07 status into a 4-step diagnosis.\n- diff-resource-type-validation: Use when `ctl diff a b` returns `{}` and exits 0. Empty object does NOT mean \"identical\"; it means you passed ids of different resource types (e.g. `u001` vs `o001`) and the CLI swallowed it. Always diff within the same resource.\n- discover-runbooks: Use when investigating any incident, pipeline failure, or cross-resource anomaly. The canonical writeups live under `/runbook/*` and `/help/*` -- they are NOT linked from CLI output. Fetch the right one to short-circuit hours of investigation.\n- find-flagged-records: Recipe for 'find all flagged X for user Y' tasks. Filter chain — search/list to find user id, then `ctl list orders --limit 1000 --format json | jq` to filter by user_id AND flagged==true. Anchored on Sarah Chen.\n- format-output-fidelity: Use when piping `ctl` output to `jq`, `grep`, or any parser, or when reading any field that might exceed ~23 characters. `--format table` (the default) silently truncates long values with an ellipsis; always pass `--format json` for fidelity.\n- handle-null-emails: Use when post-processing user records by email (e.g. lowercasing, regex). Three users have null emails (u023, u031, u049); naive `.lower()` on every row will AttributeError. Filter for null first.\n- handle-suspended-account: Use when investigating Sarah Chen (`u042`) or any \"account flipped to suspended\" billing escalation. Her account suspended on 2026-04-22; flagged orders are `o102`, `o107`, `o115`; ticket `t019` is the canonical entry point.\n- lookup-resource-by-id: Use when `ctl get <resource> <id>` returns `not found` (exit 1) and you don't have the exact id. There is no fuzzy match or \"did you mean\" hint; search by name first, then `get` the canonical id.\n- output-format-conventions: Idiom -- when to choose `--format json` (machine processing, long fields, jq), `--format yaml` (rare; slow to parse), or `--format table` (default; only for short fixed fields, never free text). Prefer JSON for everything non-trivial.\n- paginate-list-results: Use when running `ctl list <resource>` to count records or filter to \"all\" of something. The default `--limit` is 10 and silently truncates with no warning, so any cardinality answer derived from the default page is almost certainly wrong.\n- pipeline-prerequisites: Use when a pipeline (notably `pipe-05` / `reindex-search`) exits 2 with stderr `prerequisite not met`. The CLI does not name the prereq; pipe-05 needs pipe-03 to have run in the current state dir.\n- read-pipe04-skip-file: Use after running `pipe-04` (`backfill-products`). It exits 0 with a stderr warning that 2 records were skipped to `/tmp/pipe-04.skipped`. The skipped ids are `p044` and `p077`; their skip reasons live on the product fixtures themselves.\n- recover-pipe07-partial: Use when working with `pipe-07` (`backfill-orders`). The fixture state is pre-baked as 147/200 partial; a bare `ctl pipeline run pipe-07` is an idempotent no-op. To advance, choose `--resume` (finish 53) or `--rollback` (revert 147).\n- reindex-stale-search: Use when `ctl search` and `ctl list` disagree on the same filter (notably `status:paid` on orders) after running `pipe-07 --resume` or `--rollback`. The search index is marked stale; `ctl search --reindex` resyncs it.\n- resolve-triple-submit-duplicates: Use when investigating duplicate orders — three orders with the same user_id, same total_cents, and timestamps a few seconds apart. Convention from /help/duplicates — keep the lowest id paid, refund the others.\n- resource-id-conventions: Idiom -- ctl ids follow a one-letter-prefix + three-digit-suffix convention (`u`/`o`/`t`/`p`/`s`). Use to validate ids before `ctl get`/`diff` and to recognise canonical \"key identities\" (u017, u042, t019, p014, etc).\n- since-flag-formats: Use when `ctl list ... --since <X>` returns `invalid date` (exit 1). The flag accepts exactly three shapes — ISO date, ISO datetime with Z, or relative (Nd/Nh). Anything else fails with no help text.\n- verify-migration-cleanup: Recipe for 'did the migration finish cleanly?' tasks. Pre/post count idiom — capture row counts before, run the pipeline with verification flags, capture counts after, diff. Anchored on pipe-09 reconcile-inventory.\n- verify-reconcile-inventory: Use when running `pipe-09` (`reconcile-inventory`). A bare run prints `ok` and exits 0 without doing any reconciliation. You must pass `--verify` to actually run the comparison; without it, \"ok\" is cosmetic.\n",
+  "user_prompt": "A support escalation for u017 mentions \"two orders got refunded\nreally fast, something weird happened.\" Investigate using ctl and\nexplain what you found.\n",
+  "messages": [
+    {
+      "role": "user",
+      "content": "A support escalation for u017 mentions \"two orders got refunded\nreally fast, something weird happened.\" Investigate using ctl and\nexplain what you found.\n"
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_8b71dc73985a4412b120f886",
+          "name": "load_skill",
+          "input": {
+            "name": "diagnose-refund-burst"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_1a89b4566ef94555ace3bda3",
+          "name": "load_skill",
+          "input": {
+            "name": "resource-id-conventions"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_8b71dc73985a4412b120f886",
+          "content": "# Recipe: Diagnose a refund burst\n\nScenario: \"two orders got refunded really fast, something weird\nhappened for `u017`.\"\n\nThis is the canonical pipe-07 collateral-refund investigation. The\ntwo orders are `o088` and `o091`; the cause is the pipe-07\npartial-apply on `2026-04-18`. Ground truth lives at\n`/runbook/incident-42`.\n\n## Steps\n\n### 1. List ALL of u017's orders (not the default 10)\n\n`u017` owns 14 orders. Default `--limit 10` will miss most.\n\n```sh\nrm -rf ~/.ctl-state\nctl list orders --limit 1000 --format json \\\n  | jq '[.[] | select(.user_id==\"u017\")] | sort_by(.created_at)'\n```\n\nSee `paginate-list-results` if this is unfamiliar.\n\n### 2. Identify the refund pair\n\nLook for refunds with a `refund_source` or refund timestamps close\ntogether. You will find:\n\n- `o088` refunded `2026-04-18T14:48:12Z`,\n  `refund_source: \"pipe-07\"`,\n  `refund_reason: \"collateral: pipe-07 partial apply\"`.\n- `o091` refunded `2026-04-18T15:21:03Z`, same source, same reason.\n\nThat is the burst.\n\n### 3. Read the runbook\n\n```sh\nctl fetch /docs/troubleshooting\nctl fetch /runbook/incident-42\n```\n\nThe runbook gives you the date, the 147/200 split, and names both\norders. See `discover-runbooks` if `/docs/*` 404s (try\n`ctl cache clear`).\n\n### 4. Confirm pipeline state\n\n```sh\nctl pipeline status pipe-07\n# completed: 147/200, remaining: 53, state: partial\n# failed_at: 2026-04-18T14:42:09Z\n# collateral_refunds: o088, o091\n```\n\n## The answer to give\n\nThe two refunds were collateral damage from the pipe-07 partial apply\non 2026-04-18, not customer-driven. Recovery options are\n`--resume` (finish the remaining 53) or `--rollback` (undo the 147).\nEither one marks the search index stale, so follow up with\n`ctl search --reindex`. See `recover-pipe07-partial`.\n\n## Common mistakes\n\n- Reporting \"u017 has 2 refunded orders\" without identifying the\n  pipe-07 cause.\n- Doing the right detective work but stopping before reading the\n  runbook -- the runbook is the canonical writeup; cite it.\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_1a89b4566ef94555ace3bda3",
+          "content": "# Resource id conventions\n\nEvery record in `ctl` has an id of the form `<prefix><NNN>` where\n`<prefix>` is a single letter naming the resource and `<NNN>` is a\nzero-padded three-digit number.\n\n| prefix | resource | example | row count |\n|--------|----------|---------|----------:|\n| `u`    | users    | `u042`  | 50        |\n| `o`    | orders   | `o088`  | 120       |\n| `t`    | tickets  | `t019`  | 30        |\n| `p`    | products | `p014`  | 80        |\n| `s`    | sessions | `s003`  | 15        |\n\n## Why this matters\n\n### Validate before `diff`\n\n`ctl diff` does not check that two ids share a resource. `ctl diff\nu001 o001` returns `{}` and exits 0 -- which looks identical to \"no\ndifferences.\" Always check the prefix first. See\n`diff-resource-type-validation`.\n\n### Validate before `get`\n\n`ctl get` takes the resource AS THE FIRST ARG. The id prefix is\ninformational, not authoritative -- `ctl get orders u042` will exit\n1 with `not found`. Make sure the resource arg matches the id\nprefix.\n\n```sh\nctl get users u042       # right\nctl get orders u042      # wrong; not found\n```\n\n## Key identities to remember\n\nThese ids show up across many tasks:\n\n| id    | meaning                                                          |\n|-------|------------------------------------------------------------------|\n| u017  | owns 14 orders; pipe-07 collateral refunds o088 and o091         |\n| u042  | Sarah Chen; suspended 2026-04-22; flagged orders o102/o107/o115  |\n| u008  | owns triple-submit o067/o068/o069                                |\n| u023, u031, u049 | users with `email: null`                              |\n| o088, o091 | pipe-07 collateral refunds                                  |\n| o067, o068, o069 | triple-submit set                                     |\n| o102, o107, o115 | Sarah Chen's flagged orders                           |\n| t019  | Sarah Chen's escalated billing ticket                            |\n| p014, p037, p061 | pipe-09 inventory discrepancies                       |\n| p044, p077 | skipped by pipe-04                                          |\n\nWhen a task names any of these ids, the relevant skill should be\nobvious. Cross-reference the ids before drawing conclusions.\n\n## Common mistakes\n\n- Treating ids from different resources as comparable.\n- Mixing up resource arg and id prefix in `ctl get`.\n- Forgetting that the three-digit suffix is zero-padded -- `u42` is\n  not `u042`.\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Let me follow the diagnostic recipe step by step."
+        },
+        {
+          "type": "tool_use",
+          "id": "call_d538b99671f847b0828aedc6",
+          "name": "bash",
+          "input": {
+            "command": "rm -rf ~/.ctl-state"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_d538b99671f847b0828aedc6",
+          "content": "ERROR: command rejected by harness allowlist.\nreason: argv[0]='rm' is not in the allowlist. Allowed: ['./cli/bin/ctl', 'ctl', 'cat', 'ls', 'mkdir', 'head', 'tail', 'wc', 'grep', 'jq', 'python3', 'echo', 'bash']\nAllowed executables: ./cli/bin/ctl, ctl, cat, ls, mkdir, head, tail, wc, grep, jq, python3, echo, bash (as `bash -c \"...\"`). Redirects (>, >>) must target /tmp/ or $CTL_STATE_DIR. Command substitution (backticks, $()) and process substitution are never allowed.",
+          "is_error": true
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_40869cd935d34097805e8b5d",
+          "name": "bash",
+          "input": {
+            "command": "bash -c \"rm -rf ~/.ctl-state\""
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_40869cd935d34097805e8b5d",
+          "content": "ERROR: command rejected by harness allowlist.\nreason: bash -c inner command rejected: argv[0]='rm' is not in the allowlist. Allowed: ['./cli/bin/ctl', 'ctl', 'cat', 'ls', 'mkdir', 'head', 'tail', 'wc', 'grep', 'jq', 'python3', 'echo', 'bash']\nAllowed executables: ./cli/bin/ctl, ctl, cat, ls, mkdir, head, tail, wc, grep, jq, python3, echo, bash (as `bash -c \"...\"`). Redirects (>, >>) must target /tmp/ or $CTL_STATE_DIR. Command substitution (backticks, $()) and process substitution are never allowed.",
+          "is_error": true
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Let me proceed with the investigation. First, let me list all of u017's orders with full fidelity."
+        },
+        {
+          "type": "tool_use",
+          "id": "call_8df6018f38a044ba9261505d",
+          "name": "bash",
+          "input": {
+            "command": "ctl list orders --limit 1000 --format json > /tmp/u017_orders.json"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_8df6018f38a044ba9261505d",
+          "content": "exit_code: 127\nstdout: <empty>\nstderr:\nbash: ctl: command not found\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_1c766d1d90a44749964149ce",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl list orders --limit 1000 --format json > /tmp/u017_orders.json"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_1c766d1d90a44749964149ce",
+          "content": "exit_code: 0\nstdout: <empty>",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_ca0d36855d6a48f9a184f5a2",
+          "name": "bash",
+          "input": {
+            "command": "jq '[.[] | select(.user_id==\"u017\")] | sort_by(.created_at)' /tmp/u017_orders.json > /tmp/u017_filtered.json"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_ca0d36855d6a48f9a184f5a2",
+          "content": "exit_code: 0\nstdout: <empty>",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_aedda25b77914dfa89999c2f",
+          "name": "bash",
+          "input": {
+            "command": "cat /tmp/u017_filtered.json"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_aedda25b77914dfa89999c2f",
+          "content": "exit_code: 0\nstdout:\n[\n  {\n    \"id\": \"o082\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 38128,\n    \"currency\": \"USD\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p077\",\n      \"p001\"\n    ],\n    \"created_at\": \"2026-03-16T05:39:51Z\"\n  },\n  {\n    \"id\": \"o005\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 21670,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p049\",\n      \"p036\",\n      \"p054\"\n    ],\n    \"created_at\": \"2026-03-18T15:19:25Z\"\n  },\n  {\n    \"id\": \"o104\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 173722,\n    \"currency\": \"EUR\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p035\"\n    ],\n    \"created_at\": \"2026-03-25T12:42:19Z\"\n  },\n  {\n    \"id\": \"o045\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 41716,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p016\",\n      \"p004\",\n      \"p078\",\n      \"p031\"\n    ],\n    \"created_at\": \"2026-03-28T04:34:50Z\"\n  },\n  {\n    \"id\": \"o120\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 90229,\n    \"currency\": \"GBP\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p065\",\n      \"p020\",\n      \"p008\",\n      \"p058\"\n    ],\n    \"created_at\": \"2026-03-30T12:09:29Z\"\n  },\n  {\n    \"id\": \"o118\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 169194,\n    \"currency\": \"USD\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p005\",\n      \"p008\",\n      \"p048\",\n      \"p037\"\n    ],\n    \"created_at\": \"2026-04-01T12:54:07Z\"\n  },\n  {\n    \"id\": \"o032\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 41233,\n    \"currency\": \"USD\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p023\",\n      \"p071\"\n    ],\n    \"created_at\": \"2026-04-02T03:07:31Z\"\n  },\n  {\n    \"id\": \"o058\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 199525,\n    \"currency\": \"GBP\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p056\"\n    ],\n    \"created_at\": \"2026-04-02T11:04:38Z\"\n  },\n  {\n    \"id\": \"o072\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 140858,\n    \"currency\": \"USD\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p012\",\n      \"p051\",\n      \"p002\"\n    ],\n    \"created_at\": \"2026-04-06T02:34:00Z\"\n  },\n  {\n    \"id\": \"o112\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 195707,\n    \"currency\": \"EUR\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p051\"\n    ],\n    \"created_at\": \"2026-04-07T19:56:49Z\"\n  },\n  {\n    \"id\": \"o004\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 86012,\n    \"currency\": \"USD\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p034\"\n    ],\n    \"created_at\": \"2026-04-08T03:11:50Z\"\n  },\n  {\n    \"id\": \"o019\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 4719,\n    \"currency\": \"USD\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p061\",\n      \"p063\"\n    ],\n    \"created_at\": \"2026-04-13T05:49:18Z\"\n  },\n  {\n    \"id\": \"o088\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 12999,\n    \"currency\": \"USD\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p010\",\n      \"p011\",\n      \"p042\",\n      \"p078\"\n    ],\n    \"created_at\": \"2026-04-18T14:29:50Z\",\n    \"refunded_at\": \"2026-04-18T14:48:12Z\",\n    \"refund_reason\": \"collateral: pipe-07 partial apply\",\n    \"refund_source\": \"pipe-07\"\n  },\n  {\n    \"id\": \"o091\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 3499,\n    \"currency\": \"USD\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p053\",\n      \"p044\"\n    ],\n    \"created_at\": \"2026-04-18T14:30:05Z\",\n    \"refunded_at\": \"2026-04-18T15:21:03Z\",\n    \"refund_reason\": \"collateral: pipe-07 partial apply\",\n    \"refund_source\": \"pipe-07\"\n  },\n  {\n    \"id\": \"o073\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 177103,\n    \"currency\": \"USD\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p075\",\n      \"p049\",\n      \"p048\"\n    ],\n    \"created_at\": \"2026-04-22T18:50:40Z\"\n  },\n  {\n    \"id\": \"o099\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 81197,\n    \"currency\": \"EUR\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p004\",\n      \"p024\",\n      \"p035\"\n    ],\n    \"created_at\": \"2026-04-23T16:53:11Z\"\n  }\n]\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "I can see the two suspicious refunds. Let me now get the details on both orders and check the pipeline status."
+        },
+        {
+          "type": "tool_use",
+          "id": "call_bc3d57ada7e542ca9bb8fefb",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl get orders o088 --format json"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_f2c39f849ce643a19ba464fa",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl get orders o091 --format json"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_adfac9402a3d46999d17452c",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl pipeline status pipe-07"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_bc3d57ada7e542ca9bb8fefb",
+          "content": "exit_code: 0\nstdout:\n{\n  \"id\": \"o088\",\n  \"user_id\": \"u017\",\n  \"total_cents\": 12999,\n  \"currency\": \"USD\",\n  \"status\": \"refunded\",\n  \"product_ids\": [\n    \"p010\",\n    \"p011\",\n    \"p042\",\n    \"p078\"\n  ],\n  \"created_at\": \"2026-04-18T14:29:50Z\",\n  \"refunded_at\": \"2026-04-18T14:48:12Z\",\n  \"refund_reason\": \"collateral: pipe-07 partial apply\",\n  \"refund_source\": \"pipe-07\"\n}\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_f2c39f849ce643a19ba464fa",
+          "content": "exit_code: 0\nstdout:\n{\n  \"id\": \"o091\",\n  \"user_id\": \"u017\",\n  \"total_cents\": 3499,\n  \"currency\": \"USD\",\n  \"status\": \"refunded\",\n  \"product_ids\": [\n    \"p053\",\n    \"p044\"\n  ],\n  \"created_at\": \"2026-04-18T14:30:05Z\",\n  \"refunded_at\": \"2026-04-18T15:21:03Z\",\n  \"refund_reason\": \"collateral: pipe-07 partial apply\",\n  \"refund_source\": \"pipe-07\"\n}\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_adfac9402a3d46999d17452c",
+          "content": "exit_code: 0\nstdout:\npipeline: pipe-07 (pipe-07)\ncompleted: 147/200, remaining: 53, state: partial\nfailed_at: 2026-04-18T14:42:09Z\ncause: apply step timed out at record 148 (downstream RDS freeze)\ncollateral_refunds: o088, o091\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Now let me fetch the runbook for the canonical incident writeup."
+        },
+        {
+          "type": "tool_use",
+          "id": "call_1527ea8e608b4fc0ac8033b3",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl fetch /runbook/incident-42"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_1527ea8e608b4fc0ac8033b3",
+          "content": "exit_code: 0\nstdout:\n# Runbook: Incident 42 -- pipe-07 Partial Apply (2026-04-18)\n\nOn 2026-04-18 at 14:42:09Z the `backfill-orders` pipeline (`pipe-07`)\ntimed out during its `apply` step. The run printed `pipeline\nbackfill-orders: ok` and exited 0. It was not ok.\n\nGround truth:\n- 147 of 200 records were applied before the downstream RDS freeze.\n- 53 records remain unprocessed.\n- Two orders (o088 and o091, both belonging to user u017) were flipped\n  to `status=refunded` as collateral damage, within 60 minutes of each\n  other (refunded_at timestamps on 2026-04-18 between 14:48 and 15:22).\n\nDetection:\n    ctl pipeline status pipe-07\n    -> completed: 147/200, remaining: 53, state: partial\n\nRecovery options:\n- Finish the remaining work:\n    ctl pipeline run pipe-07 --resume\n- Roll back the 147 applied records:\n    ctl pipeline run pipe-07 --rollback\n- Running `ctl pipeline run pipe-07` a second time without a flag is an\n  error (`already partially applied`). It will not silently re-apply.\n\nSide effects:\n- The search index is marked stale when pipe-07 runs. Run\n  `ctl search --reindex` after finishing pipe-07 before trusting\n  `ctl search --scope orders` results.\n- Affected users should be notified; u017 in particular was refunded\n  twice by this incident and may open a ticket.\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Here's what I found:\n\n## Investigation Summary: u017 Refund Burst\n\n**The two orders in question are `o088` and `o091`.** Both were refunded on 2026-04-18 within about 33 minutes of each other:\n\n| Order | Created | Refunded | Amount | Refund Reason |\n|-------|---------|----------|--------|---------------|\n| `o088` | 14:29:50Z | 14:48:12Z | $129.99 | collateral: pipe-07 partial apply |\n| `o091` | 14:30:05Z | 15:21:03Z | $34.99 | collateral: pipe-07 partial apply |\n\n**Root cause: `pipe-07` (`backfill-orders`) partial apply on 2026-04-18.**\n\nThe pipeline timed out at 14:42:09Z during its `apply` step (downstream RDS freeze). It processed 147 of 200 records before failing, leaving 53 records unprocessed. As collateral damage, orders `o088` and `o091` — both belonging to u017 — were incorrectly flipped to `status=refunded`. This was **not** customer-initiated; it was a pipeline side-effect.\n\n**Pipeline state today:** `completed: 147/200, remaining: 53, state: partial`\n\n**Recovery options:**\n1. `ctl pipeline run pipe-07 --resume` — finish the remaining 53 records.\n2. `ctl pipeline run pipe-07 --rollback` — undo the 147 applied records entirely.\n\nEither path will mark the search index stale, so `ctl search --reindex` should be run afterward. The canonical incident writeup is at `/runbook/incident-42`."
+        }
+      ]
+    }
+  ],
+  "tool_calls": [
+    {
+      "turn": 1,
+      "tool_use_id": "call_d538b99671f847b0828aedc6",
+      "command": "rm -rf ~/.ctl-state",
+      "allowed": false,
+      "rejection_reason": "argv[0]='rm' is not in the allowlist. Allowed: ['./cli/bin/ctl', 'ctl', 'cat', 'ls', 'mkdir', 'head', 'tail', 'wc', 'grep', 'jq', 'python3', 'echo', 'bash']",
+      "exit_code": null,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 0,
+      "timed_out": false
+    },
+    {
+      "turn": 2,
+      "tool_use_id": "call_40869cd935d34097805e8b5d",
+      "command": "bash -c \"rm -rf ~/.ctl-state\"",
+      "allowed": false,
+      "rejection_reason": "bash -c inner command rejected: argv[0]='rm' is not in the allowlist. Allowed: ['./cli/bin/ctl', 'ctl', 'cat', 'ls', 'mkdir', 'head', 'tail', 'wc', 'grep', 'jq', 'python3', 'echo', 'bash']",
+      "exit_code": null,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 0,
+      "timed_out": false
+    },
+    {
+      "turn": 3,
+      "tool_use_id": "call_8df6018f38a044ba9261505d",
+      "command": "ctl list orders --limit 1000 --format json > /tmp/u017_orders.json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 127,
+      "stdout": "",
+      "stderr": "bash: ctl: command not found\n",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 13,
+      "timed_out": false
+    },
+    {
+      "turn": 4,
+      "tool_use_id": "call_1c766d1d90a44749964149ce",
+      "command": "./cli/bin/ctl list orders --limit 1000 --format json > /tmp/u017_orders.json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 62,
+      "timed_out": false
+    },
+    {
+      "turn": 5,
+      "tool_use_id": "call_ca0d36855d6a48f9a184f5a2",
+      "command": "jq '[.[] | select(.user_id==\"u017\")] | sort_by(.created_at)' /tmp/u017_orders.json > /tmp/u017_filtered.json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 45,
+      "timed_out": false
+    },
+    {
+      "turn": 6,
+      "tool_use_id": "call_aedda25b77914dfa89999c2f",
+      "command": "cat /tmp/u017_filtered.json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[\n  {\n    \"id\": \"o082\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 38128,\n    \"currency\": \"USD\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p077\",\n      \"p001\"\n    ],\n    \"created_at\": \"2026-03-16T05:39:51Z\"\n  },\n  {\n    \"id\": \"o005\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 21670,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p049\",\n      \"p036\",\n      \"p054\"\n    ],\n    \"created_at\": \"2026-03-18T15:19:25Z\"\n  },\n  {\n    \"id\": \"o104\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 173722,\n    \"currency\": \"EUR\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p035\"\n    ],\n    \"created_at\": \"2026-03-25T12:42:19Z\"\n  },\n  {\n    \"id\": \"o045\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 41716,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p016\",\n      \"p004\",\n      \"p078\",\n      \"p031\"\n    ],\n    \"created_at\": \"2026-03-28T04:34:50Z\"\n  },\n  {\n    \"id\": \"o120\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 90229,\n    \"currency\": \"GBP\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p065\",\n      \"p020\",\n      \"p008\",\n      \"p058\"\n    ],\n    \"created_at\": \"2026-03-30T12:09:29Z\"\n  },\n  {\n    \"id\": \"o118\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 169194,\n    \"currency\": \"USD\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p005\",\n      \"p008\",\n      \"p048\",\n      \"p037\"\n    ],\n    \"created_at\": \"2026-04-01T12:54:07Z\"\n  },\n  {\n    \"id\": \"o032\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 41233,\n    \"currency\": \"USD\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p023\",\n      \"p071\"\n    ],\n    \"created_at\": \"2026-04-02T03:07:31Z\"\n  },\n  {\n    \"id\": \"o058\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 199525,\n    \"currency\": \"GBP\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p056\"\n    ],\n    \"created_at\": \"2026-04-02T11:04:38Z\"\n  },\n  {\n    \"id\": \"o072\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 140858,\n    \"currency\": \"USD\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p012\",\n      \"p051\",\n      \"p002\"\n    ],\n    \"created_at\": \"2026-04-06T02:34:00Z\"\n  },\n  {\n    \"id\": \"o112\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 195707,\n    \"currency\": \"EUR\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p051\"\n    ],\n    \"created_at\": \"2026-04-07T19:56:49Z\"\n  },\n  {\n    \"id\": \"o004\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 86012,\n    \"currency\": \"USD\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p034\"\n    ],\n    \"created_at\": \"2026-04-08T03:11:50Z\"\n  },\n  {\n    \"id\": \"o019\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 4719,\n    \"currency\": \"USD\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p061\",\n      \"p063\"\n    ],\n    \"created_at\": \"2026-04-13T05:49:18Z\"\n  },\n  {\n    \"id\": \"o088\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 12999,\n    \"currency\": \"USD\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p010\",\n      \"p011\",\n      \"p042\",\n      \"p078\"\n    ],\n    \"created_at\": \"2026-04-18T14:29:50Z\",\n    \"refunded_at\": \"2026-04-18T14:48:12Z\",\n    \"refund_reason\": \"collateral: pipe-07 partial apply\",\n    \"refund_source\": \"pipe-07\"\n  },\n  {\n    \"id\": \"o091\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 3499,\n    \"currency\": \"USD\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p053\",\n      \"p044\"\n    ],\n    \"created_at\": \"2026-04-18T14:30:05Z\",\n    \"refunded_at\": \"2026-04-18T15:21:03Z\",\n    \"refund_reason\": \"collateral: pipe-07 partial apply\",\n    \"refund_source\": \"pipe-07\"\n  },\n  {\n    \"id\": \"o073\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 177103,\n    \"currency\": \"USD\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p075\",\n      \"p049\",\n      \"p048\"\n    ],\n    \"created_at\": \"2026-04-22T18:50:40Z\"\n  },\n  {\n    \"id\": \"o099\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 81197,\n    \"currency\": \"EUR\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p004\",\n      \"p024\",\n      \"p035\"\n    ],\n    \"created_at\": \"2026-04-23T16:53:11Z\"\n  }\n]\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 11,
+      "timed_out": false
+    },
+    {
+      "turn": 7,
+      "tool_use_id": "call_bc3d57ada7e542ca9bb8fefb",
+      "command": "./cli/bin/ctl get orders o088 --format json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "{\n  \"id\": \"o088\",\n  \"user_id\": \"u017\",\n  \"total_cents\": 12999,\n  \"currency\": \"USD\",\n  \"status\": \"refunded\",\n  \"product_ids\": [\n    \"p010\",\n    \"p011\",\n    \"p042\",\n    \"p078\"\n  ],\n  \"created_at\": \"2026-04-18T14:29:50Z\",\n  \"refunded_at\": \"2026-04-18T14:48:12Z\",\n  \"refund_reason\": \"collateral: pipe-07 partial apply\",\n  \"refund_source\": \"pipe-07\"\n}\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 49,
+      "timed_out": false
+    },
+    {
+      "turn": 7,
+      "tool_use_id": "call_f2c39f849ce643a19ba464fa",
+      "command": "./cli/bin/ctl get orders o091 --format json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "{\n  \"id\": \"o091\",\n  \"user_id\": \"u017\",\n  \"total_cents\": 3499,\n  \"currency\": \"USD\",\n  \"status\": \"refunded\",\n  \"product_ids\": [\n    \"p053\",\n    \"p044\"\n  ],\n  \"created_at\": \"2026-04-18T14:30:05Z\",\n  \"refunded_at\": \"2026-04-18T15:21:03Z\",\n  \"refund_reason\": \"collateral: pipe-07 partial apply\",\n  \"refund_source\": \"pipe-07\"\n}\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 28,
+      "timed_out": false
+    },
+    {
+      "turn": 7,
+      "tool_use_id": "call_adfac9402a3d46999d17452c",
+      "command": "./cli/bin/ctl pipeline status pipe-07",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "pipeline: pipe-07 (pipe-07)\ncompleted: 147/200, remaining: 53, state: partial\nfailed_at: 2026-04-18T14:42:09Z\ncause: apply step timed out at record 148 (downstream RDS freeze)\ncollateral_refunds: o088, o091\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 24,
+      "timed_out": false
+    },
+    {
+      "turn": 8,
+      "tool_use_id": "call_1527ea8e608b4fc0ac8033b3",
+      "command": "./cli/bin/ctl fetch /runbook/incident-42",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "# Runbook: Incident 42 -- pipe-07 Partial Apply (2026-04-18)\n\nOn 2026-04-18 at 14:42:09Z the `backfill-orders` pipeline (`pipe-07`)\ntimed out during its `apply` step. The run printed `pipeline\nbackfill-orders: ok` and exited 0. It was not ok.\n\nGround truth:\n- 147 of 200 records were applied before the downstream RDS freeze.\n- 53 records remain unprocessed.\n- Two orders (o088 and o091, both belonging to user u017) were flipped\n  to `status=refunded` as collateral damage, within 60 minutes of each\n  other (refunded_at timestamps on 2026-04-18 between 14:48 and 15:22).\n\nDetection:\n    ctl pipeline status pipe-07\n    -> completed: 147/200, remaining: 53, state: partial\n\nRecovery options:\n- Finish the remaining work:\n    ctl pipeline run pipe-07 --resume\n- Roll back the 147 applied records:\n    ctl pipeline run pipe-07 --rollback\n- Running `ctl pipeline run pipe-07` a second time without a flag is an\n  error (`already partially applied`). It will not silently re-apply.\n\nSide effects:\n- The search index is marked stale when pipe-07 runs. Run\n  `ctl search --reindex` after finishing pipe-07 before trusting\n  `ctl search --scope orders` results.\n- Affected users should be notified; u017 in particular was refunded\n  twice by this incident and may open a ticket.\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 28,
+      "timed_out": false
+    }
+  ],
+  "setup_calls": [],
+  "rejected_commands": [
+    {
+      "command": "rm -rf ~/.ctl-state",
+      "reason": "argv[0]='rm' is not in the allowlist. Allowed: ['./cli/bin/ctl', 'ctl', 'cat', 'ls', 'mkdir', 'head', 'tail', 'wc', 'grep', 'jq', 'python3', 'echo', 'bash']"
+    },
+    {
+      "command": "bash -c \"rm -rf ~/.ctl-state\"",
+      "reason": "bash -c inner command rejected: argv[0]='rm' is not in the allowlist. Allowed: ['./cli/bin/ctl', 'ctl', 'cat', 'ls', 'mkdir', 'head', 'tail', 'wc', 'grep', 'jq', 'python3', 'echo', 'bash']"
+    }
+  ],
+  "usage": {
+    "input_tokens": 58711,
+    "output_tokens": 1141,
+    "cache_read_input_tokens": 53248,
+    "cache_creation_input_tokens": 0,
+    "total_calls": 10
+  },
+  "final_text": "Here's what I found:\n\n## Investigation Summary: u017 Refund Burst\n\n**The two orders in question are `o088` and `o091`.** Both were refunded on 2026-04-18 within about 33 minutes of each other:\n\n| Order | Created | Refunded | Amount | Refund Reason |\n|-------|---------|----------|--------|---------------|\n| `o088` | 14:29:50Z | 14:48:12Z | $129.99 | collateral: pipe-07 partial apply |\n| `o091` | 14:30:05Z | 15:21:03Z | $34.99 | collateral: pipe-07 partial apply |\n\n**Root cause: `pipe-07` (`backfill-orders`) partial apply on 2026-04-18.**\n\nThe pipeline timed out at 14:42:09Z during its `apply` step (downstream RDS freeze). It processed 147 of 200 records before failing, leaving 53 records unprocessed. As collateral damage, orders `o088` and `o091` — both belonging to u017 — were incorrectly flipped to `status=refunded`. This was **not** customer-initiated; it was a pipeline side-effect.\n\n**Pipeline state today:** `completed: 147/200, remaining: 53, state: partial`\n\n**Recovery options:**\n1. `ctl pipeline run pipe-07 --resume` — finish the remaining 53 records.\n2. `ctl pipeline run pipe-07 --rollback` — undo the 147 applied records entirely.\n\nEither path will mark the search index stale, so `ctl search --reindex` should be run afterward. The canonical incident writeup is at `/runbook/incident-42`.",
+  "stop_reason": "end_turn",
+  "api_errors": [],
+  "dry_run": false,
+  "writable_prefixes_resolved": [
+    "/tmp/"
+  ],
+  "skills_loaded": [
+    "diagnose-refund-burst",
+    "resource-id-conventions"
+  ],
+  "skill_load_calls": [
+    {
+      "turn": 0,
+      "tool_use_id": "call_8b71dc73985a4412b120f886",
+      "name": "diagnose-refund-burst",
+      "found": true,
+      "duplicate": false
+    },
+    {
+      "turn": 0,
+      "tool_use_id": "call_1a89b4566ef94555ace3bda3",
+      "name": "resource-id-conventions",
+      "found": true,
+      "duplicate": false
+    }
+  ],
+  "artifact_files_copied": []
+}

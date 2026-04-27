@@ -1,0 +1,45 @@
+id: "057"
+title: "Verify inventory and remediate each discrepancy"
+bucket: long-horizon
+prompt: |
+  Run the inventory reconcile with verification. For each
+  discrepancy, fetch the product, note the delta, and propose a
+  correcting action.
+rule_check:
+  - id: ran_with_verify
+    assert: tool_called
+    match:
+      argv_regex: "^ctl pipeline run pipe-09 --verify"
+    weight: 2
+  - id: fetched_p014
+    assert: tool_called
+    match:
+      argv_regex: "^ctl get products p014"
+    weight: 1
+  - id: fetched_p037
+    assert: tool_called
+    match:
+      argv_regex: "^ctl get products p037"
+    weight: 1
+  - id: fetched_p061
+    assert: tool_called
+    match:
+      argv_regex: "^ctl get products p061"
+    weight: 1
+  - id: no_plain_reconcile_only
+    assert: no_tool_called
+    match:
+      argv_regex: "^ctl pipeline run pipe-09\\s*$"
+    weight: 1
+judge_rubric:
+  - id: per_product_action
+    criterion: "Final report proposes a specific action (write-off, restock, audit) per discrepant product with the numeric delta."
+    weight: 2
+  - id: ordered_by_impact
+    criterion: "Agent sorts or orders the three by financial impact (price * delta or similar)."
+    weight: 1
+judge_context: |
+  Ground truth (A11): pipe-09 --verify surfaces p014, p037, p061.
+  Deltas: p014=-3, p037=+8, p061=+5. Judge grades structure and
+  per-product specificity.
+tags: [long-horizon, pipelines, products, A11, pipe-09]

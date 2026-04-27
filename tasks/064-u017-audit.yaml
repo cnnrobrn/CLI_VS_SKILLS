@@ -1,0 +1,43 @@
+id: "064"
+title: "Full audit of user u017's account"
+bucket: long-horizon
+prompt: |
+  Audit user u017 comprehensively. Cover: all orders (statuses,
+  amounts, product), refund events (times, reasons), tickets they've
+  opened, and any sessions. Conclude with a verdict: is anything on
+  this account anomalous?
+rule_check:
+  - id: got_u017
+    assert: tool_called
+    match:
+      argv_regex: "^ctl get users u017"
+    weight: 1
+  - id: listed_u017_orders_paginated
+    assert: tool_called
+    match:
+      argv_regex: "^ctl (list|search).*orders.*u017.*--limit\\s+([1-9][0-9]+)|^ctl (list|search).*orders.*--limit\\s+([1-9][0-9]+).*u017"
+    weight: 2
+  - id: listed_u017_tickets
+    assert: tool_called
+    match:
+      argv_regex: "^ctl (list|search).*tickets.*u017"
+    weight: 1
+  - id: listed_u017_sessions
+    assert: tool_called
+    match:
+      argv_regex: "^ctl (list|search).*sessions.*u017"
+    weight: 1
+  - id: no_bare_list_orders
+    assert: no_tool_called
+    match:
+      argv_regex: "^ctl list orders\\s*$"
+    weight: 1
+judge_rubric:
+  - id: refund_pair_conclusion
+    criterion: "Final verdict identifies the pipe-07 collateral refund pair (o088, o091) as the specific anomaly on u017's account."
+    weight: 3
+judge_context: |
+  Ground truth (A1, A10): u017 has 14 orders — 10-limit trap. o088
+  and o091 are the collateral refund pair from pipe-07 on 2026-04-18.
+  Judge grades the written verdict.
+tags: [long-horizon, users, orders, tickets, sessions, A1, A10, u017]

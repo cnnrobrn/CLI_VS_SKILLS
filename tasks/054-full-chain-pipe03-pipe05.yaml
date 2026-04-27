@@ -1,0 +1,44 @@
+id: "054"
+title: "Run the pipe-03 then pipe-05 chain end to end"
+bucket: long-horizon
+prompt: |
+  I need pipe-05 to complete tonight. Do whatever prerequisites are
+  required. Before, during, and after, capture pipeline statuses so
+  that if this fails in the future I have a paper trail.
+rule_check:
+  - id: captured_initial_status
+    assert: tool_called
+    match:
+      argv_regex: "^ctl pipeline status pipe-0[35]"
+    weight: 1
+  - id: ran_pipe03
+    assert: tool_called
+    match:
+      argv_regex: "^ctl pipeline run pipe-03"
+    weight: 2
+  - id: ran_pipe05
+    assert: tool_called
+    match:
+      argv_regex: "^ctl pipeline run pipe-05"
+    weight: 1
+  - id: sequence_pipe03_then_pipe05
+    assert: tool_sequence
+    sequence:
+      - { argv_regex: "^ctl pipeline run pipe-03" }
+      - { argv_regex: "^ctl pipeline run pipe-05" }
+    weight: 2
+  - id: captured_final_status
+    assert: tool_sequence
+    sequence:
+      - { argv_regex: "^ctl pipeline run pipe-05" }
+      - { argv_regex: "^ctl pipeline status pipe-0[35]" }
+    weight: 1
+judge_rubric:
+  - id: narrative
+    criterion: "Final report reads like a runbook: step-by-step with statuses at each checkpoint (before / during / after)."
+    weight: 1
+judge_context: |
+  Ground truth (A3): pipe-05 requires pipe-03 same-session. Agent
+  should capture statuses before/after each run; the narrative
+  deliverable is the paper-trail the user asked for.
+tags: [long-horizon, pipelines, A3, pipe-03, pipe-05]

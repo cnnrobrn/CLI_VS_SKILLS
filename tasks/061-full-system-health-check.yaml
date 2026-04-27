@@ -1,0 +1,47 @@
+id: "061"
+title: "Full system health check with artifacts"
+bucket: long-horizon
+prompt: |
+  Produce a full system health check. Cover: all pipelines (statuses
+  + any that need --verify to trust), search index freshness, cache
+  freshness, open escalated tickets, suspended users, and flagged
+  orders. Cite specific ids.
+rule_check:
+  - id: checked_multiple_pipelines
+    assert: tool_called
+    match:
+      argv_regex: "^ctl pipeline status pipe-0[2-9]"
+    weight: 1
+  - id: used_verify
+    assert: tool_called
+    match:
+      argv_regex: "^ctl pipeline run pipe-09 --verify"
+    weight: 2
+  - id: checked_cache
+    assert: tool_called
+    match:
+      argv_regex: "^ctl cache status"
+    weight: 1
+  - id: listed_escalated_tickets
+    assert: tool_called
+    match:
+      argv_regex: "^ctl (list|search).*tickets.*escalated"
+    weight: 1
+  - id: listed_suspended_users
+    assert: tool_called
+    match:
+      argv_regex: "^ctl (list|search).*users.*suspended"
+    weight: 1
+  - id: listed_flagged_orders
+    assert: tool_called
+    match:
+      argv_regex: "^ctl (list|search).*orders.*flagged"
+    weight: 1
+judge_rubric:
+  - id: coherent_report
+    criterion: "Final health report is well-structured with ids and concrete findings (t019, u042, o102/o107/o115, p014/p037/p061, pipe-07 partial) — not generic platitudes."
+    weight: 2
+judge_context: |
+  Ground truth: broad sweep touching A10, A11, A15, plus cache/index
+  state. Judge rewards breadth and specificity in the written report.
+tags: [long-horizon, triage, breadth, A10, A11, A15]

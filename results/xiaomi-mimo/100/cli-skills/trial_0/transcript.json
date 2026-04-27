@@ -1,0 +1,2082 @@
+{
+  "task_id": "100",
+  "task_title": "Readiness memo: is the system healthy enough to ship today",
+  "task_bucket": "non-file",
+  "task_tags": [
+    "non-file",
+    "executive",
+    "breadth",
+    "A6",
+    "A7",
+    "A10",
+    "A11",
+    "A15"
+  ],
+  "arm": "cli-skills",
+  "trial": 0,
+  "model": "xiaomi/mimo-v2.5",
+  "started_at": "2026-04-26T17:49:25.159958+00:00",
+  "ended_at": "2026-04-26T17:50:09.269060+00:00",
+  "wall_clock_seconds": 44.109,
+  "ctl_state_dir": "/Users/connorobrien/Documents/CLI_VS_SKILLS/results/xiaomi-mimo-tooled/100/cli-skills/trial_0/ctl-state",
+  "workdir": "/Users/connorobrien/Documents/CLI_VS_SKILLS/results/xiaomi-mimo-tooled/100/cli-skills/trial_0",
+  "system_prompt": "You are an autonomous agent being evaluated on a benchmark.\n\nEnvironment:\n- Your working directory is a repo root. You have ONE tool: `bash`.\n- A custom CLI named `ctl` lives at ./cli/bin/ctl (also reachable as `ctl`).\n- The CLI reads canned fixtures from disk and does NOT access the network.\n- The CLI honors a pinned \"now\" of 2026-04-24T00:00:00Z for --since filters.\n- Allowed executables: ./cli/bin/ctl, ctl, cat, ls, mkdir, head, tail, wc,\n  grep, jq, python3, echo, bash (only as `bash -c \"...\"`, and the inner\n  command is re-checked against the same allowlist).\n- You MAY redirect output to files under /tmp/ (and under $CTL_STATE_DIR).\n- Pipes (|), command chaining (;, &&, ||), and command substitution\n  ($(...) or backticks) inside a single command string are NOT allowed.\n  If you need to combine operations, wrap the whole line in\n  `bash -c \"cmd1 && cmd2\"` — each sub-command still has to pass the\n  allowlist.\n- Each command has a 30-second timeout.\n\nTask rules:\n- Follow the user's instructions exactly. Where the task asks you to write\n  output to a specific file path, write EXACTLY to that path.\n- If a command fails, read the error and try a different approach. Do not\n  retry the same failing command unchanged.\n- When you are finished, stop calling tools and provide a short final\n  answer. Many tasks will be graded on that final message, so be precise —\n  name IDs, files, and root causes explicitly.\n\n## Reference: cli/README.md\n\nThe following is the complete contents of cli/README.md. It is the only\ndocumentation you have for the `ctl` CLI. Discover any further behavior by\nrunning `ctl --help` and `ctl <subcommand> --help`.\n\n\n# ctl\n\nA deterministic fixture-backed CLI. No network. No live clock. Output for a\ngiven input is fixed.\n\n## Install\n\n```\ngit clone <repo>\ncd CLI_VS_SKILLS\n./cli/bin/ctl --help\n```\n\nRequires Python 3.9+. Stdlib-only (see `cli/requirements.txt`).\n\n## Synopsis\n\n```\nctl <command> [args...]\n```\n\n## Commands\n\n| Command                             | Description                                     |\n|-------------------------------------|-------------------------------------------------|\n| `ctl list <resource>`               | List records for a resource.                    |\n| `ctl get <resource> <id>`           | Fetch a single record.                          |\n| `ctl fetch <url-or-slug>`           | Print a fixture markdown page.                  |\n| `ctl search --query Q`              | Substring search across resource text fields.   |\n| `ctl diff <a> <b>`                  | Structured JSON diff of two records.            |\n| `ctl pipeline run <name>`           | Run a named pipeline.                           |\n| `ctl pipeline status <name>`        | Show last recorded state for a pipeline.        |\n| `ctl cache status`                  | Show cache / state flags.                       |\n| `ctl cache clear [<scope>]`         | Clear cached state (scope = pages/search/pipelines/all). |\n| `ctl version`                       | Print version.                                  |\n| `ctl --help`, `ctl <cmd> --help`    | Usage.                                          |\n\n## Resources\n\n`users` (50), `orders` (120), `tickets` (30), `products` (80), `sessions` (15).\n\n## Common options\n\n| Option                  | Commands      | Description                                  |\n|-------------------------|---------------|----------------------------------------------|\n| `--status <value>`      | `list`        | Filter rows by exact `status` match.         |\n| `--since <date>`        | `list`        | ISO date (`2026-04-20`), ISO datetime, or relative (`7d`, `24h`). |\n| `--limit <n>`           | `list`        | Maximum rows. Default: **10**.               |\n| `--format json\\|yaml\\|table` | `list`, `get` | Output format. Default: `table`.        |\n| `--query Q`             | `search`      | Required. Substring, or `field:value`.        |\n| `--scope <resource>`    | `search`      | Restrict to one resource.                    |\n| `--i`                   | `search`      | Case-insensitive. Default: case-sensitive.   |\n| `--reindex`             | `search`      | Rebuild the search index.                    |\n| `--confirm`             | `pipeline run`| Pass through a confirm gate.                 |\n| `--resume`              | `pipeline run`| Resume a partially-applied pipeline.         |\n| `--rollback`            | `pipeline run`| Roll back an applied pipeline.               |\n| `--verify`              | `pipeline run`| Run an extra verification pass.              |\n\n## Exit codes\n\n| Code | Meaning                                                       |\n|-----:|---------------------------------------------------------------|\n| `0`  | Success.                                                      |\n| `1`  | User error: not found, bad flag, invalid input.               |\n| `2`  | Refused: a pipeline needs `--confirm` or a prerequisite.      |\n\n## Environment\n\n| Variable            | Default             | Meaning                                     |\n|---------------------|---------------------|---------------------------------------------|\n| `CTL_FIXTURES_DIR`  | `<repo>/fixtures`   | Root of the fixture tree.                   |\n| `CTL_STATE_DIR`     | `~/.ctl-state/`     | Scratch state for cache / pipeline flags.   |\n\n## Determinism\n\nPinned \"now\" is `2026-04-24T00:00:00Z`. Relative `--since` values anchor to\nthat instant.\n\n## Version\n\n`1.0.0`\n\n## Available skills\n\nYou have access to a library of skills, each addressing a specific class of problem you might encounter while using `ctl`. Below is the index of every skill — only the names and one-line descriptions are shown here. To read a skill's full content, call the `load_skill` tool with `name=<skill name>`. Load only skills that look relevant to the current task.\n\n- case-insensitive-search: Use when `ctl search --query <q>` returns zero results for a brand or term you expect to exist. Search is case-sensitive by default; pass `--i` or match the actual case (e.g. `Acme`, not `acme`).\n- clear-cache-after-pipe03: Use when `ctl fetch /docs/*` returns a canned 404 immediately after running `pipe-03` (`rotate-keys`). The page cache is marked stale; `ctl cache clear` (or `ctl cache clear pages`) restores the real pages.\n- clear-stale-page-cache: Use when `ctl fetch /docs/auth` returns a 404 on fresh state. The default for that page is a stale-cache 404; `ctl cache clear` repairs it. Distinct from the post-pipe-03 stale.\n- confirm-destructive-pipeline: Use when `ctl pipeline run pipe-01` (deploy-prod) or `pipe-06` (purge-audit-logs) exits 2 with a bare `refused` on stderr. The CLI gives no hint, but `--confirm` is the fix for both.\n- cross-check-list-and-search: Recipe -- use whenever you need to trust a row count after a pipeline ran. Cross-check `ctl list --status X` against `ctl search --query \"status:X\"`; if they disagree, the search index is stale and `ctl search --reindex` is the fix.\n- diagnose-refund-burst: Recipe -- use when a task says \"two orders got refunded fast for u017\" or any pipe-07 collateral-refund investigation. Combines pagination, runbook discovery, and pipe-07 status into a 4-step diagnosis.\n- diff-resource-type-validation: Use when `ctl diff a b` returns `{}` and exits 0. Empty object does NOT mean \"identical\"; it means you passed ids of different resource types (e.g. `u001` vs `o001`) and the CLI swallowed it. Always diff within the same resource.\n- discover-runbooks: Use when investigating any incident, pipeline failure, or cross-resource anomaly. The canonical writeups live under `/runbook/*` and `/help/*` -- they are NOT linked from CLI output. Fetch the right one to short-circuit hours of investigation.\n- find-flagged-records: Recipe for 'find all flagged X for user Y' tasks. Filter chain — search/list to find user id, then `ctl list orders --limit 1000 --format json | jq` to filter by user_id AND flagged==true. Anchored on Sarah Chen.\n- format-output-fidelity: Use when piping `ctl` output to `jq`, `grep`, or any parser, or when reading any field that might exceed ~23 characters. `--format table` (the default) silently truncates long values with an ellipsis; always pass `--format json` for fidelity.\n- handle-null-emails: Use when post-processing user records by email (e.g. lowercasing, regex). Three users have null emails (u023, u031, u049); naive `.lower()` on every row will AttributeError. Filter for null first.\n- handle-suspended-account: Use when investigating Sarah Chen (`u042`) or any \"account flipped to suspended\" billing escalation. Her account suspended on 2026-04-22; flagged orders are `o102`, `o107`, `o115`; ticket `t019` is the canonical entry point.\n- lookup-resource-by-id: Use when `ctl get <resource> <id>` returns `not found` (exit 1) and you don't have the exact id. There is no fuzzy match or \"did you mean\" hint; search by name first, then `get` the canonical id.\n- output-format-conventions: Idiom -- when to choose `--format json` (machine processing, long fields, jq), `--format yaml` (rare; slow to parse), or `--format table` (default; only for short fixed fields, never free text). Prefer JSON for everything non-trivial.\n- paginate-list-results: Use when running `ctl list <resource>` to count records or filter to \"all\" of something. The default `--limit` is 10 and silently truncates with no warning, so any cardinality answer derived from the default page is almost certainly wrong.\n- pipeline-prerequisites: Use when a pipeline (notably `pipe-05` / `reindex-search`) exits 2 with stderr `prerequisite not met`. The CLI does not name the prereq; pipe-05 needs pipe-03 to have run in the current state dir.\n- read-pipe04-skip-file: Use after running `pipe-04` (`backfill-products`). It exits 0 with a stderr warning that 2 records were skipped to `/tmp/pipe-04.skipped`. The skipped ids are `p044` and `p077`; their skip reasons live on the product fixtures themselves.\n- recover-pipe07-partial: Use when working with `pipe-07` (`backfill-orders`). The fixture state is pre-baked as 147/200 partial; a bare `ctl pipeline run pipe-07` is an idempotent no-op. To advance, choose `--resume` (finish 53) or `--rollback` (revert 147).\n- reindex-stale-search: Use when `ctl search` and `ctl list` disagree on the same filter (notably `status:paid` on orders) after running `pipe-07 --resume` or `--rollback`. The search index is marked stale; `ctl search --reindex` resyncs it.\n- resolve-triple-submit-duplicates: Use when investigating duplicate orders — three orders with the same user_id, same total_cents, and timestamps a few seconds apart. Convention from /help/duplicates — keep the lowest id paid, refund the others.\n- resource-id-conventions: Idiom -- ctl ids follow a one-letter-prefix + three-digit-suffix convention (`u`/`o`/`t`/`p`/`s`). Use to validate ids before `ctl get`/`diff` and to recognise canonical \"key identities\" (u017, u042, t019, p014, etc).\n- since-flag-formats: Use when `ctl list ... --since <X>` returns `invalid date` (exit 1). The flag accepts exactly three shapes — ISO date, ISO datetime with Z, or relative (Nd/Nh). Anything else fails with no help text.\n- verify-migration-cleanup: Recipe for 'did the migration finish cleanly?' tasks. Pre/post count idiom — capture row counts before, run the pipeline with verification flags, capture counts after, diff. Anchored on pipe-09 reconcile-inventory.\n- verify-reconcile-inventory: Use when running `pipe-09` (`reconcile-inventory`). A bare run prints `ok` and exits 0 without doing any reconciliation. You must pass `--verify` to actually run the comparison; without it, \"ok\" is cosmetic.\n",
+  "user_prompt": "Write a readiness memo for a ship decision today. Must cover:\npipeline state, data integrity, open escalations, any stale\ncaches/indices, and a final recommendation (ship / hold / ship\nwith conditions). Include concrete ids and numbers.\n",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Write a readiness memo for a ship decision today. Must cover:\npipeline state, data integrity, open escalations, any stale\ncaches/indices, and a final recommendation (ship / hold / ship\nwith conditions). Include concrete ids and numbers.\n"
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_44d189eb1a01466d8ba27fc5",
+          "name": "bash",
+          "input": {
+            "command": "ctl cache status"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_54b5634af93d4fdfb382fa63",
+          "name": "bash",
+          "input": {
+            "command": "ctl pipeline status pipe-01"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_aaa1797ba6764846a4f16523",
+          "name": "bash",
+          "input": {
+            "command": "ctl pipeline status pipe-03"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_8a92c5bed9b24aeea733dbc0",
+          "name": "bash",
+          "input": {
+            "command": "ctl pipeline status pipe-04"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_b2f0b744388c491a86e31920",
+          "name": "bash",
+          "input": {
+            "command": "ctl pipeline status pipe-05"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_145ce433d6d94484ab015f95",
+          "name": "bash",
+          "input": {
+            "command": "ctl pipeline status pipe-06"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_c671fce4e74c4348b58cb16c",
+          "name": "bash",
+          "input": {
+            "command": "ctl pipeline status pipe-07"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_803959c1109c45a99b847429",
+          "name": "bash",
+          "input": {
+            "command": "ctl pipeline status pipe-09"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_44d189eb1a01466d8ba27fc5",
+          "content": "exit_code: 127\nstdout: <empty>\nstderr:\nexecutable not found: [Errno 2] No such file or directory: 'ctl'",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_54b5634af93d4fdfb382fa63",
+          "content": "exit_code: 127\nstdout: <empty>\nstderr:\nexecutable not found: [Errno 2] No such file or directory: 'ctl'",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_aaa1797ba6764846a4f16523",
+          "content": "exit_code: 127\nstdout: <empty>\nstderr:\nexecutable not found: [Errno 2] No such file or directory: 'ctl'",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_8a92c5bed9b24aeea733dbc0",
+          "content": "exit_code: 127\nstdout: <empty>\nstderr:\nexecutable not found: [Errno 2] No such file or directory: 'ctl'",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_b2f0b744388c491a86e31920",
+          "content": "exit_code: 127\nstdout: <empty>\nstderr:\nexecutable not found: [Errno 2] No such file or directory: 'ctl'",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_145ce433d6d94484ab015f95",
+          "content": "exit_code: 127\nstdout: <empty>\nstderr:\nexecutable not found: [Errno 2] No such file or directory: 'ctl'",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_c671fce4e74c4348b58cb16c",
+          "content": "exit_code: 127\nstdout: <empty>\nstderr:\nexecutable not found: [Errno 2] No such file or directory: 'ctl'",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_803959c1109c45a99b847429",
+          "content": "exit_code: 127\nstdout: <empty>\nstderr:\nexecutable not found: [Errno 2] No such file or directory: 'ctl'",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_71ed5a649de949738173e1a1",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl cache status"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_51737fc7fee74cb5af673b5c",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl pipeline status pipe-01"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_3d4d9394f9cc47a0b34c78e9",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl pipeline status pipe-03"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_8599270523974ba399be4b54",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl pipeline status pipe-04"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_040f8abe5b4a4c368da6c8c8",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl pipeline status pipe-05"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_5248953ee8024a74a8dcf231",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl pipeline status pipe-06"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_f675830b097b4238b8b5de7a",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl pipeline status pipe-07"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_cd2defd7a80946d682d5cf01",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl pipeline status pipe-09"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_71ed5a649de949738173e1a1",
+          "content": "exit_code: 0\nstdout:\npages_cache_stale: no\nauth_page_ok: no\nsearch_index_stale: no\npipe-03_ran_in_session: no\npipe-07_state: clean\nstate_files: (none)\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_51737fc7fee74cb5af673b5c",
+          "content": "exit_code: 0\nstdout:\npipeline: pipe-01 (pipe-01)\nran_in_session: no\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_3d4d9394f9cc47a0b34c78e9",
+          "content": "exit_code: 0\nstdout:\npipeline: pipe-03 (pipe-03)\nran_in_session: no\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_8599270523974ba399be4b54",
+          "content": "exit_code: 0\nstdout:\npipeline: pipe-04 (pipe-04)\nran_in_session: no\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_040f8abe5b4a4c368da6c8c8",
+          "content": "exit_code: 0\nstdout:\npipeline: pipe-05 (pipe-05)\nran_in_session: no\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_5248953ee8024a74a8dcf231",
+          "content": "exit_code: 0\nstdout:\npipeline: pipe-06 (pipe-06)\nran_in_session: no\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_f675830b097b4238b8b5de7a",
+          "content": "exit_code: 0\nstdout:\npipeline: pipe-07 (pipe-07)\ncompleted: 147/200, remaining: 53, state: partial\nfailed_at: 2026-04-18T14:42:09Z\ncause: apply step timed out at record 148 (downstream RDS freeze)\ncollateral_refunds: o088, o091\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_cd2defd7a80946d682d5cf01",
+          "content": "exit_code: 0\nstdout:\npipeline: pipe-09 (pipe-09)\nran_in_session: no\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_2a22336b5a214e598d1d1563",
+          "name": "load_skill",
+          "input": {
+            "name": "handle-suspended-account"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_8761f2691c2445559e2ac4c3",
+          "name": "load_skill",
+          "input": {
+            "name": "diagnose-refund-burst"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_72570e5c22294df8af1cdaed",
+          "name": "load_skill",
+          "input": {
+            "name": "find-flagged-records"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_215809a887c847f293a77659",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl list tickets --limit 30 --format json"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_c3ecd52f340a40a8b599ccfc",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl list orders --status flagged --limit 30 --format json"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_dbb79c273bda4a5a9e2ba621",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl list users --status suspended --limit 10 --format json"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_2a22336b5a214e598d1d1563",
+          "content": "# Sarah Chen (u042) and the billing escalation\n\nSarah Chen is the canonical suspended-account investigation. Her\naccount flipped to `suspended` on `2026-04-22T11:47:00Z` pending\nbilling-dispute review.\n\n## The key facts\n\n| field             | value                                                        |\n|-------------------|--------------------------------------------------------------|\n| id                | u042                                                         |\n| email             | sarah.chen@acme.io                                           |\n| name              | Sarah Chen                                                   |\n| status            | suspended                                                    |\n| status_changed_at | 2026-04-22T11:47:00Z                                         |\n| org_id            | org-2                                                        |\n| notes             | billing dispute; account flipped to suspended pending review |\n\nShe has 3 flagged orders: `o102`, `o107`, `o115`. Each has\n`flagged: true` and `flag_reason: \"billing anomaly; see ticket t019\"`.\n\nTicket `t019` is escalated, critical priority, subject \"billing broken\nsince the weekend.\" Its body names the three order ids explicitly.\n`t019` is the canonical entry point for her story.\n\n## Right investigation chain\n\n```sh\n# 1. Find her id\nctl search --query \"sarah.chen\" --scope users --i --format json\n# -> u042\n\n# 2. Pull the user record\nctl get users u042 --format json\n# -> status: suspended, status_changed_at: 2026-04-22T11:47:00Z\n\n# 3. Pull her flagged orders (need --limit 1000, see paginate-list-results)\nctl list orders --limit 1000 --format json \\\n  | jq '[.[] | select(.user_id==\"u042\" and .flagged==true)] | map(.id)'\n# -> [\"o102\", \"o107\", \"o115\"]\n\n# 4. The escalation ticket\nctl get tickets t019 --format json\n# -> escalated, critical, names o102/o107/o115\n```\n\n## Wrong invocations\n\n- `ctl list tickets` without `--limit 1000` may not include `t019`\n  (see `paginate-list-results`).\n- `ctl search --query sarah.chen` (no `--i`) may miss her if\n  case-sensitive matching kicks in (see `case-insensitive-search`).\n- Trying to look her up via the tickets list first as a primary path\n  -- the body mentions the order ids but only after you know to pull\n  it, and the chain via `users` is more direct.\n\n## Common mistakes\n\n- Confusing her flagged-but-paid orders with refunds. None of\n  `o102`/`o107`/`o115` is refunded.\n- Confusing her with `u017` (whose collateral refunds are pipe-07\n  damage; see `recover-pipe07-partial`).\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_8761f2691c2445559e2ac4c3",
+          "content": "# Recipe: Diagnose a refund burst\n\nScenario: \"two orders got refunded really fast, something weird\nhappened for `u017`.\"\n\nThis is the canonical pipe-07 collateral-refund investigation. The\ntwo orders are `o088` and `o091`; the cause is the pipe-07\npartial-apply on `2026-04-18`. Ground truth lives at\n`/runbook/incident-42`.\n\n## Steps\n\n### 1. List ALL of u017's orders (not the default 10)\n\n`u017` owns 14 orders. Default `--limit 10` will miss most.\n\n```sh\nrm -rf ~/.ctl-state\nctl list orders --limit 1000 --format json \\\n  | jq '[.[] | select(.user_id==\"u017\")] | sort_by(.created_at)'\n```\n\nSee `paginate-list-results` if this is unfamiliar.\n\n### 2. Identify the refund pair\n\nLook for refunds with a `refund_source` or refund timestamps close\ntogether. You will find:\n\n- `o088` refunded `2026-04-18T14:48:12Z`,\n  `refund_source: \"pipe-07\"`,\n  `refund_reason: \"collateral: pipe-07 partial apply\"`.\n- `o091` refunded `2026-04-18T15:21:03Z`, same source, same reason.\n\nThat is the burst.\n\n### 3. Read the runbook\n\n```sh\nctl fetch /docs/troubleshooting\nctl fetch /runbook/incident-42\n```\n\nThe runbook gives you the date, the 147/200 split, and names both\norders. See `discover-runbooks` if `/docs/*` 404s (try\n`ctl cache clear`).\n\n### 4. Confirm pipeline state\n\n```sh\nctl pipeline status pipe-07\n# completed: 147/200, remaining: 53, state: partial\n# failed_at: 2026-04-18T14:42:09Z\n# collateral_refunds: o088, o091\n```\n\n## The answer to give\n\nThe two refunds were collateral damage from the pipe-07 partial apply\non 2026-04-18, not customer-driven. Recovery options are\n`--resume` (finish the remaining 53) or `--rollback` (undo the 147).\nEither one marks the search index stale, so follow up with\n`ctl search --reindex`. See `recover-pipe07-partial`.\n\n## Common mistakes\n\n- Reporting \"u017 has 2 refunded orders\" without identifying the\n  pipe-07 cause.\n- Doing the right detective work but stopping before reading the\n  runbook -- the runbook is the canonical writeup; cite it.\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_72570e5c22294df8af1cdaed",
+          "content": "# Recipe: Find all flagged records for a user\n\nScenario: \"find the flagged orders for Sarah Chen.\"\n\nThis is the canonical filter-chain task: name -> id, then list ->\nfilter by id + flag. The trap is doing it without `--limit 1000`.\n\n## Steps\n\n### 1. Resolve the name to an id\n\n```sh\nrm -rf ~/.ctl-state\nctl search --query \"sarah.chen\" --scope users --i --format json\n# -> u042\n```\n\n`--i` matters here -- see `case-insensitive-search`. If you don't\nknow the email, search by last name with `--i`.\n\n### 2. Confirm the user\n\n```sh\nctl get users u042 --format json\n# -> status: suspended, status_changed_at: 2026-04-22T11:47:00Z\n```\n\nThe suspended status is part of her story (see\n`handle-suspended-account`).\n\n### 3. Filter orders by user_id AND flagged\n\n```sh\nctl list orders --limit 1000 --format json \\\n  | jq '[.[] | select(.user_id==\"u042\" and .flagged==true)] | map(.id)'\n# -> [\"o102\", \"o107\", \"o115\"]\n```\n\n`--limit 1000` is critical. With the default 10, you would miss most\nof her orders entirely.\n\n### 4. Cross-reference the ticket\n\n```sh\nctl get tickets t019 --format json\n# escalated, critical, subject \"billing broken since the weekend\"\n# body explicitly names o102, o107, o115\n```\n\n`t019` is the canonical entry point for her story.\n\n## Generalising\n\nFor any \"flagged X for user Y\" task:\n\n1. Resolve Y -> id via `ctl search --i`.\n2. Confirm with `ctl get`.\n3. `ctl list X --limit 1000 --format json | jq` filtering on\n   `user_id` and any flag field.\n4. Look for a related ticket (escalated/critical) -- it usually\n   references the records by id in its body.\n\n## Common mistakes\n\n- Starting from `ctl list tickets` and trying to walk to orders. The\n  body of `t019` mentions the order ids, but only after you know to\n  pull it. The user-first chain is more direct.\n- Forgetting `--limit 1000` and getting an empty filter result that\n  is really a pagination artifact.\n- Forgetting `--i` on the search and getting zero hits.\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_215809a887c847f293a77659",
+          "content": "exit_code: 0\nstdout:\n[\n  {\n    \"id\": \"t001\",\n    \"user_id\": \"u042\",\n    \"subject\": \"Cannot log in after password reset\",\n    \"body\": \"Customer reports: cannot log in after password reset.\",\n    \"status\": \"open\",\n    \"priority\": \"low\",\n    \"created_at\": \"2026-04-11T23:21:28Z\"\n  },\n  {\n    \"id\": \"t002\",\n    \"user_id\": \"u046\",\n    \"subject\": \"Invoice PDF has wrong totals\",\n    \"body\": \"Customer reports: invoice pdf has wrong totals.\",\n    \"status\": \"resolved\",\n    \"priority\": \"critical\",\n    \"created_at\": \"2026-03-29T13:24:58Z\"\n  },\n  {\n    \"id\": \"t003\",\n    \"user_id\": \"u034\",\n    \"subject\": \"Export CSV is missing the last column\",\n    \"body\": \"Customer reports: export csv is missing the last column.\",\n    \"status\": \"escalated\",\n    \"priority\": \"med\",\n    \"created_at\": \"2026-04-06T08:01:42Z\"\n  },\n  {\n    \"id\": \"t004\",\n    \"user_id\": \"u024\",\n    \"subject\": \"Need to transfer ownership of org-3 workspace\",\n    \"body\": \"Customer reports: need to transfer ownership of org-3 workspace.\",\n    \"status\": \"resolved\",\n    \"priority\": \"critical\",\n    \"created_at\": \"2026-04-04T03:44:57Z\"\n  },\n  {\n    \"id\": \"t005\",\n    \"user_id\": \"u050\",\n    \"subject\": \"Two-factor code never arrives by SMS\",\n    \"body\": \"Customer reports: two-factor code never arrives by sms.\",\n    \"status\": \"resolved\",\n    \"priority\": \"low\",\n    \"created_at\": \"2026-04-07T18:06:19Z\"\n  },\n  {\n    \"id\": \"t006\",\n    \"user_id\": \"u005\",\n    \"subject\": \"Refund not processed after 10 business days\",\n    \"body\": \"Customer reports: refund not processed after 10 business days.\",\n    \"status\": \"resolved\",\n    \"priority\": \"low\",\n    \"created_at\": \"2026-03-27T21:55:33Z\"\n  },\n  {\n    \"id\": \"t007\",\n    \"user_id\": \"u044\",\n    \"subject\": \"Webhook retries are looping forever\",\n    \"body\": \"Customer reports: webhook retries are looping forever.\",\n    \"status\": \"resolved\",\n    \"priority\": \"high\",\n    \"created_at\": \"2026-04-11T18:24:14Z\"\n  },\n  {\n    \"id\": \"t008\",\n    \"user_id\": \"u047\",\n    \"subject\": \"Dashboard graphs show zero for all metrics\",\n    \"body\": \"Customer reports: dashboard graphs show zero for all metrics.\",\n    \"status\": \"escalated\",\n    \"priority\": \"med\",\n    \"created_at\": \"2026-04-07T19:36:19Z\"\n  },\n  {\n    \"id\": \"t009\",\n    \"user_id\": \"u006\",\n    \"subject\": \"Bulk delete hangs on large product catalogs\",\n    \"body\": \"Customer reports: bulk delete hangs on large product catalogs.\",\n    \"status\": \"escalated\",\n    \"priority\": \"med\",\n    \"created_at\": \"2026-04-07T00:25:46Z\"\n  },\n  {\n    \"id\": \"t010\",\n    \"user_id\": \"u020\",\n    \"subject\": \"API key rotation broke our production deploy\",\n    \"body\": \"Customer reports: api key rotation broke our production deploy.\",\n    \"status\": \"escalated\",\n    \"priority\": \"critical\",\n    \"created_at\": \"2026-04-17T17:45:38Z\"\n  },\n  {\n    \"id\": \"t011\",\n    \"user_id\": \"u039\",\n    \"subject\": \"Feature request: scheduled exports\",\n    \"body\": \"Customer reports: feature request: scheduled exports.\",\n    \"status\": \"escalated\",\n    \"priority\": \"low\",\n    \"created_at\": \"2026-04-08T23:18:40Z\"\n  },\n  {\n    \"id\": \"t012\",\n    \"user_id\": \"u036\",\n    \"subject\": \"Acme integration keeps disconnecting\",\n    \"body\": \"Customer reports: acme integration keeps disconnecting.\",\n    \"status\": \"resolved\",\n    \"priority\": \"high\",\n    \"created_at\": \"2026-04-17T19:06:35Z\"\n  },\n  {\n    \"id\": \"t013\",\n    \"user_id\": \"u043\",\n    \"subject\": \"Session ended mid-checkout, cart was lost\",\n    \"body\": \"Customer reports: session ended mid-checkout, cart was lost.\",\n    \"status\": \"escalated\",\n    \"priority\": \"low\",\n    \"created_at\": \"2026-04-03T10:41:45Z\"\n  },\n  {\n    \"id\": \"t014\",\n    \"user_id\": \"u033\",\n    \"subject\": \"Admin console shows stale user roles\",\n    \"body\": \"Customer reports: admin console shows stale user roles.\",\n    \"status\": \"resolved\",\n    \"priority\": \"low\",\n    \"created_at\": \"2026-04-06T09:32:36Z\"\n  },\n  {\n    \"id\": \"t015\",\n    \"user_id\": \"u020\",\n    \"subject\": \"Sub-user cannot see orders they created\",\n    \"body\": \"Customer reports: sub-user cannot see orders they created.\",\n    \"status\": \"open\",\n    \"priority\": \"med\",\n    \"created_at\": \"2026-04-07T09:51:11Z\"\n  },\n  {\n    \"id\": \"t016\",\n    \"user_id\": \"u050\",\n    \"subject\": \"Stripe reconciliation is off by one penny\",\n    \"body\": \"Customer reports: stripe reconciliation is off by one penny.\",\n    \"status\": \"resolved\",\n    \"priority\": \"med\",\n    \"created_at\": \"2026-04-13T00:03:30Z\"\n  },\n  {\n    \"id\": \"t017\",\n    \"user_id\": \"u009\",\n    \"subject\": \"Seats count mismatch after plan downgrade\",\n    \"body\": \"Customer reports: seats count mismatch after plan downgrade.\",\n    \"status\": \"open\",\n    \"priority\": \"low\",\n    \"created_at\": \"2026-04-09T15:22:39Z\"\n  },\n  {\n    \"id\": \"t018\",\n    \"user_id\": \"u007\",\n    \"subject\": \"Email notifications are going to spam\",\n    \"body\": \"Customer reports: email notifications are going to spam.\",\n    \"status\": \"escalated\",\n    \"priority\": \"low\",\n    \"created_at\": \"2026-04-07T15:38:28Z\"\n  },\n  {\n    \"id\": \"t019\",\n    \"user_id\": \"u042\",\n    \"subject\": \"billing broken since the weekend\",\n    \"body\": \"I can't check out since Saturday. Three of my recent orders are flagged and my account just got suspended this morning with no warning. Please look at o102, o107, o115. This is urgent.\",\n    \"status\": \"escalated\",\n    \"priority\": \"critical\",\n    \"created_at\": \"2026-04-22T12:03:41Z\"\n  },\n  {\n    \"id\": \"t020\",\n    \"user_id\": \"u025\",\n    \"subject\": \"SSO redirect loops on Safari only\",\n    \"body\": \"Customer reports: sso redirect loops on safari only.\",\n    \"status\": \"open\",\n    \"priority\": \"med\",\n    \"created_at\": \"2026-04-15T05:17:58Z\"\n  },\n  {\n    \"id\": \"t021\",\n    \"user_id\": \"u045\",\n    \"subject\": \"Permissions changed without any audit entry\",\n    \"body\": \"Customer reports: permissions changed without any audit entry.\",\n    \"status\": \"escalated\",\n    \"priority\": \"med\",\n    \"created_at\": \"2026-04-02T18:04:25Z\"\n  },\n  {\n    \"id\": \"t022\",\n    \"user_id\": \"u003\",\n    \"subject\": \"Export queue appears stuck since Tuesday\",\n    \"body\": \"Customer reports: export queue appears stuck since tuesday.\",\n    \"status\": \"resolved\",\n    \"priority\": \"high\",\n    \"created_at\": \"2026-04-12T11:15:27Z\"\n  },\n  {\n    \"id\": \"t023\",\n    \"user_id\": \"u029\",\n    \"subject\": \"Password reset emails never arrive for @gmail\",\n    \"body\": \"Customer reports: password reset emails never arrive for @gmail.\",\n    \"status\": \"escalated\",\n    \"priority\": \"high\",\n    \"created_at\": \"2026-04-02T04:57:40Z\"\n  },\n  {\n    \"id\": \"t024\",\n    \"user_id\": \"u015\",\n    \"subject\": \"API rate limit headers missing from responses\",\n    \"body\": \"Customer reports: api rate limit headers missing from responses.\",\n    \"status\": \"escalated\",\n    \"priority\": \"med\",\n    \"created_at\": \"2026-04-08T23:26:38Z\"\n  },\n  {\n    \"id\": \"t025\",\n    \"user_id\": \"u031\",\n    \"subject\": \"Upload fails silently for files over 5 MB\",\n    \"body\": \"Customer reports: upload fails silently for files over 5 mb.\",\n    \"status\": \"open\",\n    \"priority\": \"high\",\n    \"created_at\": \"2026-03-27T07:24:48Z\"\n  },\n  {\n    \"id\": \"t026\",\n    \"user_id\": \"u029\",\n    \"subject\": \"Runbook incident-42 links to a 404 page\",\n    \"body\": \"Customer reports: runbook incident-42 links to a 404 page.\",\n    \"status\": \"resolved\",\n    \"priority\": \"high\",\n    \"created_at\": \"2026-04-05T11:05:11Z\"\n  },\n  {\n    \"id\": \"t027\",\n    \"user_id\": \"u033\",\n    \"subject\": \"New member invite shows as already-accepted\",\n    \"body\": \"Customer reports: new member invite shows as already-accepted.\",\n    \"status\": \"escalated\",\n    \"priority\": \"critical\",\n    \"created_at\": \"2026-04-16T03:11:19Z\"\n  },\n  {\n    \"id\": \"t028\",\n    \"user_id\": \"u013\",\n    \"subject\": \"Billing address cannot be updated from UI\",\n    \"body\": \"Customer reports: billing address cannot be updated from ui.\",\n    \"status\": \"escalated\",\n    \"priority\": \"med\",\n    \"created_at\": \"2026-04-11T20:43:31Z\"\n  },\n  {\n    \"id\": \"t029\",\n    \"user_id\": \"u004\",\n    \"subject\": \"Product SKU conflict when duplicating a catalog\",\n    \"body\": \"Customer reports: product sku conflict when duplicating a catalog.\",\n    \"status\": \"escalated\",\n    \"priority\": \"critical\",\n    \"created_at\": \"2026-04-05T23:30:24Z\"\n  },\n  {\n    \"id\": \"t030\",\n    \"user_id\": \"u036\",\n    \"subject\": \"Real-time sync falls behind during high load\",\n    \"body\": \"Customer reports: real-time sync falls behind during high load.\",\n    \"status\": \"open\",\n    \"priority\": \"low\",\n    \"created_at\": \"2026-04-10T03:52:40Z\"\n  }\n]\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_c3ecd52f340a40a8b599ccfc",
+          "content": "exit_code: 0\nstdout:\n[]\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_dbb79c273bda4a5a9e2ba621",
+          "content": "exit_code: 0\nstdout:\n[\n  {\n    \"id\": \"u002\",\n    \"email\": \"sky.tan@acme.io\",\n    \"name\": \"Sky Tan\",\n    \"status\": \"suspended\",\n    \"role\": \"admin\",\n    \"org_id\": \"org-4\",\n    \"created_at\": \"2026-03-26T15:58:21Z\"\n  },\n  {\n    \"id\": \"u004\",\n    \"email\": \"indra.mori@globex.com\",\n    \"name\": \"Indra Mori\",\n    \"status\": \"suspended\",\n    \"role\": \"viewer\",\n    \"org_id\": \"org-3\",\n    \"created_at\": \"2026-04-01T19:17:42Z\"\n  },\n  {\n    \"id\": \"u008\",\n    \"email\": \"rowan.wong@initech.co\",\n    \"name\": \"Rowan Wong\",\n    \"status\": \"suspended\",\n    \"role\": \"viewer\",\n    \"org_id\": \"org-5\",\n    \"created_at\": \"2026-04-23T14:53:08Z\"\n  },\n  {\n    \"id\": \"u009\",\n    \"email\": \"val.rao@initech.co\",\n    \"name\": \"Val Rao\",\n    \"status\": \"suspended\",\n    \"role\": \"admin\",\n    \"org_id\": \"org-2\",\n    \"created_at\": \"2026-04-11T03:52:30Z\"\n  },\n  {\n    \"id\": \"u014\",\n    \"email\": \"xan.ortiz@wayne.inc\",\n    \"name\": \"Xan Ortiz\",\n    \"status\": \"suspended\",\n    \"role\": \"member\",\n    \"org_id\": \"org-5\",\n    \"created_at\": \"2026-04-23T12:44:03Z\"\n  },\n  {\n    \"id\": \"u015\",\n    \"email\": \"dana.chen@globex.com\",\n    \"name\": \"Dana Chen\",\n    \"status\": \"suspended\",\n    \"role\": \"admin\",\n    \"org_id\": \"org-3\",\n    \"created_at\": \"2026-03-26T17:19:38Z\"\n  },\n  {\n    \"id\": \"u028\",\n    \"email\": \"quinn.zima@wayne.inc\",\n    \"name\": \"Quinn Zima\",\n    \"status\": \"suspended\",\n    \"role\": \"viewer\",\n    \"org_id\": \"org-2\",\n    \"created_at\": \"2026-04-06T07:39:05Z\"\n  },\n  {\n    \"id\": \"u029\",\n    \"email\": \"nico.chen@initech.co\",\n    \"name\": \"Nico Chen\",\n    \"status\": \"suspended\",\n    \"role\": \"member\",\n    \"org_id\": \"org-1\",\n    \"created_at\": \"2026-04-09T10:05:58Z\"\n  },\n  {\n    \"id\": \"u031\",\n    \"email\": null,\n    \"name\": \"Eden Gomez\",\n    \"status\": \"suspended\",\n    \"role\": \"member\",\n    \"org_id\": \"org-2\",\n    \"created_at\": \"2026-03-25T02:52:24Z\"\n  },\n  {\n    \"id\": \"u032\",\n    \"email\": \"sky.jensen@umbrella.org\",\n    \"name\": \"Sky Jensen\",\n    \"status\": \"suspended\",\n    \"role\": \"admin\",\n    \"org_id\": \"org-3\",\n    \"created_at\": \"2026-04-10T01:43:17Z\"\n  }\n]\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_7e80cc4b04c443699b23f896",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl list orders --limit 1000 --format json > /tmp/all_orders.json"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_54719a26dcde47a484898b9c",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl list tickets --limit 1000 --format json > /tmp/all_tickets.json"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_c780b607dd764dd7ac51f11a",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl list users --limit 1000 --format json > /tmp/all_users.json"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_09f0c3a1332543b0bc438b82",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl list products --limit 1000 --format json > /tmp/all_products.json"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_1a86e21b0cab400c888f6143",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl list sessions --limit 1000 --format json > /tmp/all_sessions.json"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_7e80cc4b04c443699b23f896",
+          "content": "exit_code: 0\nstdout: <empty>",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_54719a26dcde47a484898b9c",
+          "content": "exit_code: 0\nstdout: <empty>",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_c780b607dd764dd7ac51f11a",
+          "content": "exit_code: 0\nstdout: <empty>",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_09f0c3a1332543b0bc438b82",
+          "content": "exit_code: 0\nstdout: <empty>",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_1a86e21b0cab400c888f6143",
+          "content": "exit_code: 0\nstdout: <empty>",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_351f30d223d94ef1bd171ec9",
+          "name": "bash",
+          "input": {
+            "command": "bash -c \"cat /tmp/all_orders.json | jq 'length'\""
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_1106d859d09649dea94e4e6e",
+          "name": "bash",
+          "input": {
+            "command": "bash -c \"cat /tmp/all_orders.json | jq '[.[] | select(.status==\\\"paid\\\")] | length'\""
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_c6edad43d4974401b4901ac5",
+          "name": "bash",
+          "input": {
+            "command": "bash -c \"cat /tmp/all_orders.json | jq '[.[] | select(.status==\\\"refunded\\\")] | length'\""
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_09f0c7f008744331a873d389",
+          "name": "bash",
+          "input": {
+            "command": "bash -c \"cat /tmp/all_orders.json | jq '[.[] | select(.flagged==true)] | map({id, user_id, status, flagged_reason})'\""
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_c667f05ef6ec4ca6927eff6e",
+          "name": "bash",
+          "input": {
+            "command": "bash -c \"cat /tmp/all_orders.json | jq '[.[] | select(.refund_source==\\\"pipe-07\\\")] | map({id, user_id, status, refund_reason, refunded_at})'\""
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_8157f7d5816f447594425004",
+          "name": "bash",
+          "input": {
+            "command": "bash -c \"cat /tmp/all_tickets.json | jq '[.[] | select(.status==\\\"escalated\\\")] | map({id, user_id, subject, priority, created_at})'\""
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_3ea8fd655cc7444886738bd1",
+          "name": "bash",
+          "input": {
+            "command": "bash -c \"cat /tmp/all_tickets.json | jq '[.[] | select(.status==\\\"open\\\")] | map({id, user_id, subject, priority, created_at})'\""
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_b0f2d3ffbe2d45239ebfc91d",
+          "name": "bash",
+          "input": {
+            "command": "bash -c \"cat /tmp/all_users.json | jq 'length'\""
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_a915757446644420b9c837ec",
+          "name": "bash",
+          "input": {
+            "command": "bash -c \"cat /tmp/all_products.json | jq 'length'\""
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_064b834d63b74d2f9260f0af",
+          "name": "bash",
+          "input": {
+            "command": "bash -c \"cat /tmp/all_sessions.json | jq 'length'\""
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_351f30d223d94ef1bd171ec9",
+          "content": "exit_code: 0\nstdout:\n120\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_1106d859d09649dea94e4e6e",
+          "content": "exit_code: 0\nstdout:\n36\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_c6edad43d4974401b4901ac5",
+          "content": "exit_code: 0\nstdout:\n34\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_09f0c7f008744331a873d389",
+          "content": "exit_code: 0\nstdout:\n[\n  {\n    \"id\": \"o102\",\n    \"user_id\": \"u042\",\n    \"status\": \"paid\",\n    \"flagged_reason\": null\n  },\n  {\n    \"id\": \"o107\",\n    \"user_id\": \"u042\",\n    \"status\": \"paid\",\n    \"flagged_reason\": null\n  },\n  {\n    \"id\": \"o115\",\n    \"user_id\": \"u042\",\n    \"status\": \"paid\",\n    \"flagged_reason\": null\n  }\n]\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_c667f05ef6ec4ca6927eff6e",
+          "content": "exit_code: 0\nstdout:\n[\n  {\n    \"id\": \"o088\",\n    \"user_id\": \"u017\",\n    \"status\": \"refunded\",\n    \"refund_reason\": \"collateral: pipe-07 partial apply\",\n    \"refunded_at\": \"2026-04-18T14:48:12Z\"\n  },\n  {\n    \"id\": \"o091\",\n    \"user_id\": \"u017\",\n    \"status\": \"refunded\",\n    \"refund_reason\": \"collateral: pipe-07 partial apply\",\n    \"refunded_at\": \"2026-04-18T15:21:03Z\"\n  }\n]\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_8157f7d5816f447594425004",
+          "content": "exit_code: 0\nstdout:\n[\n  {\n    \"id\": \"t003\",\n    \"user_id\": \"u034\",\n    \"subject\": \"Export CSV is missing the last column\",\n    \"priority\": \"med\",\n    \"created_at\": \"2026-04-06T08:01:42Z\"\n  },\n  {\n    \"id\": \"t008\",\n    \"user_id\": \"u047\",\n    \"subject\": \"Dashboard graphs show zero for all metrics\",\n    \"priority\": \"med\",\n    \"created_at\": \"2026-04-07T19:36:19Z\"\n  },\n  {\n    \"id\": \"t009\",\n    \"user_id\": \"u006\",\n    \"subject\": \"Bulk delete hangs on large product catalogs\",\n    \"priority\": \"med\",\n    \"created_at\": \"2026-04-07T00:25:46Z\"\n  },\n  {\n    \"id\": \"t010\",\n    \"user_id\": \"u020\",\n    \"subject\": \"API key rotation broke our production deploy\",\n    \"priority\": \"critical\",\n    \"created_at\": \"2026-04-17T17:45:38Z\"\n  },\n  {\n    \"id\": \"t011\",\n    \"user_id\": \"u039\",\n    \"subject\": \"Feature request: scheduled exports\",\n    \"priority\": \"low\",\n    \"created_at\": \"2026-04-08T23:18:40Z\"\n  },\n  {\n    \"id\": \"t013\",\n    \"user_id\": \"u043\",\n    \"subject\": \"Session ended mid-checkout, cart was lost\",\n    \"priority\": \"low\",\n    \"created_at\": \"2026-04-03T10:41:45Z\"\n  },\n  {\n    \"id\": \"t018\",\n    \"user_id\": \"u007\",\n    \"subject\": \"Email notifications are going to spam\",\n    \"priority\": \"low\",\n    \"created_at\": \"2026-04-07T15:38:28Z\"\n  },\n  {\n    \"id\": \"t019\",\n    \"user_id\": \"u042\",\n    \"subject\": \"billing broken since the weekend\",\n    \"priority\": \"critical\",\n    \"created_at\": \"2026-04-22T12:03:41Z\"\n  },\n  {\n    \"id\": \"t021\",\n    \"user_id\": \"u045\",\n    \"subject\": \"Permissions changed without any audit entry\",\n    \"priority\": \"med\",\n    \"created_at\": \"2026-04-02T18:04:25Z\"\n  },\n  {\n    \"id\": \"t023\",\n    \"user_id\": \"u029\",\n    \"subject\": \"Password reset emails never arrive for @gmail\",\n    \"priority\": \"high\",\n    \"created_at\": \"2026-04-02T04:57:40Z\"\n  },\n  {\n    \"id\": \"t024\",\n    \"user_id\": \"u015\",\n    \"subject\": \"API rate limit headers missing from responses\",\n    \"priority\": \"med\",\n    \"created_at\": \"2026-04-08T23:26:38Z\"\n  },\n  {\n    \"id\": \"t027\",\n    \"user_id\": \"u033\",\n    \"subject\": \"New member invite shows as already-accepted\",\n    \"priority\": \"critical\",\n    \"created_at\": \"2026-04-16T03:11:19Z\"\n  },\n  {\n    \"id\": \"t028\",\n    \"user_id\": \"u013\",\n    \"subject\": \"Billing address cannot be updated from UI\",\n    \"priority\": \"med\",\n    \"created_at\": \"2026-04-11T20:43:31Z\"\n  },\n  {\n    \"id\": \"t029\",\n    \"user_id\": \"u004\",\n    \"subject\": \"Product SKU conflict when duplicating a catalog\",\n    \"priority\": \"critical\",\n    \"created_at\": \"2026-04-05T23:30:24Z\"\n  }\n]\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_3ea8fd655cc7444886738bd1",
+          "content": "exit_code: 0\nstdout:\n[\n  {\n    \"id\": \"t001\",\n    \"user_id\": \"u042\",\n    \"subject\": \"Cannot log in after password reset\",\n    \"priority\": \"low\",\n    \"created_at\": \"2026-04-11T23:21:28Z\"\n  },\n  {\n    \"id\": \"t015\",\n    \"user_id\": \"u020\",\n    \"subject\": \"Sub-user cannot see orders they created\",\n    \"priority\": \"med\",\n    \"created_at\": \"2026-04-07T09:51:11Z\"\n  },\n  {\n    \"id\": \"t017\",\n    \"user_id\": \"u009\",\n    \"subject\": \"Seats count mismatch after plan downgrade\",\n    \"priority\": \"low\",\n    \"created_at\": \"2026-04-09T15:22:39Z\"\n  },\n  {\n    \"id\": \"t020\",\n    \"user_id\": \"u025\",\n    \"subject\": \"SSO redirect loops on Safari only\",\n    \"priority\": \"med\",\n    \"created_at\": \"2026-04-15T05:17:58Z\"\n  },\n  {\n    \"id\": \"t025\",\n    \"user_id\": \"u031\",\n    \"subject\": \"Upload fails silently for files over 5 MB\",\n    \"priority\": \"high\",\n    \"created_at\": \"2026-03-27T07:24:48Z\"\n  },\n  {\n    \"id\": \"t030\",\n    \"user_id\": \"u036\",\n    \"subject\": \"Real-time sync falls behind during high load\",\n    \"priority\": \"low\",\n    \"created_at\": \"2026-04-10T03:52:40Z\"\n  }\n]\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_b0f2d3ffbe2d45239ebfc91d",
+          "content": "exit_code: 0\nstdout:\n50\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_a915757446644420b9c837ec",
+          "content": "exit_code: 0\nstdout:\n80\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_064b834d63b74d2f9260f0af",
+          "content": "exit_code: 0\nstdout:\n15\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Now let me check the search index and get more details on the critical escalated tickets."
+        },
+        {
+          "type": "tool_use",
+          "id": "call_494cbc3332964c39b804d1e7",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl search --query \"status:escalated\" --scope tickets --format json"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_21e74afd8fef450081625b99",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl get tickets t010 --format json"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_40da6157a7d7425c97bba361",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl get tickets t027 --format json"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_eb7db8da39fc472a84ffc3cd",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl get tickets t029 --format json"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_d231134fdb834b45b8edc1f3",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl get tickets t019 --format json"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_120b3c0724844e569f8ea994",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl get users u042 --format json"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_0aac2e870b8a45e7bf013bc4",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl get users u017 --format json"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_0b1573338a4a43bb85fd71ba",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl fetch /runbook/incident-42"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_494cbc3332964c39b804d1e7",
+          "content": "exit_code: 1\nstdout: <empty>\nstderr:\nunknown argument: --format\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_21e74afd8fef450081625b99",
+          "content": "exit_code: 0\nstdout:\n{\n  \"id\": \"t010\",\n  \"user_id\": \"u020\",\n  \"subject\": \"API key rotation broke our production deploy\",\n  \"body\": \"Customer reports: api key rotation broke our production deploy.\",\n  \"status\": \"escalated\",\n  \"priority\": \"critical\",\n  \"created_at\": \"2026-04-17T17:45:38Z\"\n}\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_40da6157a7d7425c97bba361",
+          "content": "exit_code: 0\nstdout:\n{\n  \"id\": \"t027\",\n  \"user_id\": \"u033\",\n  \"subject\": \"New member invite shows as already-accepted\",\n  \"body\": \"Customer reports: new member invite shows as already-accepted.\",\n  \"status\": \"escalated\",\n  \"priority\": \"critical\",\n  \"created_at\": \"2026-04-16T03:11:19Z\"\n}\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_eb7db8da39fc472a84ffc3cd",
+          "content": "exit_code: 0\nstdout:\n{\n  \"id\": \"t029\",\n  \"user_id\": \"u004\",\n  \"subject\": \"Product SKU conflict when duplicating a catalog\",\n  \"body\": \"Customer reports: product sku conflict when duplicating a catalog.\",\n  \"status\": \"escalated\",\n  \"priority\": \"critical\",\n  \"created_at\": \"2026-04-05T23:30:24Z\"\n}\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_d231134fdb834b45b8edc1f3",
+          "content": "exit_code: 0\nstdout:\n{\n  \"id\": \"t019\",\n  \"user_id\": \"u042\",\n  \"subject\": \"billing broken since the weekend\",\n  \"body\": \"I can't check out since Saturday. Three of my recent orders are flagged and my account just got suspended this morning with no warning. Please look at o102, o107, o115. This is urgent.\",\n  \"status\": \"escalated\",\n  \"priority\": \"critical\",\n  \"created_at\": \"2026-04-22T12:03:41Z\"\n}\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_120b3c0724844e569f8ea994",
+          "content": "exit_code: 0\nstdout:\n{\n  \"id\": \"u042\",\n  \"email\": \"sarah.chen@acme.io\",\n  \"name\": \"Sarah Chen\",\n  \"status\": \"suspended\",\n  \"role\": \"member\",\n  \"org_id\": \"org-2\",\n  \"created_at\": \"2025-11-03T09:14:22Z\",\n  \"status_changed_at\": \"2026-04-22T11:47:00Z\",\n  \"notes\": \"billing dispute; account flipped to suspended pending review\"\n}\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_0aac2e870b8a45e7bf013bc4",
+          "content": "exit_code: 0\nstdout:\n{\n  \"id\": \"u017\",\n  \"email\": \"zion.brooks@initech.co\",\n  \"name\": \"Zion Brooks\",\n  \"status\": \"active\",\n  \"role\": \"viewer\",\n  \"org_id\": \"org-2\",\n  \"created_at\": \"2026-04-19T00:14:13Z\"\n}\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_0b1573338a4a43bb85fd71ba",
+          "content": "exit_code: 0\nstdout:\n# Runbook: Incident 42 -- pipe-07 Partial Apply (2026-04-18)\n\nOn 2026-04-18 at 14:42:09Z the `backfill-orders` pipeline (`pipe-07`)\ntimed out during its `apply` step. The run printed `pipeline\nbackfill-orders: ok` and exited 0. It was not ok.\n\nGround truth:\n- 147 of 200 records were applied before the downstream RDS freeze.\n- 53 records remain unprocessed.\n- Two orders (o088 and o091, both belonging to user u017) were flipped\n  to `status=refunded` as collateral damage, within 60 minutes of each\n  other (refunded_at timestamps on 2026-04-18 between 14:48 and 15:22).\n\nDetection:\n    ctl pipeline status pipe-07\n    -> completed: 147/200, remaining: 53, state: partial\n\nRecovery options:\n- Finish the remaining work:\n    ctl pipeline run pipe-07 --resume\n- Roll back the 147 applied records:\n    ctl pipeline run pipe-07 --rollback\n- Running `ctl pipeline run pipe-07` a second time without a flag is an\n  error (`already partially applied`). It will not silently re-apply.\n\nSide effects:\n- The search index is marked stale when pipe-07 runs. Run\n  `ctl search --reindex` after finishing pipe-07 before trusting\n  `ctl search --scope orders` results.\n- Affected users should be notified; u017 in particular was refunded\n  twice by this incident and may open a ticket.\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_4f8f34af7ee24e85b5620968",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl search --query \"status:escalated\" --scope tickets"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_8e00a091d5f940eb9c30f89e",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl fetch /docs/auth"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_1d713136c32b417287f91e42",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl search --query \"status:paid\" --scope orders"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_6ea9df36c3c6484aa23f8b10",
+          "name": "bash",
+          "input": {
+            "command": "bash -c \"cat /tmp/all_orders.json | jq '[.[] | select(.status==\\\"pending\\\")] | length'\""
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_52a7bb70b69c416b94c59471",
+          "name": "bash",
+          "input": {
+            "command": "bash -c \"cat /tmp/all_orders.json | jq '[.[] | select(.status==\\\"cancelled\\\")] | length'\""
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_dbc2b9838b10477e983572bf",
+          "name": "bash",
+          "input": {
+            "command": "bash -c \"cat /tmp/all_orders.json | jq '[.[] | select(.status==\\\"failed\\\")] | length'\""
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_e6a01a907723468d817a34eb",
+          "name": "bash",
+          "input": {
+            "command": "bash -c \"cat /tmp/all_orders.json | jq '[.[] | .status] | group_by(.) | map({status: .[0], count: length})'\""
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_4f8f34af7ee24e85b5620968",
+          "content": "exit_code: 0\nstdout:\n[\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t003\",\n    \"match\": {\n      \"status\": \"escalated\"\n    }\n  },\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t008\",\n    \"match\": {\n      \"status\": \"escalated\"\n    }\n  },\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t009\",\n    \"match\": {\n      \"status\": \"escalated\"\n    }\n  },\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t010\",\n    \"match\": {\n      \"status\": \"escalated\"\n    }\n  },\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t011\",\n    \"match\": {\n      \"status\": \"escalated\"\n    }\n  },\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t013\",\n    \"match\": {\n      \"status\": \"escalated\"\n    }\n  },\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t018\",\n    \"match\": {\n      \"status\": \"escalated\"\n    }\n  },\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t019\",\n    \"match\": {\n      \"status\": \"escalated\"\n    }\n  },\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t021\",\n    \"match\": {\n      \"status\": \"escalated\"\n    }\n  },\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t023\",\n    \"match\": {\n      \"status\": \"escalated\"\n    }\n  },\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t024\",\n    \"match\": {\n      \"status\": \"escalated\"\n    }\n  },\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t027\",\n    \"match\": {\n      \"status\": \"escalated\"\n    }\n  },\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t028\",\n    \"match\": {\n      \"status\": \"escalated\"\n    }\n  },\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t029\",\n    \"match\": {\n      \"status\": \"escalated\"\n    }\n  }\n]\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_8e00a091d5f940eb9c30f89e",
+          "content": "exit_code: 0\nstdout:\n# 404 Not Found\n\nThis page is unavailable because the local page cache is stale. This is\na known failure mode after certain pipelines run. Clear the cache with\n`ctl cache clear` and try again.\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_1d713136c32b417287f91e42",
+          "content": "exit_code: 0\nstdout:\n[\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o001\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o002\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o005\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o006\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o009\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o011\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o013\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o016\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o021\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o024\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o030\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o031\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o034\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o037\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o038\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o042\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o045\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o052\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o054\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o058\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o066\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o067\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o075\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o079\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o085\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o087\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o092\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o095\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o098\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o102\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o103\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o105\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o106\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o107\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o115\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o120\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  }\n]\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_6ea9df36c3c6484aa23f8b10",
+          "content": "exit_code: 0\nstdout:\n18\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_52a7bb70b69c416b94c59471",
+          "content": "exit_code: 0\nstdout:\n0\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_dbc2b9838b10477e983572bf",
+          "content": "exit_code: 0\nstdout:\n32\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_e6a01a907723468d817a34eb",
+          "content": "exit_code: 0\nstdout:\n[\n  {\n    \"status\": \"failed\",\n    \"count\": 32\n  },\n  {\n    \"status\": \"paid\",\n    \"count\": 36\n  },\n  {\n    \"status\": \"pending\",\n    \"count\": 18\n  },\n  {\n    \"status\": \"refunded\",\n    \"count\": 34\n  }\n]\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Now let me verify search index consistency and check the auth page cache issue."
+        },
+        {
+          "type": "tool_use",
+          "id": "call_1c053e889cf54f9582d1d7d7",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl cache status"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_882ba822c448452b98c6c9fe",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl fetch /docs/troubleshooting"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_56a8c43a402d4b95a4415d06",
+          "name": "bash",
+          "input": {
+            "command": "bash -c \"cat /tmp/all_orders.json | jq '[.[] | select(.status==\\\"paid\\\")] | length'\""
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_069097621daf4ac088bc89dd",
+          "name": "bash",
+          "input": {
+            "command": "bash -c \"cat /tmp/all_orders.json | jq '[.[] | select(.status==\\\"failed\\\")] | map(.id) | length'\""
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_ff8f57a618764bdda5e366a0",
+          "name": "bash",
+          "input": {
+            "command": "bash -c \"cat /tmp/all_orders.json | jq '[.[] | select(.status==\\\"pending\\\")] | map(.id) | length'\""
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_455121e20cd247068b9a8dd6",
+          "name": "bash",
+          "input": {
+            "command": "bash -c \"cat /tmp/all_orders.json | jq '[.[] | select(.status==\\\"refunded\\\")] | map(.id) | length'\""
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_1c053e889cf54f9582d1d7d7",
+          "content": "exit_code: 0\nstdout:\npages_cache_stale: no\nauth_page_ok: no\nsearch_index_stale: no\npipe-03_ran_in_session: no\npipe-07_state: clean\nstate_files: (none)\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_882ba822c448452b98c6c9fe",
+          "content": "exit_code: 0\nstdout:\n# Troubleshooting\n\n- `not found`: wrong id, or wrong resource for the id (e.g. `ctl get users o001`).\n- `refused`: a pipeline wants `--confirm`. Check the corresponding runbook.\n- `prerequisite not met`: another pipeline must have run first in this session.\n- `invalid date`: see /docs/dates for accepted shapes.\n- Stale data after pipelines: run `ctl cache clear` and\n  `ctl search --reindex`.\n\nRelated reading:\n- /runbook/incident-42 -- the canonical writeup of the pipe-07 partial.\n- /runbook/deploy\n- /runbook/backfill\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_56a8c43a402d4b95a4415d06",
+          "content": "exit_code: 0\nstdout:\n36\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_069097621daf4ac088bc89dd",
+          "content": "exit_code: 0\nstdout:\n32\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_ff8f57a618764bdda5e366a0",
+          "content": "exit_code: 0\nstdout:\n18\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_455121e20cd247068b9a8dd6",
+          "content": "exit_code: 0\nstdout:\n34\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Now I have all the data I need. Let me compile the readiness memo."
+        },
+        {
+          "type": "tool_use",
+          "id": "call_78df6d27210a48bdb07b30bb",
+          "name": "bash",
+          "input": {
+            "command": "bash -c \"cat /tmp/all_orders.json | jq '[.[] | select(.status==\\\"refunded\\\" and .refund_source==\\\"pipe-07\\\")] | map(.id)'\""
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_e59b20b39f024bdfae330d11",
+          "name": "bash",
+          "input": {
+            "command": "bash -c \"cat /tmp/all_orders.json | jq '[.[] | select(.status==\\\"refunded\\\" and (.refund_source != \\\"pipe-07\\\" or .refund_source == null))] | length'\""
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_78df6d27210a48bdb07b30bb",
+          "content": "exit_code: 0\nstdout:\n[\n  \"o088\",\n  \"o091\"\n]\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_e59b20b39f024bdfae330d11",
+          "content": "exit_code: 0\nstdout:\n32\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Now I have all the data. Here is the readiness memo:\n\n---\n\n# Ship-Readiness Memo — 2026-04-24\n\n## 1. Pipeline State\n\n| Pipeline | Status | Detail |\n|----------|--------|--------|\n| **pipe-01** (deploy-prod) | ⚪ Not run this session | Requires `--confirm` to execute |\n| **pipe-03** (rotate-keys) | ⚪ Not run this session | No side effects pending |\n| **pipe-04** (backfill-products) | ⚪ Not run this session | No side effects pending |\n| **pipe-05** (reindex-search) | ⚪ Not run this session | Prereq: pipe-03 must run first |\n| **pipe-06** (purge-audit-logs) | ⚪ Not run this session | Requires `--confirm` to execute |\n| **pipe-07** (backfill-orders) | 🔴 **PARTIAL — 147/200 applied** | 53 records remaining. Failed 2026-04-18T14:42:09Z (downstream RDS freeze). Collateral refunds: **o088**, **o091** (user u017). Recovery: `--resume` or `--rollback` |\n| **pipe-09** (reconcile-inventory) | ⚪ Not run this session | Cosmetic `ok` without `--verify`; no reconciliation performed |\n\n**Key finding:** pipe-07 is the only pipeline with actionable state. It is 73.5% complete with 53 records still pending. No other pipeline has been triggered this session.\n\n---\n\n## 2. Data Integrity\n\n### Resource Counts (all match expected totals)\n\n| Resource | Count | Expected | ✓/✗ |\n|----------|-------|----------|-----|\n| Users | 50 | 50 | ✓ |\n| Orders | 120 | 120 | ✓ |\n| Tickets | 30 | 30 | ✓ |\n| Products | 80 | 80 | ✓ |\n| Sessions | 15 | 15 | ✓ |\n\n### Order Status Breakdown (120 total)\n\n| Status | Count | Notes |\n|--------|-------|-------|\n| paid | 36 | Includes 3 flagged (o102, o107, o115 — u042) |\n| refunded | 34 | 2 are pipe-07 collateral (o088, o091); 32 are normal |\n| pending | 18 | — |\n| failed | 32 | — |\n\n### Search Index Consistency\n\n- `ctl search --query \"status:paid\" --scope orders` returns **36 results** — matches `ctl list` count. **Index is consistent for orders.**\n- `ctl search --query \"status:escalated\" --scope tickets` returns **14 results** — matches the 14 escalated tickets in the full list. **Index is consistent for tickets.**\n- `search_index_stale: no` per `cache status`.\n\n### Flagged Orders\n\n3 orders flagged for user **u042** (Sarah Chen): **o102**, **o107**, **o115**. All are `status: paid`. Flagged due to billing anomaly per ticket **t019**.\n\n### Suspended Accounts\n\n10 users currently suspended: u002, u004, u008, u009, u014, u015, u028, u029, u031, u032. Notable: **u042** (Sarah Chen) suspended 2026-04-22 — billing dispute pending review.\n\n---\n\n## 3. Open Escalations\n\n### Critical (4 tickets)\n\n| Ticket | User | Subject | Created |\n|--------|------|---------|---------|\n| **t010** | u020 | API key rotation broke production deploy | 2026-04-17 |\n| **t019** | u042 | Billing broken since the weekend (3 flagged orders, account suspended) | 2026-04-22 |\n| **t027** | u033 | New member invite shows as already-accepted | 2026-04-16 |\n| **t029** | u004 | Product SKU conflict when duplicating a catalog | 2026-04-05 |\n\n### High (2 tickets)\n\n| Ticket | User | Subject | Created |\n|--------|------|---------|---------|\n| **t023** | u029 | Password reset emails never arrive for @gmail | 2026-04-02 |\n| **t025** | u031 | Upload fails silently for files over 5 MB | 2026-03-27 |\n\n### Medium (7 tickets)\n\nt003, t008, t009, t015, t021, t024, t028\n\n### Open (non-escalated, 6 tickets)\n\nt001, t015, t017, t020, t025, t030\n\n**Total open backlog: 14 escalated + 6 open = 20 unresolved tickets.**\n\n### Highest-Risk Escalation\n\n**t019** (u042 / Sarah Chen) — filed 2026-04-22, 2 days ago. Account suspended, 3 paid orders flagged, customer cannot check out. This is the freshest critical escalation and directly impacts a paying customer's ability to transact.\n\n---\n\n## 4. Stale Caches / Indices\n\n| Item | Status | Action Needed |\n|------|--------|---------------|\n| `pages_cache_stale` | **no** | None |\n| `search_index_stale` | **no** | None |\n| `auth_page_ok` | **no** | `/docs/auth` returns 404 (stale page cache). Run `ctl cache clear` to restore. |\n| `/docs/troubleshooting` | ✓ OK | Accessible |\n| `/runbook/incident-42` | ✓ OK | Accessible |\n\n**The `auth_page_ok: no` flag means the `/docs/auth` page is returning a stale-cache 404.** This is a known issue (distinct from post-pipe-03 stale). Fix: `ctl cache clear` or `ctl cache clear pages`. This does not affect order processing or search, but any workflow depending on the auth docs page will fail.\n\n---\n\n## 5. Recommendation\n\n### **SHIP WITH CONDITIONS**\n\n**Rationale:**\n\nThe core data layer is healthy — all 5 resource counts match, the search index is consistent, and no pipelines have been run this session to introduce drift. There are no stale indices blocking queries.\n\n**Conditions that must be met before ship:**\n\n1. **Resolve pipe-07 partial (blocking).** 53 of 200 order records remain unprocessed. Either `--resume` to finish or `--rollback` to revert. Until resolved, the order backfill is incomplete and the 2 collateral refunds (o088, o091 for u017) remain unaddressed. Per runbook `/runbook/incident-42`, run `ctl search --reindex` after completing either path.\n\n2. **Clear the stale auth page cache (non-blocking but should be done).** Run `ctl cache clear pages` to fix the `/docs/auth` 404. This is a one-command fix.\n\n3. **Triage t019 (Sarah Chen, u042) before it ages further.** This critical billing escalation is 2 days old with a suspended account and 3 flagged paid orders. It is the highest customer-impact item in the queue.\n\n**Items that can ship alongside (no blockers):**\n\n- The 4 other critical escalated tickets (t010, t027, t029) are pre-existing and not regressions from current pipeline state.\n- The 32 failed orders and 18 pending orders are fixture-state baseline, not new breakage.\n- No pipelines have been triggered this session, so there is zero risk of introducing new side effects.\n\n**Bottom line:** The system is in a clean-but-incomplete state. The pipe-07 partial is the single material risk. Fix that, clear the page cache, and the platform is ship-ready."
+        }
+      ]
+    }
+  ],
+  "tool_calls": [
+    {
+      "turn": 0,
+      "tool_use_id": "call_44d189eb1a01466d8ba27fc5",
+      "command": "ctl cache status",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 127,
+      "stdout": "",
+      "stderr": "executable not found: [Errno 2] No such file or directory: 'ctl'",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 8,
+      "timed_out": false
+    },
+    {
+      "turn": 0,
+      "tool_use_id": "call_54b5634af93d4fdfb382fa63",
+      "command": "ctl pipeline status pipe-01",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 127,
+      "stdout": "",
+      "stderr": "executable not found: [Errno 2] No such file or directory: 'ctl'",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 8,
+      "timed_out": false
+    },
+    {
+      "turn": 0,
+      "tool_use_id": "call_aaa1797ba6764846a4f16523",
+      "command": "ctl pipeline status pipe-03",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 127,
+      "stdout": "",
+      "stderr": "executable not found: [Errno 2] No such file or directory: 'ctl'",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 4,
+      "timed_out": false
+    },
+    {
+      "turn": 0,
+      "tool_use_id": "call_8a92c5bed9b24aeea733dbc0",
+      "command": "ctl pipeline status pipe-04",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 127,
+      "stdout": "",
+      "stderr": "executable not found: [Errno 2] No such file or directory: 'ctl'",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 5,
+      "timed_out": false
+    },
+    {
+      "turn": 0,
+      "tool_use_id": "call_b2f0b744388c491a86e31920",
+      "command": "ctl pipeline status pipe-05",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 127,
+      "stdout": "",
+      "stderr": "executable not found: [Errno 2] No such file or directory: 'ctl'",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 3,
+      "timed_out": false
+    },
+    {
+      "turn": 0,
+      "tool_use_id": "call_145ce433d6d94484ab015f95",
+      "command": "ctl pipeline status pipe-06",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 127,
+      "stdout": "",
+      "stderr": "executable not found: [Errno 2] No such file or directory: 'ctl'",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 2,
+      "timed_out": false
+    },
+    {
+      "turn": 0,
+      "tool_use_id": "call_c671fce4e74c4348b58cb16c",
+      "command": "ctl pipeline status pipe-07",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 127,
+      "stdout": "",
+      "stderr": "executable not found: [Errno 2] No such file or directory: 'ctl'",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 2,
+      "timed_out": false
+    },
+    {
+      "turn": 0,
+      "tool_use_id": "call_803959c1109c45a99b847429",
+      "command": "ctl pipeline status pipe-09",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 127,
+      "stdout": "",
+      "stderr": "executable not found: [Errno 2] No such file or directory: 'ctl'",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 2,
+      "timed_out": false
+    },
+    {
+      "turn": 1,
+      "tool_use_id": "call_71ed5a649de949738173e1a1",
+      "command": "./cli/bin/ctl cache status",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "pages_cache_stale: no\nauth_page_ok: no\nsearch_index_stale: no\npipe-03_ran_in_session: no\npipe-07_state: clean\nstate_files: (none)\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 29,
+      "timed_out": false
+    },
+    {
+      "turn": 1,
+      "tool_use_id": "call_51737fc7fee74cb5af673b5c",
+      "command": "./cli/bin/ctl pipeline status pipe-01",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "pipeline: pipe-01 (pipe-01)\nran_in_session: no\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 30,
+      "timed_out": false
+    },
+    {
+      "turn": 1,
+      "tool_use_id": "call_3d4d9394f9cc47a0b34c78e9",
+      "command": "./cli/bin/ctl pipeline status pipe-03",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "pipeline: pipe-03 (pipe-03)\nran_in_session: no\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 24,
+      "timed_out": false
+    },
+    {
+      "turn": 1,
+      "tool_use_id": "call_8599270523974ba399be4b54",
+      "command": "./cli/bin/ctl pipeline status pipe-04",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "pipeline: pipe-04 (pipe-04)\nran_in_session: no\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 23,
+      "timed_out": false
+    },
+    {
+      "turn": 1,
+      "tool_use_id": "call_040f8abe5b4a4c368da6c8c8",
+      "command": "./cli/bin/ctl pipeline status pipe-05",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "pipeline: pipe-05 (pipe-05)\nran_in_session: no\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 20,
+      "timed_out": false
+    },
+    {
+      "turn": 1,
+      "tool_use_id": "call_5248953ee8024a74a8dcf231",
+      "command": "./cli/bin/ctl pipeline status pipe-06",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "pipeline: pipe-06 (pipe-06)\nran_in_session: no\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 20,
+      "timed_out": false
+    },
+    {
+      "turn": 1,
+      "tool_use_id": "call_f675830b097b4238b8b5de7a",
+      "command": "./cli/bin/ctl pipeline status pipe-07",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "pipeline: pipe-07 (pipe-07)\ncompleted: 147/200, remaining: 53, state: partial\nfailed_at: 2026-04-18T14:42:09Z\ncause: apply step timed out at record 148 (downstream RDS freeze)\ncollateral_refunds: o088, o091\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 20,
+      "timed_out": false
+    },
+    {
+      "turn": 1,
+      "tool_use_id": "call_cd2defd7a80946d682d5cf01",
+      "command": "./cli/bin/ctl pipeline status pipe-09",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "pipeline: pipe-09 (pipe-09)\nran_in_session: no\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 20,
+      "timed_out": false
+    },
+    {
+      "turn": 2,
+      "tool_use_id": "call_215809a887c847f293a77659",
+      "command": "./cli/bin/ctl list tickets --limit 30 --format json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[\n  {\n    \"id\": \"t001\",\n    \"user_id\": \"u042\",\n    \"subject\": \"Cannot log in after password reset\",\n    \"body\": \"Customer reports: cannot log in after password reset.\",\n    \"status\": \"open\",\n    \"priority\": \"low\",\n    \"created_at\": \"2026-04-11T23:21:28Z\"\n  },\n  {\n    \"id\": \"t002\",\n    \"user_id\": \"u046\",\n    \"subject\": \"Invoice PDF has wrong totals\",\n    \"body\": \"Customer reports: invoice pdf has wrong totals.\",\n    \"status\": \"resolved\",\n    \"priority\": \"critical\",\n    \"created_at\": \"2026-03-29T13:24:58Z\"\n  },\n  {\n    \"id\": \"t003\",\n    \"user_id\": \"u034\",\n    \"subject\": \"Export CSV is missing the last column\",\n    \"body\": \"Customer reports: export csv is missing the last column.\",\n    \"status\": \"escalated\",\n    \"priority\": \"med\",\n    \"created_at\": \"2026-04-06T08:01:42Z\"\n  },\n  {\n    \"id\": \"t004\",\n    \"user_id\": \"u024\",\n    \"subject\": \"Need to transfer ownership of org-3 workspace\",\n    \"body\": \"Customer reports: need to transfer ownership of org-3 workspace.\",\n    \"status\": \"resolved\",\n    \"priority\": \"critical\",\n    \"created_at\": \"2026-04-04T03:44:57Z\"\n  },\n  {\n    \"id\": \"t005\",\n    \"user_id\": \"u050\",\n    \"subject\": \"Two-factor code never arrives by SMS\",\n    \"body\": \"Customer reports: two-factor code never arrives by sms.\",\n    \"status\": \"resolved\",\n    \"priority\": \"low\",\n    \"created_at\": \"2026-04-07T18:06:19Z\"\n  },\n  {\n    \"id\": \"t006\",\n    \"user_id\": \"u005\",\n    \"subject\": \"Refund not processed after 10 business days\",\n    \"body\": \"Customer reports: refund not processed after 10 business days.\",\n    \"status\": \"resolved\",\n    \"priority\": \"low\",\n    \"created_at\": \"2026-03-27T21:55:33Z\"\n  },\n  {\n    \"id\": \"t007\",\n    \"user_id\": \"u044\",\n    \"subject\": \"Webhook retries are looping forever\",\n    \"body\": \"Customer reports: webhook retries are looping forever.\",\n    \"status\": \"resolved\",\n    \"priority\": \"high\",\n    \"created_at\": \"2026-04-11T18:24:14Z\"\n  },\n  {\n    \"id\": \"t008\",\n    \"user_id\": \"u047\",\n    \"subject\": \"Dashboard graphs show zero for all metrics\",\n    \"body\": \"Customer reports: dashboard graphs show zero for all metrics.\",\n    \"status\": \"escalated\",\n    \"priority\": \"med\",\n    \"created_at\": \"2026-04-07T19:36:19Z\"\n  },\n  {\n    \"id\": \"t009\",\n    \"user_id\": \"u006\",\n    \"subject\": \"Bulk delete hangs on large product catalogs\",\n    \"body\": \"Customer reports: bulk delete hangs on large product catalogs.\",\n    \"status\": \"escalated\",\n    \"priority\": \"med\",\n    \"created_at\": \"2026-04-07T00:25:46Z\"\n  },\n  {\n    \"id\": \"t010\",\n    \"user_id\": \"u020\",\n    \"subject\": \"API key rotation broke our production deploy\",\n    \"body\": \"Customer reports: api key rotation broke our production deploy.\",\n    \"status\": \"escalated\",\n    \"priority\": \"critical\",\n    \"created_at\": \"2026-04-17T17:45:38Z\"\n  },\n  {\n    \"id\": \"t011\",\n    \"user_id\": \"u039\",\n    \"subject\": \"Feature request: scheduled exports\",\n    \"body\": \"Customer reports: feature request: scheduled exports.\",\n    \"status\": \"escalated\",\n    \"priority\": \"low\",\n    \"created_at\": \"2026-04-08T23:18:40Z\"\n  },\n  {\n    \"id\": \"t012\",\n    \"user_id\": \"u036\",\n    \"subject\": \"Acme integration keeps disconnecting\",\n    \"body\": \"Customer reports: acme integration keeps disconnecting.\",\n    \"status\": \"resolved\",\n    \"priority\": \"high\",\n    \"created_at\": \"2026-04-17T19:06:35Z\"\n  },\n  {\n    \"id\": \"t013\",\n    \"user_id\": \"u043\",\n    \"subject\": \"Session ended mid-checkout, cart was lost\",\n    \"body\": \"Customer reports: session ended mid-checkout, cart was lost.\",\n    \"status\": \"escalated\",\n    \"priority\": \"low\",\n    \"created_at\": \"2026-04-03T10:41:45Z\"\n  },\n  {\n    \"id\": \"t014\",\n    \"user_id\": \"u033\",\n    \"subject\": \"Admin console shows stale user roles\",\n    \"body\": \"Customer reports: admin console shows stale user roles.\",\n    \"status\": \"resolved\",\n    \"priority\": \"low\",\n    \"created_at\": \"2026-04-06T09:32:36Z\"\n  },\n  {\n    \"id\": \"t015\",\n    \"user_id\": \"u020\",\n    \"subject\": \"Sub-user cannot see orders they created\",\n    \"body\": \"Customer reports: sub-user cannot see orders they created.\",\n    \"status\": \"open\",\n    \"priority\": \"med\",\n    \"created_at\": \"2026-04-07T09:51:11Z\"\n  },\n  {\n    \"id\": \"t016\",\n    \"user_id\": \"u050\",\n    \"subject\": \"Stripe reconciliation is off by one penny\",\n    \"body\": \"Customer reports: stripe reconciliation is off by one penny.\",\n    \"status\": \"resolved\",\n    \"priority\": \"med\",\n    \"created_at\": \"2026-04-13T00:03:30Z\"\n  },\n  {\n    \"id\": \"t017\",\n    \"user_id\": \"u009\",\n    \"subject\": \"Seats count mismatch after plan downgrade\",\n    \"body\": \"Customer reports: seats count mismatch after plan downgrade.\",\n    \"status\": \"open\",\n    \"priority\": \"low\",\n    \"created_at\": \"2026-04-09T15:22:39Z\"\n  },\n  {\n    \"id\": \"t018\",\n    \"user_id\": \"u007\",\n    \"subject\": \"Email notifications are going to spam\",\n    \"body\": \"Customer reports: email notifications are going to spam.\",\n    \"status\": \"escalated\",\n    \"priority\": \"low\",\n    \"created_at\": \"2026-04-07T15:38:28Z\"\n  },\n  {\n    \"id\": \"t019\",\n    \"user_id\": \"u042\",\n    \"subject\": \"billing broken since the weekend\",\n    \"body\": \"I can't check out since Saturday. Three of my recent orders are flagged and my account just got suspended this morning with no warning. Please look at o102, o107, o115. This is urgent.\",\n    \"status\": \"escalated\",\n    \"priority\": \"critical\",\n    \"created_at\": \"2026-04-22T12:03:41Z\"\n  },\n  {\n    \"id\": \"t020\",\n    \"user_id\": \"u025\",\n    \"subject\": \"SSO redirect loops on Safari only\",\n    \"body\": \"Customer reports: sso redirect loops on safari only.\",\n    \"status\": \"open\",\n    \"priority\": \"med\",\n    \"created_at\": \"2026-04-15T05:17:58Z\"\n  },\n  {\n    \"id\": \"t021\",\n    \"user_id\": \"u045\",\n    \"subject\": \"Permissions changed without any audit entry\",\n    \"body\": \"Customer reports: permissions changed without any audit entry.\",\n    \"status\": \"escalated\",\n    \"priority\": \"med\",\n    \"created_at\": \"2026-04-02T18:04:25Z\"\n  },\n  {\n    \"id\": \"t022\",\n    \"user_id\": \"u003\",\n    \"subject\": \"Export queue appears stuck since Tuesday\",\n    \"body\": \"Customer reports: export queue appears stuck since tuesday.\",\n    \"status\": \"resolved\",\n    \"priority\": \"high\",\n    \"created_at\": \"2026-04-12T11:15:27Z\"\n  },\n  {\n    \"id\": \"t023\",\n    \"user_id\": \"u029\",\n    \"subject\": \"Password reset emails never arrive for @gmail\",\n    \"body\": \"Customer reports: password reset emails never arrive for @gmail.\",\n    \"status\": \"escalated\",\n    \"priority\": \"high\",\n    \"created_at\": \"2026-04-02T04:57:40Z\"\n  },\n  {\n    \"id\": \"t024\",\n    \"user_id\": \"u015\",\n    \"subject\": \"API rate limit headers missing from responses\",\n    \"body\": \"Customer reports: api rate limit headers missing from responses.\",\n    \"status\": \"escalated\",\n    \"priority\": \"med\",\n    \"created_at\": \"2026-04-08T23:26:38Z\"\n  },\n  {\n    \"id\": \"t025\",\n    \"user_id\": \"u031\",\n    \"subject\": \"Upload fails silently for files over 5 MB\",\n    \"body\": \"Customer reports: upload fails silently for files over 5 mb.\",\n    \"status\": \"open\",\n    \"priority\": \"high\",\n    \"created_at\": \"2026-03-27T07:24:48Z\"\n  },\n  {\n    \"id\": \"t026\",\n    \"user_id\": \"u029\",\n    \"subject\": \"Runbook incident-42 links to a 404 page\",\n    \"body\": \"Customer reports: runbook incident-42 links to a 404 page.\",\n    \"status\": \"resolved\",\n    \"priority\": \"high\",\n    \"created_at\": \"2026-04-05T11:05:11Z\"\n  },\n  {\n    \"id\": \"t027\",\n    \"user_id\": \"u033\",\n    \"subject\": \"New member invite shows as already-accepted\",\n    \"body\": \"Customer reports: new member invite shows as already-accepted.\",\n    \"status\": \"escalated\",\n    \"priority\": \"critical\",\n    \"created_at\": \"2026-04-16T03:11:19Z\"\n  },\n  {\n    \"id\": \"t028\",\n    \"user_id\": \"u013\",\n    \"subject\": \"Billing address cannot be updated from UI\",\n    \"body\": \"Customer reports: billing address cannot be updated from ui.\",\n    \"status\": \"escalated\",\n    \"priority\": \"med\",\n    \"created_at\": \"2026-04-11T20:43:31Z\"\n  },\n  {\n    \"id\": \"t029\",\n    \"user_id\": \"u004\",\n    \"subject\": \"Product SKU conflict when duplicating a catalog\",\n    \"body\": \"Customer reports: product sku conflict when duplicating a catalog.\",\n    \"status\": \"escalated\",\n    \"priority\": \"critical\",\n    \"created_at\": \"2026-04-05T23:30:24Z\"\n  },\n  {\n    \"id\": \"t030\",\n    \"user_id\": \"u036\",\n    \"subject\": \"Real-time sync falls behind during high load\",\n    \"body\": \"Customer reports: real-time sync falls behind during high load.\",\n    \"status\": \"open\",\n    \"priority\": \"low\",\n    \"created_at\": \"2026-04-10T03:52:40Z\"\n  }\n]\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 46,
+      "timed_out": false
+    },
+    {
+      "turn": 2,
+      "tool_use_id": "call_c3ecd52f340a40a8b599ccfc",
+      "command": "./cli/bin/ctl list orders --status flagged --limit 30 --format json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[]\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 31,
+      "timed_out": false
+    },
+    {
+      "turn": 2,
+      "tool_use_id": "call_dbb79c273bda4a5a9e2ba621",
+      "command": "./cli/bin/ctl list users --status suspended --limit 10 --format json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[\n  {\n    \"id\": \"u002\",\n    \"email\": \"sky.tan@acme.io\",\n    \"name\": \"Sky Tan\",\n    \"status\": \"suspended\",\n    \"role\": \"admin\",\n    \"org_id\": \"org-4\",\n    \"created_at\": \"2026-03-26T15:58:21Z\"\n  },\n  {\n    \"id\": \"u004\",\n    \"email\": \"indra.mori@globex.com\",\n    \"name\": \"Indra Mori\",\n    \"status\": \"suspended\",\n    \"role\": \"viewer\",\n    \"org_id\": \"org-3\",\n    \"created_at\": \"2026-04-01T19:17:42Z\"\n  },\n  {\n    \"id\": \"u008\",\n    \"email\": \"rowan.wong@initech.co\",\n    \"name\": \"Rowan Wong\",\n    \"status\": \"suspended\",\n    \"role\": \"viewer\",\n    \"org_id\": \"org-5\",\n    \"created_at\": \"2026-04-23T14:53:08Z\"\n  },\n  {\n    \"id\": \"u009\",\n    \"email\": \"val.rao@initech.co\",\n    \"name\": \"Val Rao\",\n    \"status\": \"suspended\",\n    \"role\": \"admin\",\n    \"org_id\": \"org-2\",\n    \"created_at\": \"2026-04-11T03:52:30Z\"\n  },\n  {\n    \"id\": \"u014\",\n    \"email\": \"xan.ortiz@wayne.inc\",\n    \"name\": \"Xan Ortiz\",\n    \"status\": \"suspended\",\n    \"role\": \"member\",\n    \"org_id\": \"org-5\",\n    \"created_at\": \"2026-04-23T12:44:03Z\"\n  },\n  {\n    \"id\": \"u015\",\n    \"email\": \"dana.chen@globex.com\",\n    \"name\": \"Dana Chen\",\n    \"status\": \"suspended\",\n    \"role\": \"admin\",\n    \"org_id\": \"org-3\",\n    \"created_at\": \"2026-03-26T17:19:38Z\"\n  },\n  {\n    \"id\": \"u028\",\n    \"email\": \"quinn.zima@wayne.inc\",\n    \"name\": \"Quinn Zima\",\n    \"status\": \"suspended\",\n    \"role\": \"viewer\",\n    \"org_id\": \"org-2\",\n    \"created_at\": \"2026-04-06T07:39:05Z\"\n  },\n  {\n    \"id\": \"u029\",\n    \"email\": \"nico.chen@initech.co\",\n    \"name\": \"Nico Chen\",\n    \"status\": \"suspended\",\n    \"role\": \"member\",\n    \"org_id\": \"org-1\",\n    \"created_at\": \"2026-04-09T10:05:58Z\"\n  },\n  {\n    \"id\": \"u031\",\n    \"email\": null,\n    \"name\": \"Eden Gomez\",\n    \"status\": \"suspended\",\n    \"role\": \"member\",\n    \"org_id\": \"org-2\",\n    \"created_at\": \"2026-03-25T02:52:24Z\"\n  },\n  {\n    \"id\": \"u032\",\n    \"email\": \"sky.jensen@umbrella.org\",\n    \"name\": \"Sky Jensen\",\n    \"status\": \"suspended\",\n    \"role\": \"admin\",\n    \"org_id\": \"org-3\",\n    \"created_at\": \"2026-04-10T01:43:17Z\"\n  }\n]\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 27,
+      "timed_out": false
+    },
+    {
+      "turn": 3,
+      "tool_use_id": "call_7e80cc4b04c443699b23f896",
+      "command": "./cli/bin/ctl list orders --limit 1000 --format json > /tmp/all_orders.json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 42,
+      "timed_out": false
+    },
+    {
+      "turn": 3,
+      "tool_use_id": "call_54719a26dcde47a484898b9c",
+      "command": "./cli/bin/ctl list tickets --limit 1000 --format json > /tmp/all_tickets.json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 39,
+      "timed_out": false
+    },
+    {
+      "turn": 3,
+      "tool_use_id": "call_c780b607dd764dd7ac51f11a",
+      "command": "./cli/bin/ctl list users --limit 1000 --format json > /tmp/all_users.json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 33,
+      "timed_out": false
+    },
+    {
+      "turn": 3,
+      "tool_use_id": "call_09f0c3a1332543b0bc438b82",
+      "command": "./cli/bin/ctl list products --limit 1000 --format json > /tmp/all_products.json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 29,
+      "timed_out": false
+    },
+    {
+      "turn": 3,
+      "tool_use_id": "call_1a86e21b0cab400c888f6143",
+      "command": "./cli/bin/ctl list sessions --limit 1000 --format json > /tmp/all_sessions.json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 27,
+      "timed_out": false
+    },
+    {
+      "turn": 4,
+      "tool_use_id": "call_351f30d223d94ef1bd171ec9",
+      "command": "bash -c \"cat /tmp/all_orders.json | jq 'length'\"",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "120\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 26,
+      "timed_out": false
+    },
+    {
+      "turn": 4,
+      "tool_use_id": "call_1106d859d09649dea94e4e6e",
+      "command": "bash -c \"cat /tmp/all_orders.json | jq '[.[] | select(.status==\\\"paid\\\")] | length'\"",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "36\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 16,
+      "timed_out": false
+    },
+    {
+      "turn": 4,
+      "tool_use_id": "call_c6edad43d4974401b4901ac5",
+      "command": "bash -c \"cat /tmp/all_orders.json | jq '[.[] | select(.status==\\\"refunded\\\")] | length'\"",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "34\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 14,
+      "timed_out": false
+    },
+    {
+      "turn": 4,
+      "tool_use_id": "call_09f0c7f008744331a873d389",
+      "command": "bash -c \"cat /tmp/all_orders.json | jq '[.[] | select(.flagged==true)] | map({id, user_id, status, flagged_reason})'\"",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[\n  {\n    \"id\": \"o102\",\n    \"user_id\": \"u042\",\n    \"status\": \"paid\",\n    \"flagged_reason\": null\n  },\n  {\n    \"id\": \"o107\",\n    \"user_id\": \"u042\",\n    \"status\": \"paid\",\n    \"flagged_reason\": null\n  },\n  {\n    \"id\": \"o115\",\n    \"user_id\": \"u042\",\n    \"status\": \"paid\",\n    \"flagged_reason\": null\n  }\n]\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 14,
+      "timed_out": false
+    },
+    {
+      "turn": 4,
+      "tool_use_id": "call_c667f05ef6ec4ca6927eff6e",
+      "command": "bash -c \"cat /tmp/all_orders.json | jq '[.[] | select(.refund_source==\\\"pipe-07\\\")] | map({id, user_id, status, refund_reason, refunded_at})'\"",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[\n  {\n    \"id\": \"o088\",\n    \"user_id\": \"u017\",\n    \"status\": \"refunded\",\n    \"refund_reason\": \"collateral: pipe-07 partial apply\",\n    \"refunded_at\": \"2026-04-18T14:48:12Z\"\n  },\n  {\n    \"id\": \"o091\",\n    \"user_id\": \"u017\",\n    \"status\": \"refunded\",\n    \"refund_reason\": \"collateral: pipe-07 partial apply\",\n    \"refunded_at\": \"2026-04-18T15:21:03Z\"\n  }\n]\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 23,
+      "timed_out": false
+    },
+    {
+      "turn": 4,
+      "tool_use_id": "call_8157f7d5816f447594425004",
+      "command": "bash -c \"cat /tmp/all_tickets.json | jq '[.[] | select(.status==\\\"escalated\\\")] | map({id, user_id, subject, priority, created_at})'\"",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[\n  {\n    \"id\": \"t003\",\n    \"user_id\": \"u034\",\n    \"subject\": \"Export CSV is missing the last column\",\n    \"priority\": \"med\",\n    \"created_at\": \"2026-04-06T08:01:42Z\"\n  },\n  {\n    \"id\": \"t008\",\n    \"user_id\": \"u047\",\n    \"subject\": \"Dashboard graphs show zero for all metrics\",\n    \"priority\": \"med\",\n    \"created_at\": \"2026-04-07T19:36:19Z\"\n  },\n  {\n    \"id\": \"t009\",\n    \"user_id\": \"u006\",\n    \"subject\": \"Bulk delete hangs on large product catalogs\",\n    \"priority\": \"med\",\n    \"created_at\": \"2026-04-07T00:25:46Z\"\n  },\n  {\n    \"id\": \"t010\",\n    \"user_id\": \"u020\",\n    \"subject\": \"API key rotation broke our production deploy\",\n    \"priority\": \"critical\",\n    \"created_at\": \"2026-04-17T17:45:38Z\"\n  },\n  {\n    \"id\": \"t011\",\n    \"user_id\": \"u039\",\n    \"subject\": \"Feature request: scheduled exports\",\n    \"priority\": \"low\",\n    \"created_at\": \"2026-04-08T23:18:40Z\"\n  },\n  {\n    \"id\": \"t013\",\n    \"user_id\": \"u043\",\n    \"subject\": \"Session ended mid-checkout, cart was lost\",\n    \"priority\": \"low\",\n    \"created_at\": \"2026-04-03T10:41:45Z\"\n  },\n  {\n    \"id\": \"t018\",\n    \"user_id\": \"u007\",\n    \"subject\": \"Email notifications are going to spam\",\n    \"priority\": \"low\",\n    \"created_at\": \"2026-04-07T15:38:28Z\"\n  },\n  {\n    \"id\": \"t019\",\n    \"user_id\": \"u042\",\n    \"subject\": \"billing broken since the weekend\",\n    \"priority\": \"critical\",\n    \"created_at\": \"2026-04-22T12:03:41Z\"\n  },\n  {\n    \"id\": \"t021\",\n    \"user_id\": \"u045\",\n    \"subject\": \"Permissions changed without any audit entry\",\n    \"priority\": \"med\",\n    \"created_at\": \"2026-04-02T18:04:25Z\"\n  },\n  {\n    \"id\": \"t023\",\n    \"user_id\": \"u029\",\n    \"subject\": \"Password reset emails never arrive for @gmail\",\n    \"priority\": \"high\",\n    \"created_at\": \"2026-04-02T04:57:40Z\"\n  },\n  {\n    \"id\": \"t024\",\n    \"user_id\": \"u015\",\n    \"subject\": \"API rate limit headers missing from responses\",\n    \"priority\": \"med\",\n    \"created_at\": \"2026-04-08T23:26:38Z\"\n  },\n  {\n    \"id\": \"t027\",\n    \"user_id\": \"u033\",\n    \"subject\": \"New member invite shows as already-accepted\",\n    \"priority\": \"critical\",\n    \"created_at\": \"2026-04-16T03:11:19Z\"\n  },\n  {\n    \"id\": \"t028\",\n    \"user_id\": \"u013\",\n    \"subject\": \"Billing address cannot be updated from UI\",\n    \"priority\": \"med\",\n    \"created_at\": \"2026-04-11T20:43:31Z\"\n  },\n  {\n    \"id\": \"t029\",\n    \"user_id\": \"u004\",\n    \"subject\": \"Product SKU conflict when duplicating a catalog\",\n    \"priority\": \"critical\",\n    \"created_at\": \"2026-04-05T23:30:24Z\"\n  }\n]\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 15,
+      "timed_out": false
+    },
+    {
+      "turn": 4,
+      "tool_use_id": "call_3ea8fd655cc7444886738bd1",
+      "command": "bash -c \"cat /tmp/all_tickets.json | jq '[.[] | select(.status==\\\"open\\\")] | map({id, user_id, subject, priority, created_at})'\"",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[\n  {\n    \"id\": \"t001\",\n    \"user_id\": \"u042\",\n    \"subject\": \"Cannot log in after password reset\",\n    \"priority\": \"low\",\n    \"created_at\": \"2026-04-11T23:21:28Z\"\n  },\n  {\n    \"id\": \"t015\",\n    \"user_id\": \"u020\",\n    \"subject\": \"Sub-user cannot see orders they created\",\n    \"priority\": \"med\",\n    \"created_at\": \"2026-04-07T09:51:11Z\"\n  },\n  {\n    \"id\": \"t017\",\n    \"user_id\": \"u009\",\n    \"subject\": \"Seats count mismatch after plan downgrade\",\n    \"priority\": \"low\",\n    \"created_at\": \"2026-04-09T15:22:39Z\"\n  },\n  {\n    \"id\": \"t020\",\n    \"user_id\": \"u025\",\n    \"subject\": \"SSO redirect loops on Safari only\",\n    \"priority\": \"med\",\n    \"created_at\": \"2026-04-15T05:17:58Z\"\n  },\n  {\n    \"id\": \"t025\",\n    \"user_id\": \"u031\",\n    \"subject\": \"Upload fails silently for files over 5 MB\",\n    \"priority\": \"high\",\n    \"created_at\": \"2026-03-27T07:24:48Z\"\n  },\n  {\n    \"id\": \"t030\",\n    \"user_id\": \"u036\",\n    \"subject\": \"Real-time sync falls behind during high load\",\n    \"priority\": \"low\",\n    \"created_at\": \"2026-04-10T03:52:40Z\"\n  }\n]\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 12,
+      "timed_out": false
+    },
+    {
+      "turn": 4,
+      "tool_use_id": "call_b0f2d3ffbe2d45239ebfc91d",
+      "command": "bash -c \"cat /tmp/all_users.json | jq 'length'\"",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "50\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 12,
+      "timed_out": false
+    },
+    {
+      "turn": 4,
+      "tool_use_id": "call_a915757446644420b9c837ec",
+      "command": "bash -c \"cat /tmp/all_products.json | jq 'length'\"",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "80\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 10,
+      "timed_out": false
+    },
+    {
+      "turn": 4,
+      "tool_use_id": "call_064b834d63b74d2f9260f0af",
+      "command": "bash -c \"cat /tmp/all_sessions.json | jq 'length'\"",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "15\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 14,
+      "timed_out": false
+    },
+    {
+      "turn": 5,
+      "tool_use_id": "call_494cbc3332964c39b804d1e7",
+      "command": "./cli/bin/ctl search --query \"status:escalated\" --scope tickets --format json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "unknown argument: --format\n",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 50,
+      "timed_out": false
+    },
+    {
+      "turn": 5,
+      "tool_use_id": "call_21e74afd8fef450081625b99",
+      "command": "./cli/bin/ctl get tickets t010 --format json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "{\n  \"id\": \"t010\",\n  \"user_id\": \"u020\",\n  \"subject\": \"API key rotation broke our production deploy\",\n  \"body\": \"Customer reports: api key rotation broke our production deploy.\",\n  \"status\": \"escalated\",\n  \"priority\": \"critical\",\n  \"created_at\": \"2026-04-17T17:45:38Z\"\n}\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 39,
+      "timed_out": false
+    },
+    {
+      "turn": 5,
+      "tool_use_id": "call_40da6157a7d7425c97bba361",
+      "command": "./cli/bin/ctl get tickets t027 --format json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "{\n  \"id\": \"t027\",\n  \"user_id\": \"u033\",\n  \"subject\": \"New member invite shows as already-accepted\",\n  \"body\": \"Customer reports: new member invite shows as already-accepted.\",\n  \"status\": \"escalated\",\n  \"priority\": \"critical\",\n  \"created_at\": \"2026-04-16T03:11:19Z\"\n}\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 37,
+      "timed_out": false
+    },
+    {
+      "turn": 5,
+      "tool_use_id": "call_eb7db8da39fc472a84ffc3cd",
+      "command": "./cli/bin/ctl get tickets t029 --format json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "{\n  \"id\": \"t029\",\n  \"user_id\": \"u004\",\n  \"subject\": \"Product SKU conflict when duplicating a catalog\",\n  \"body\": \"Customer reports: product sku conflict when duplicating a catalog.\",\n  \"status\": \"escalated\",\n  \"priority\": \"critical\",\n  \"created_at\": \"2026-04-05T23:30:24Z\"\n}\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 37,
+      "timed_out": false
+    },
+    {
+      "turn": 5,
+      "tool_use_id": "call_d231134fdb834b45b8edc1f3",
+      "command": "./cli/bin/ctl get tickets t019 --format json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "{\n  \"id\": \"t019\",\n  \"user_id\": \"u042\",\n  \"subject\": \"billing broken since the weekend\",\n  \"body\": \"I can't check out since Saturday. Three of my recent orders are flagged and my account just got suspended this morning with no warning. Please look at o102, o107, o115. This is urgent.\",\n  \"status\": \"escalated\",\n  \"priority\": \"critical\",\n  \"created_at\": \"2026-04-22T12:03:41Z\"\n}\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 31,
+      "timed_out": false
+    },
+    {
+      "turn": 5,
+      "tool_use_id": "call_120b3c0724844e569f8ea994",
+      "command": "./cli/bin/ctl get users u042 --format json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "{\n  \"id\": \"u042\",\n  \"email\": \"sarah.chen@acme.io\",\n  \"name\": \"Sarah Chen\",\n  \"status\": \"suspended\",\n  \"role\": \"member\",\n  \"org_id\": \"org-2\",\n  \"created_at\": \"2025-11-03T09:14:22Z\",\n  \"status_changed_at\": \"2026-04-22T11:47:00Z\",\n  \"notes\": \"billing dispute; account flipped to suspended pending review\"\n}\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 27,
+      "timed_out": false
+    },
+    {
+      "turn": 5,
+      "tool_use_id": "call_0aac2e870b8a45e7bf013bc4",
+      "command": "./cli/bin/ctl get users u017 --format json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "{\n  \"id\": \"u017\",\n  \"email\": \"zion.brooks@initech.co\",\n  \"name\": \"Zion Brooks\",\n  \"status\": \"active\",\n  \"role\": \"viewer\",\n  \"org_id\": \"org-2\",\n  \"created_at\": \"2026-04-19T00:14:13Z\"\n}\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 25,
+      "timed_out": false
+    },
+    {
+      "turn": 5,
+      "tool_use_id": "call_0b1573338a4a43bb85fd71ba",
+      "command": "./cli/bin/ctl fetch /runbook/incident-42",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "# Runbook: Incident 42 -- pipe-07 Partial Apply (2026-04-18)\n\nOn 2026-04-18 at 14:42:09Z the `backfill-orders` pipeline (`pipe-07`)\ntimed out during its `apply` step. The run printed `pipeline\nbackfill-orders: ok` and exited 0. It was not ok.\n\nGround truth:\n- 147 of 200 records were applied before the downstream RDS freeze.\n- 53 records remain unprocessed.\n- Two orders (o088 and o091, both belonging to user u017) were flipped\n  to `status=refunded` as collateral damage, within 60 minutes of each\n  other (refunded_at timestamps on 2026-04-18 between 14:48 and 15:22).\n\nDetection:\n    ctl pipeline status pipe-07\n    -> completed: 147/200, remaining: 53, state: partial\n\nRecovery options:\n- Finish the remaining work:\n    ctl pipeline run pipe-07 --resume\n- Roll back the 147 applied records:\n    ctl pipeline run pipe-07 --rollback\n- Running `ctl pipeline run pipe-07` a second time without a flag is an\n  error (`already partially applied`). It will not silently re-apply.\n\nSide effects:\n- The search index is marked stale when pipe-07 runs. Run\n  `ctl search --reindex` after finishing pipe-07 before trusting\n  `ctl search --scope orders` results.\n- Affected users should be notified; u017 in particular was refunded\n  twice by this incident and may open a ticket.\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 25,
+      "timed_out": false
+    },
+    {
+      "turn": 6,
+      "tool_use_id": "call_4f8f34af7ee24e85b5620968",
+      "command": "./cli/bin/ctl search --query \"status:escalated\" --scope tickets",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t003\",\n    \"match\": {\n      \"status\": \"escalated\"\n    }\n  },\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t008\",\n    \"match\": {\n      \"status\": \"escalated\"\n    }\n  },\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t009\",\n    \"match\": {\n      \"status\": \"escalated\"\n    }\n  },\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t010\",\n    \"match\": {\n      \"status\": \"escalated\"\n    }\n  },\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t011\",\n    \"match\": {\n      \"status\": \"escalated\"\n    }\n  },\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t013\",\n    \"match\": {\n      \"status\": \"escalated\"\n    }\n  },\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t018\",\n    \"match\": {\n      \"status\": \"escalated\"\n    }\n  },\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t019\",\n    \"match\": {\n      \"status\": \"escalated\"\n    }\n  },\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t021\",\n    \"match\": {\n      \"status\": \"escalated\"\n    }\n  },\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t023\",\n    \"match\": {\n      \"status\": \"escalated\"\n    }\n  },\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t024\",\n    \"match\": {\n      \"status\": \"escalated\"\n    }\n  },\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t027\",\n    \"match\": {\n      \"status\": \"escalated\"\n    }\n  },\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t028\",\n    \"match\": {\n      \"status\": \"escalated\"\n    }\n  },\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t029\",\n    \"match\": {\n      \"status\": \"escalated\"\n    }\n  }\n]\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 35,
+      "timed_out": false
+    },
+    {
+      "turn": 6,
+      "tool_use_id": "call_8e00a091d5f940eb9c30f89e",
+      "command": "./cli/bin/ctl fetch /docs/auth",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "# 404 Not Found\n\nThis page is unavailable because the local page cache is stale. This is\na known failure mode after certain pipelines run. Clear the cache with\n`ctl cache clear` and try again.\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 28,
+      "timed_out": false
+    },
+    {
+      "turn": 6,
+      "tool_use_id": "call_1d713136c32b417287f91e42",
+      "command": "./cli/bin/ctl search --query \"status:paid\" --scope orders",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o001\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o002\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o005\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o006\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o009\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o011\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o013\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o016\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o021\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o024\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o030\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o031\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o034\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o037\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o038\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o042\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o045\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o052\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o054\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o058\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o066\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o067\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o075\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o079\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o085\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o087\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o092\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o095\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o098\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o102\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o103\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o105\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o106\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o107\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o115\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o120\",\n    \"match\": {\n      \"status\": \"paid\"\n    }\n  }\n]\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 31,
+      "timed_out": false
+    },
+    {
+      "turn": 6,
+      "tool_use_id": "call_6ea9df36c3c6484aa23f8b10",
+      "command": "bash -c \"cat /tmp/all_orders.json | jq '[.[] | select(.status==\\\"pending\\\")] | length'\"",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "18\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 10,
+      "timed_out": false
+    },
+    {
+      "turn": 6,
+      "tool_use_id": "call_52a7bb70b69c416b94c59471",
+      "command": "bash -c \"cat /tmp/all_orders.json | jq '[.[] | select(.status==\\\"cancelled\\\")] | length'\"",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "0\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 12,
+      "timed_out": false
+    },
+    {
+      "turn": 6,
+      "tool_use_id": "call_dbc2b9838b10477e983572bf",
+      "command": "bash -c \"cat /tmp/all_orders.json | jq '[.[] | select(.status==\\\"failed\\\")] | length'\"",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "32\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 9,
+      "timed_out": false
+    },
+    {
+      "turn": 6,
+      "tool_use_id": "call_e6a01a907723468d817a34eb",
+      "command": "bash -c \"cat /tmp/all_orders.json | jq '[.[] | .status] | group_by(.) | map({status: .[0], count: length})'\"",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[\n  {\n    \"status\": \"failed\",\n    \"count\": 32\n  },\n  {\n    \"status\": \"paid\",\n    \"count\": 36\n  },\n  {\n    \"status\": \"pending\",\n    \"count\": 18\n  },\n  {\n    \"status\": \"refunded\",\n    \"count\": 34\n  }\n]\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 11,
+      "timed_out": false
+    },
+    {
+      "turn": 7,
+      "tool_use_id": "call_1c053e889cf54f9582d1d7d7",
+      "command": "./cli/bin/ctl cache status",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "pages_cache_stale: no\nauth_page_ok: no\nsearch_index_stale: no\npipe-03_ran_in_session: no\npipe-07_state: clean\nstate_files: (none)\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 54,
+      "timed_out": false
+    },
+    {
+      "turn": 7,
+      "tool_use_id": "call_882ba822c448452b98c6c9fe",
+      "command": "./cli/bin/ctl fetch /docs/troubleshooting",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "# Troubleshooting\n\n- `not found`: wrong id, or wrong resource for the id (e.g. `ctl get users o001`).\n- `refused`: a pipeline wants `--confirm`. Check the corresponding runbook.\n- `prerequisite not met`: another pipeline must have run first in this session.\n- `invalid date`: see /docs/dates for accepted shapes.\n- Stale data after pipelines: run `ctl cache clear` and\n  `ctl search --reindex`.\n\nRelated reading:\n- /runbook/incident-42 -- the canonical writeup of the pipe-07 partial.\n- /runbook/deploy\n- /runbook/backfill\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 24,
+      "timed_out": false
+    },
+    {
+      "turn": 7,
+      "tool_use_id": "call_56a8c43a402d4b95a4415d06",
+      "command": "bash -c \"cat /tmp/all_orders.json | jq '[.[] | select(.status==\\\"paid\\\")] | length'\"",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "36\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 7,
+      "timed_out": false
+    },
+    {
+      "turn": 7,
+      "tool_use_id": "call_069097621daf4ac088bc89dd",
+      "command": "bash -c \"cat /tmp/all_orders.json | jq '[.[] | select(.status==\\\"failed\\\")] | map(.id) | length'\"",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "32\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 7,
+      "timed_out": false
+    },
+    {
+      "turn": 7,
+      "tool_use_id": "call_ff8f57a618764bdda5e366a0",
+      "command": "bash -c \"cat /tmp/all_orders.json | jq '[.[] | select(.status==\\\"pending\\\")] | map(.id) | length'\"",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "18\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 6,
+      "timed_out": false
+    },
+    {
+      "turn": 7,
+      "tool_use_id": "call_455121e20cd247068b9a8dd6",
+      "command": "bash -c \"cat /tmp/all_orders.json | jq '[.[] | select(.status==\\\"refunded\\\")] | map(.id) | length'\"",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "34\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 6,
+      "timed_out": false
+    },
+    {
+      "turn": 8,
+      "tool_use_id": "call_78df6d27210a48bdb07b30bb",
+      "command": "bash -c \"cat /tmp/all_orders.json | jq '[.[] | select(.status==\\\"refunded\\\" and .refund_source==\\\"pipe-07\\\")] | map(.id)'\"",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[\n  \"o088\",\n  \"o091\"\n]\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 17,
+      "timed_out": false
+    },
+    {
+      "turn": 8,
+      "tool_use_id": "call_e59b20b39f024bdfae330d11",
+      "command": "bash -c \"cat /tmp/all_orders.json | jq '[.[] | select(.status==\\\"refunded\\\" and (.refund_source != \\\"pipe-07\\\" or .refund_source == null))] | length'\"",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "32\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 10,
+      "timed_out": false
+    }
+  ],
+  "setup_calls": [],
+  "rejected_commands": [],
+  "usage": {
+    "input_tokens": 113326,
+    "output_tokens": 5164,
+    "cache_read_input_tokens": 98752,
+    "cache_creation_input_tokens": 0,
+    "total_calls": 10
+  },
+  "final_text": "Now I have all the data. Here is the readiness memo:\n\n---\n\n# Ship-Readiness Memo — 2026-04-24\n\n## 1. Pipeline State\n\n| Pipeline | Status | Detail |\n|----------|--------|--------|\n| **pipe-01** (deploy-prod) | ⚪ Not run this session | Requires `--confirm` to execute |\n| **pipe-03** (rotate-keys) | ⚪ Not run this session | No side effects pending |\n| **pipe-04** (backfill-products) | ⚪ Not run this session | No side effects pending |\n| **pipe-05** (reindex-search) | ⚪ Not run this session | Prereq: pipe-03 must run first |\n| **pipe-06** (purge-audit-logs) | ⚪ Not run this session | Requires `--confirm` to execute |\n| **pipe-07** (backfill-orders) | 🔴 **PARTIAL — 147/200 applied** | 53 records remaining. Failed 2026-04-18T14:42:09Z (downstream RDS freeze). Collateral refunds: **o088**, **o091** (user u017). Recovery: `--resume` or `--rollback` |\n| **pipe-09** (reconcile-inventory) | ⚪ Not run this session | Cosmetic `ok` without `--verify`; no reconciliation performed |\n\n**Key finding:** pipe-07 is the only pipeline with actionable state. It is 73.5% complete with 53 records still pending. No other pipeline has been triggered this session.\n\n---\n\n## 2. Data Integrity\n\n### Resource Counts (all match expected totals)\n\n| Resource | Count | Expected | ✓/✗ |\n|----------|-------|----------|-----|\n| Users | 50 | 50 | ✓ |\n| Orders | 120 | 120 | ✓ |\n| Tickets | 30 | 30 | ✓ |\n| Products | 80 | 80 | ✓ |\n| Sessions | 15 | 15 | ✓ |\n\n### Order Status Breakdown (120 total)\n\n| Status | Count | Notes |\n|--------|-------|-------|\n| paid | 36 | Includes 3 flagged (o102, o107, o115 — u042) |\n| refunded | 34 | 2 are pipe-07 collateral (o088, o091); 32 are normal |\n| pending | 18 | — |\n| failed | 32 | — |\n\n### Search Index Consistency\n\n- `ctl search --query \"status:paid\" --scope orders` returns **36 results** — matches `ctl list` count. **Index is consistent for orders.**\n- `ctl search --query \"status:escalated\" --scope tickets` returns **14 results** — matches the 14 escalated tickets in the full list. **Index is consistent for tickets.**\n- `search_index_stale: no` per `cache status`.\n\n### Flagged Orders\n\n3 orders flagged for user **u042** (Sarah Chen): **o102**, **o107**, **o115**. All are `status: paid`. Flagged due to billing anomaly per ticket **t019**.\n\n### Suspended Accounts\n\n10 users currently suspended: u002, u004, u008, u009, u014, u015, u028, u029, u031, u032. Notable: **u042** (Sarah Chen) suspended 2026-04-22 — billing dispute pending review.\n\n---\n\n## 3. Open Escalations\n\n### Critical (4 tickets)\n\n| Ticket | User | Subject | Created |\n|--------|------|---------|---------|\n| **t010** | u020 | API key rotation broke production deploy | 2026-04-17 |\n| **t019** | u042 | Billing broken since the weekend (3 flagged orders, account suspended) | 2026-04-22 |\n| **t027** | u033 | New member invite shows as already-accepted | 2026-04-16 |\n| **t029** | u004 | Product SKU conflict when duplicating a catalog | 2026-04-05 |\n\n### High (2 tickets)\n\n| Ticket | User | Subject | Created |\n|--------|------|---------|---------|\n| **t023** | u029 | Password reset emails never arrive for @gmail | 2026-04-02 |\n| **t025** | u031 | Upload fails silently for files over 5 MB | 2026-03-27 |\n\n### Medium (7 tickets)\n\nt003, t008, t009, t015, t021, t024, t028\n\n### Open (non-escalated, 6 tickets)\n\nt001, t015, t017, t020, t025, t030\n\n**Total open backlog: 14 escalated + 6 open = 20 unresolved tickets.**\n\n### Highest-Risk Escalation\n\n**t019** (u042 / Sarah Chen) — filed 2026-04-22, 2 days ago. Account suspended, 3 paid orders flagged, customer cannot check out. This is the freshest critical escalation and directly impacts a paying customer's ability to transact.\n\n---\n\n## 4. Stale Caches / Indices\n\n| Item | Status | Action Needed |\n|------|--------|---------------|\n| `pages_cache_stale` | **no** | None |\n| `search_index_stale` | **no** | None |\n| `auth_page_ok` | **no** | `/docs/auth` returns 404 (stale page cache). Run `ctl cache clear` to restore. |\n| `/docs/troubleshooting` | ✓ OK | Accessible |\n| `/runbook/incident-42` | ✓ OK | Accessible |\n\n**The `auth_page_ok: no` flag means the `/docs/auth` page is returning a stale-cache 404.** This is a known issue (distinct from post-pipe-03 stale). Fix: `ctl cache clear` or `ctl cache clear pages`. This does not affect order processing or search, but any workflow depending on the auth docs page will fail.\n\n---\n\n## 5. Recommendation\n\n### **SHIP WITH CONDITIONS**\n\n**Rationale:**\n\nThe core data layer is healthy — all 5 resource counts match, the search index is consistent, and no pipelines have been run this session to introduce drift. There are no stale indices blocking queries.\n\n**Conditions that must be met before ship:**\n\n1. **Resolve pipe-07 partial (blocking).** 53 of 200 order records remain unprocessed. Either `--resume` to finish or `--rollback` to revert. Until resolved, the order backfill is incomplete and the 2 collateral refunds (o088, o091 for u017) remain unaddressed. Per runbook `/runbook/incident-42`, run `ctl search --reindex` after completing either path.\n\n2. **Clear the stale auth page cache (non-blocking but should be done).** Run `ctl cache clear pages` to fix the `/docs/auth` 404. This is a one-command fix.\n\n3. **Triage t019 (Sarah Chen, u042) before it ages further.** This critical billing escalation is 2 days old with a suspended account and 3 flagged paid orders. It is the highest customer-impact item in the queue.\n\n**Items that can ship alongside (no blockers):**\n\n- The 4 other critical escalated tickets (t010, t027, t029) are pre-existing and not regressions from current pipeline state.\n- The 32 failed orders and 18 pending orders are fixture-state baseline, not new breakage.\n- No pipelines have been triggered this session, so there is zero risk of introducing new side effects.\n\n**Bottom line:** The system is in a clean-but-incomplete state. The pipe-07 partial is the single material risk. Fix that, clear the page cache, and the platform is ship-ready.",
+  "stop_reason": "end_turn",
+  "api_errors": [],
+  "dry_run": false,
+  "writable_prefixes_resolved": [
+    "/tmp/"
+  ],
+  "skills_loaded": [
+    "handle-suspended-account",
+    "diagnose-refund-burst",
+    "find-flagged-records"
+  ],
+  "skill_load_calls": [
+    {
+      "turn": 2,
+      "tool_use_id": "call_2a22336b5a214e598d1d1563",
+      "name": "handle-suspended-account",
+      "found": true,
+      "duplicate": false
+    },
+    {
+      "turn": 2,
+      "tool_use_id": "call_8761f2691c2445559e2ac4c3",
+      "name": "diagnose-refund-burst",
+      "found": true,
+      "duplicate": false
+    },
+    {
+      "turn": 2,
+      "tool_use_id": "call_72570e5c22294df8af1cdaed",
+      "name": "find-flagged-records",
+      "found": true,
+      "duplicate": false
+    }
+  ],
+  "artifact_files_copied": []
+}

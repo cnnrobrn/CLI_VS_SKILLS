@@ -1,0 +1,29 @@
+id: "021"
+title: "Diff two orders belonging to the same user"
+bucket: stateful
+prompt: |
+  Find user u017's two most recent orders (by created_at). Diff them
+  and summarize the fields that changed between the two.
+rule_check:
+  - id: listed_u017_orders_paginated
+    assert: tool_called
+    match:
+      argv_regex: "^ctl (list|search).*orders.*u017.*--limit\\s+([1-9][0-9]+)|^ctl (list|search).*orders.*--limit\\s+([1-9][0-9]+).*u017"
+    weight: 2
+  - id: diffed_two_orders
+    assert: tool_called
+    match:
+      argv_regex: "^ctl diff o[0-9]{3} o[0-9]{3}"
+    weight: 3
+  - id: no_type_mismatch_diff
+    assert: no_tool_called
+    match:
+      argv_regex: "^ctl diff (u[0-9]{3} o[0-9]{3}|o[0-9]{3} u[0-9]{3})"
+    weight: 2
+  - id: sequence_list_then_diff
+    assert: tool_sequence
+    sequence:
+      - { argv_regex: "^ctl (list|search).*orders.*u017" }
+      - { argv_regex: "^ctl diff o[0-9]{3} o[0-9]{3}" }
+    weight: 1
+tags: [orders, users, diff, stateful, A1, A8, u017]

@@ -1,0 +1,1036 @@
+{
+  "task_id": "020",
+  "task_title": "Use search to find a doc, then fetch and summarize it",
+  "task_bucket": "stateful",
+  "task_tags": [
+    "search",
+    "fetch",
+    "pages",
+    "stateful",
+    "A5",
+    "A7"
+  ],
+  "arm": "cli-only",
+  "trial": 0,
+  "model": "xiaomi/mimo-v2.5",
+  "started_at": "2026-04-26T16:48:57.085375+00:00",
+  "ended_at": "2026-04-26T16:49:16.679784+00:00",
+  "wall_clock_seconds": 19.595,
+  "ctl_state_dir": "/Users/connorobrien/Documents/CLI_VS_SKILLS/results/xiaomi-mimo-tooled/020/cli-only/trial_0/ctl-state",
+  "workdir": "/Users/connorobrien/Documents/CLI_VS_SKILLS/results/xiaomi-mimo-tooled/020/cli-only/trial_0",
+  "system_prompt": "You are an autonomous agent being evaluated on a benchmark.\n\nEnvironment:\n- Your working directory is a repo root. You have ONE tool: `bash`.\n- A custom CLI named `ctl` lives at ./cli/bin/ctl (also reachable as `ctl`).\n- The CLI reads canned fixtures from disk and does NOT access the network.\n- The CLI honors a pinned \"now\" of 2026-04-24T00:00:00Z for --since filters.\n- Allowed executables: ./cli/bin/ctl, ctl, cat, ls, mkdir, head, tail, wc,\n  grep, jq, python3, echo, bash (only as `bash -c \"...\"`, and the inner\n  command is re-checked against the same allowlist).\n- You MAY redirect output to files under /tmp/ (and under $CTL_STATE_DIR).\n- Pipes (|), command chaining (;, &&, ||), and command substitution\n  ($(...) or backticks) inside a single command string are NOT allowed.\n  If you need to combine operations, wrap the whole line in\n  `bash -c \"cmd1 && cmd2\"` — each sub-command still has to pass the\n  allowlist.\n- Each command has a 30-second timeout.\n\nTask rules:\n- Follow the user's instructions exactly. Where the task asks you to write\n  output to a specific file path, write EXACTLY to that path.\n- If a command fails, read the error and try a different approach. Do not\n  retry the same failing command unchanged.\n- When you are finished, stop calling tools and provide a short final\n  answer. Many tasks will be graded on that final message, so be precise —\n  name IDs, files, and root causes explicitly.\n\n## Reference: cli/README.md\n\nThe following is the complete contents of cli/README.md. It is the only\ndocumentation you have for the `ctl` CLI. Discover any further behavior by\nrunning `ctl --help` and `ctl <subcommand> --help`.\n\n\n# ctl\n\nA deterministic fixture-backed CLI. No network. No live clock. Output for a\ngiven input is fixed.\n\n## Install\n\n```\ngit clone <repo>\ncd CLI_VS_SKILLS\n./cli/bin/ctl --help\n```\n\nRequires Python 3.9+. Stdlib-only (see `cli/requirements.txt`).\n\n## Synopsis\n\n```\nctl <command> [args...]\n```\n\n## Commands\n\n| Command                             | Description                                     |\n|-------------------------------------|-------------------------------------------------|\n| `ctl list <resource>`               | List records for a resource.                    |\n| `ctl get <resource> <id>`           | Fetch a single record.                          |\n| `ctl fetch <url-or-slug>`           | Print a fixture markdown page.                  |\n| `ctl search --query Q`              | Substring search across resource text fields.   |\n| `ctl diff <a> <b>`                  | Structured JSON diff of two records.            |\n| `ctl pipeline run <name>`           | Run a named pipeline.                           |\n| `ctl pipeline status <name>`        | Show last recorded state for a pipeline.        |\n| `ctl cache status`                  | Show cache / state flags.                       |\n| `ctl cache clear [<scope>]`         | Clear cached state (scope = pages/search/pipelines/all). |\n| `ctl version`                       | Print version.                                  |\n| `ctl --help`, `ctl <cmd> --help`    | Usage.                                          |\n\n## Resources\n\n`users` (50), `orders` (120), `tickets` (30), `products` (80), `sessions` (15).\n\n## Common options\n\n| Option                  | Commands      | Description                                  |\n|-------------------------|---------------|----------------------------------------------|\n| `--status <value>`      | `list`        | Filter rows by exact `status` match.         |\n| `--since <date>`        | `list`        | ISO date (`2026-04-20`), ISO datetime, or relative (`7d`, `24h`). |\n| `--limit <n>`           | `list`        | Maximum rows. Default: **10**.               |\n| `--format json\\|yaml\\|table` | `list`, `get` | Output format. Default: `table`.        |\n| `--query Q`             | `search`      | Required. Substring, or `field:value`.        |\n| `--scope <resource>`    | `search`      | Restrict to one resource.                    |\n| `--i`                   | `search`      | Case-insensitive. Default: case-sensitive.   |\n| `--reindex`             | `search`      | Rebuild the search index.                    |\n| `--confirm`             | `pipeline run`| Pass through a confirm gate.                 |\n| `--resume`              | `pipeline run`| Resume a partially-applied pipeline.         |\n| `--rollback`            | `pipeline run`| Roll back an applied pipeline.               |\n| `--verify`              | `pipeline run`| Run an extra verification pass.              |\n\n## Exit codes\n\n| Code | Meaning                                                       |\n|-----:|---------------------------------------------------------------|\n| `0`  | Success.                                                      |\n| `1`  | User error: not found, bad flag, invalid input.               |\n| `2`  | Refused: a pipeline needs `--confirm` or a prerequisite.      |\n\n## Environment\n\n| Variable            | Default             | Meaning                                     |\n|---------------------|---------------------|---------------------------------------------|\n| `CTL_FIXTURES_DIR`  | `<repo>/fixtures`   | Root of the fixture tree.                   |\n| `CTL_STATE_DIR`     | `~/.ctl-state/`     | Scratch state for cache / pipeline flags.   |\n\n## Determinism\n\nPinned \"now\" is `2026-04-24T00:00:00Z`. Relative `--since` values anchor to\nthat instant.\n\n## Version\n\n`1.0.0`\n",
+  "user_prompt": "Search the documentation corpus for content about \"authentication\".\nPick the most relevant page, fetch it, and give me a one-paragraph\nsummary.\n",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Search the documentation corpus for content about \"authentication\".\nPick the most relevant page, fetch it, and give me a one-paragraph\nsummary.\n"
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_159096fa129a432e9717c664",
+          "name": "bash",
+          "input": {
+            "command": "ctl search --query \"authentication\" --i"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_159096fa129a432e9717c664",
+          "content": "exit_code: 127\nstdout: <empty>\nstderr:\nexecutable not found: [Errno 2] No such file or directory: 'ctl'",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_5063ebe6e50a4705b8ab6cea",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl search --query \"authentication\" --i"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_5063ebe6e50a4705b8ab6cea",
+          "content": "exit_code: 0\nstdout:\n[]\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_9280afd3693443478125e2b8",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl search --query \"auth\" --i"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_9280afd3693443478125e2b8",
+          "content": "exit_code: 0\nstdout:\n[]\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_c6a1953957844824abcc1e7d",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl search --query \"login\" --i"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_1e335e867c63467f808cd2a2",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl search --query \"password\" --i"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_096fcdb6358f4bffa0374394",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl search --query \"token\" --i"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_dc3b12b5a2be4271ab86d5ab",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl search --query \"security\" --i"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_c6a1953957844824abcc1e7d",
+          "content": "exit_code: 0\nstdout:\n[]\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_1e335e867c63467f808cd2a2",
+          "content": "exit_code: 0\nstdout:\n[\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t001\",\n    \"match\": {\n      \"subject\": \"Cannot log in after password reset\",\n      \"body\": \"Customer reports: cannot log in after password reset.\"\n    }\n  },\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t023\",\n    \"match\": {\n      \"subject\": \"Password reset emails never arrive for @gmail\",\n      \"body\": \"Customer reports: password reset emails never arrive for @gmail.\"\n    }\n  }\n]\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_096fcdb6358f4bffa0374394",
+          "content": "exit_code: 0\nstdout:\n[]\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_dc3b12b5a2be4271ab86d5ab",
+          "content": "exit_code: 0\nstdout:\n[]\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Let me try broader searches and also look at what pages are available in the documentation corpus."
+        },
+        {
+          "type": "tool_use",
+          "id": "call_0d4be5d88a1b4e029f9ec0c5",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl search --query \"session\" --i"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_cac9d6d4447a42e58ea947fe",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl search --query \"credential\" --i"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_661cba0fdc0a4efa9956a9f2",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl search --query \"access\" --i"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_bd31a26b115f49bab0a69625",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl search --query \"sign\" --i"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_0d4be5d88a1b4e029f9ec0c5",
+          "content": "exit_code: 0\nstdout:\n[\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t013\",\n    \"match\": {\n      \"subject\": \"Session ended mid-checkout, cart was lost\",\n      \"body\": \"Customer reports: session ended mid-checkout, cart was lost.\"\n    }\n  }\n]\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_cac9d6d4447a42e58ea947fe",
+          "content": "exit_code: 0\nstdout:\n[]\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_661cba0fdc0a4efa9956a9f2",
+          "content": "exit_code: 0\nstdout:\n[]\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_bd31a26b115f49bab0a69625",
+          "content": "exit_code: 0\nstdout:\n[]\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Let me try fetching documentation pages directly and also search more broadly."
+        },
+        {
+          "type": "tool_use",
+          "id": "call_17a7f73b6af74beca2fdae1c",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl fetch --help"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_a0683e98f8204f10b4118fdc",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl search --query \"authentication\" --scope users --i"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_d93ff454e6c9483eabb38fde",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl search --query \"authentication\" --scope products --i"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_17a7f73b6af74beca2fdae1c",
+          "content": "exit_code: 0\nstdout:\nusage: ctl fetch <url-or-slug>\n\nPrint the markdown page for the given slug. Accepts either a bare slug\n(/docs/getting-started) or a full URL whose path is a known slug\n(https://example.com/docs/getting-started).\n\nExit codes:\n  0    success (including the canned 404 body)\n  1    page not found\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_a0683e98f8204f10b4118fdc",
+          "content": "exit_code: 0\nstdout:\n[]\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_d93ff454e6c9483eabb38fde",
+          "content": "exit_code: 0\nstdout:\n[]\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_c335d8818f384123ab22ff7f",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl fetch /docs/authentication"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_b016bfd4f992497083809c07",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl fetch /docs/getting-started"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_083f2a1a837643648bdb3f10",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl fetch /docs/security"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_c335d8818f384123ab22ff7f",
+          "content": "exit_code: 1\nstdout: <empty>\nstderr:\nnot found\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_b016bfd4f992497083809c07",
+          "content": "exit_code: 0\nstdout:\n# Getting Started\n\nWelcome to the ctl reference environment. Every command is backed by a\ncommitted fixture -- there is no live backend. Output is deterministic;\ntreat it as ground truth for tests.\n\nStart with `ctl --help`, then try `ctl list <resource>` for one of the\nfive resources: users, orders, tickets, products, sessions.\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_083f2a1a837643648bdb3f10",
+          "content": "exit_code: 1\nstdout: <empty>\nstderr:\nnot found\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_9362f7b73d9b49df834454c9",
+          "name": "bash",
+          "input": {
+            "command": "ls fixtures/"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_97fa93919eb046dabf94885f",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl fetch /docs/api-reference"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_3e2633a6431e48638195c074",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl fetch /docs/overview"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_9362f7b73d9b49df834454c9",
+          "content": "exit_code: 0\nstdout:\n_gen.py\nANOMALIES.md\napi\npages\npipelines\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_97fa93919eb046dabf94885f",
+          "content": "exit_code: 1\nstdout: <empty>\nstderr:\nnot found\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_3e2633a6431e48638195c074",
+          "content": "exit_code: 1\nstdout: <empty>\nstderr:\nnot found\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_a67ce1dd167f4b4b838776be",
+          "name": "bash",
+          "input": {
+            "command": "ls fixtures/pages/"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_09e6471d940142cda11a4b99",
+          "name": "bash",
+          "input": {
+            "command": "ls fixtures/api/"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_a67ce1dd167f4b4b838776be",
+          "content": "exit_code: 0\nstdout:\n_stale_404.md\nabout\nblog\ndocs\nhelp\npolicy\nrunbook\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_09e6471d940142cda11a4b99",
+          "content": "exit_code: 0\nstdout:\norders\nproducts\nsessions\ntickets\nusers\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_838f550c55cf4fd289e7118f",
+          "name": "bash",
+          "input": {
+            "command": "ls fixtures/pages/docs/"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_838f550c55cf4fd289e7118f",
+          "content": "exit_code: 0\nstdout:\nauth.md\ndates.md\nexit-codes.md\nfixtures.md\nformatting.md\ngetting-started.md\npagination.md\nsearch.md\ntroubleshooting.md\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Found it — there's an `auth.md` page. Let me fetch it."
+        },
+        {
+          "type": "tool_use",
+          "id": "call_fc2773049da74c7e9ff5bdf8",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl fetch /docs/auth"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_fc2773049da74c7e9ff5bdf8",
+          "content": "exit_code: 0\nstdout:\n# 404 Not Found\n\nThis page is unavailable because the local page cache is stale. This is\na known failure mode after certain pipelines run. Clear the cache with\n`ctl cache clear` and try again.\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "The page is stale. Let me clear the cache and retry."
+        },
+        {
+          "type": "tool_use",
+          "id": "call_1fadc24bd5e54d279ca286c9",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl cache clear pages"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_1fadc24bd5e54d279ca286c9",
+          "content": "exit_code: 0\nstdout:\ncleared 0 state entries (pages)\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_fd438cb416364872890a0b17",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl cache clear all"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_fd438cb416364872890a0b17",
+          "content": "exit_code: 0\nstdout:\ncleared 1 state entry (all)\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_b1b2f154ca124b5c840e9c06",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl fetch /docs/auth"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_b1b2f154ca124b5c840e9c06",
+          "content": "exit_code: 0\nstdout:\n# Authentication\n\nctl does not authenticate. The mock backend trusts the caller entirely.\nThere is no token store, no API key, no session cookie. Every request is\neffectively anonymous. Do not try to log in.\n\n(You are reading this page because someone ran `ctl cache clear` and\nrepaired the persistent auth-page 404 cache entry. If you get a\n404-looking body on this slug instead, that is the stale-cache anomaly;\nrun `ctl cache clear` and retry.)\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Here's the most relevant page and its summary:\n\n**Page:** `/docs/auth` (fetched via `ctl fetch /docs/auth`)\n\n**Summary:** The `/docs/auth` page explains that the `ctl` CLI operates without any authentication mechanism whatsoever — there is no token store, no API key, and no session cookie. The mock backend is entirely trust-based, treating every request as anonymous, so users should not attempt to log in. The page also notes a known anomaly: the auth page can sometimes appear as a stale 404 due to a caching issue caused by certain pipeline runs, which can be resolved by running `ctl cache clear` and retrying the fetch."
+        }
+      ]
+    }
+  ],
+  "tool_calls": [
+    {
+      "turn": 0,
+      "tool_use_id": "call_159096fa129a432e9717c664",
+      "command": "ctl search --query \"authentication\" --i",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 127,
+      "stdout": "",
+      "stderr": "executable not found: [Errno 2] No such file or directory: 'ctl'",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 3,
+      "timed_out": false
+    },
+    {
+      "turn": 1,
+      "tool_use_id": "call_5063ebe6e50a4705b8ab6cea",
+      "command": "./cli/bin/ctl search --query \"authentication\" --i",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[]\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 45,
+      "timed_out": false
+    },
+    {
+      "turn": 2,
+      "tool_use_id": "call_9280afd3693443478125e2b8",
+      "command": "./cli/bin/ctl search --query \"auth\" --i",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[]\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 37,
+      "timed_out": false
+    },
+    {
+      "turn": 3,
+      "tool_use_id": "call_c6a1953957844824abcc1e7d",
+      "command": "./cli/bin/ctl search --query \"login\" --i",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[]\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 35,
+      "timed_out": false
+    },
+    {
+      "turn": 3,
+      "tool_use_id": "call_1e335e867c63467f808cd2a2",
+      "command": "./cli/bin/ctl search --query \"password\" --i",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t001\",\n    \"match\": {\n      \"subject\": \"Cannot log in after password reset\",\n      \"body\": \"Customer reports: cannot log in after password reset.\"\n    }\n  },\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t023\",\n    \"match\": {\n      \"subject\": \"Password reset emails never arrive for @gmail\",\n      \"body\": \"Customer reports: password reset emails never arrive for @gmail.\"\n    }\n  }\n]\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 29,
+      "timed_out": false
+    },
+    {
+      "turn": 3,
+      "tool_use_id": "call_096fcdb6358f4bffa0374394",
+      "command": "./cli/bin/ctl search --query \"token\" --i",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[]\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 26,
+      "timed_out": false
+    },
+    {
+      "turn": 3,
+      "tool_use_id": "call_dc3b12b5a2be4271ab86d5ab",
+      "command": "./cli/bin/ctl search --query \"security\" --i",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[]\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 24,
+      "timed_out": false
+    },
+    {
+      "turn": 4,
+      "tool_use_id": "call_0d4be5d88a1b4e029f9ec0c5",
+      "command": "./cli/bin/ctl search --query \"session\" --i",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t013\",\n    \"match\": {\n      \"subject\": \"Session ended mid-checkout, cart was lost\",\n      \"body\": \"Customer reports: session ended mid-checkout, cart was lost.\"\n    }\n  }\n]\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 66,
+      "timed_out": false
+    },
+    {
+      "turn": 4,
+      "tool_use_id": "call_cac9d6d4447a42e58ea947fe",
+      "command": "./cli/bin/ctl search --query \"credential\" --i",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[]\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 32,
+      "timed_out": false
+    },
+    {
+      "turn": 4,
+      "tool_use_id": "call_661cba0fdc0a4efa9956a9f2",
+      "command": "./cli/bin/ctl search --query \"access\" --i",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[]\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 25,
+      "timed_out": false
+    },
+    {
+      "turn": 4,
+      "tool_use_id": "call_bd31a26b115f49bab0a69625",
+      "command": "./cli/bin/ctl search --query \"sign\" --i",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[]\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 29,
+      "timed_out": false
+    },
+    {
+      "turn": 5,
+      "tool_use_id": "call_17a7f73b6af74beca2fdae1c",
+      "command": "./cli/bin/ctl fetch --help",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "usage: ctl fetch <url-or-slug>\n\nPrint the markdown page for the given slug. Accepts either a bare slug\n(/docs/getting-started) or a full URL whose path is a known slug\n(https://example.com/docs/getting-started).\n\nExit codes:\n  0    success (including the canned 404 body)\n  1    page not found\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 32,
+      "timed_out": false
+    },
+    {
+      "turn": 5,
+      "tool_use_id": "call_a0683e98f8204f10b4118fdc",
+      "command": "./cli/bin/ctl search --query \"authentication\" --scope users --i",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[]\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 33,
+      "timed_out": false
+    },
+    {
+      "turn": 5,
+      "tool_use_id": "call_d93ff454e6c9483eabb38fde",
+      "command": "./cli/bin/ctl search --query \"authentication\" --scope products --i",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[]\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 45,
+      "timed_out": false
+    },
+    {
+      "turn": 6,
+      "tool_use_id": "call_c335d8818f384123ab22ff7f",
+      "command": "./cli/bin/ctl fetch /docs/authentication",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "not found\n",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 47,
+      "timed_out": false
+    },
+    {
+      "turn": 6,
+      "tool_use_id": "call_b016bfd4f992497083809c07",
+      "command": "./cli/bin/ctl fetch /docs/getting-started",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "# Getting Started\n\nWelcome to the ctl reference environment. Every command is backed by a\ncommitted fixture -- there is no live backend. Output is deterministic;\ntreat it as ground truth for tests.\n\nStart with `ctl --help`, then try `ctl list <resource>` for one of the\nfive resources: users, orders, tickets, products, sessions.\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 43,
+      "timed_out": false
+    },
+    {
+      "turn": 6,
+      "tool_use_id": "call_083f2a1a837643648bdb3f10",
+      "command": "./cli/bin/ctl fetch /docs/security",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "not found\n",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 33,
+      "timed_out": false
+    },
+    {
+      "turn": 7,
+      "tool_use_id": "call_9362f7b73d9b49df834454c9",
+      "command": "ls fixtures/",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "_gen.py\nANOMALIES.md\napi\npages\npipelines\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 12,
+      "timed_out": false
+    },
+    {
+      "turn": 7,
+      "tool_use_id": "call_97fa93919eb046dabf94885f",
+      "command": "./cli/bin/ctl fetch /docs/api-reference",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "not found\n",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 48,
+      "timed_out": false
+    },
+    {
+      "turn": 7,
+      "tool_use_id": "call_3e2633a6431e48638195c074",
+      "command": "./cli/bin/ctl fetch /docs/overview",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "not found\n",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 31,
+      "timed_out": false
+    },
+    {
+      "turn": 8,
+      "tool_use_id": "call_a67ce1dd167f4b4b838776be",
+      "command": "ls fixtures/pages/",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "_stale_404.md\nabout\nblog\ndocs\nhelp\npolicy\nrunbook\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 24,
+      "timed_out": false
+    },
+    {
+      "turn": 8,
+      "tool_use_id": "call_09e6471d940142cda11a4b99",
+      "command": "ls fixtures/api/",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "orders\nproducts\nsessions\ntickets\nusers\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 7,
+      "timed_out": false
+    },
+    {
+      "turn": 9,
+      "tool_use_id": "call_838f550c55cf4fd289e7118f",
+      "command": "ls fixtures/pages/docs/",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "auth.md\ndates.md\nexit-codes.md\nfixtures.md\nformatting.md\ngetting-started.md\npagination.md\nsearch.md\ntroubleshooting.md\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 17,
+      "timed_out": false
+    },
+    {
+      "turn": 10,
+      "tool_use_id": "call_fc2773049da74c7e9ff5bdf8",
+      "command": "./cli/bin/ctl fetch /docs/auth",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "# 404 Not Found\n\nThis page is unavailable because the local page cache is stale. This is\na known failure mode after certain pipelines run. Clear the cache with\n`ctl cache clear` and try again.\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 53,
+      "timed_out": false
+    },
+    {
+      "turn": 11,
+      "tool_use_id": "call_1fadc24bd5e54d279ca286c9",
+      "command": "./cli/bin/ctl cache clear pages",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "cleared 0 state entries (pages)\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 25,
+      "timed_out": false
+    },
+    {
+      "turn": 12,
+      "tool_use_id": "call_fd438cb416364872890a0b17",
+      "command": "./cli/bin/ctl cache clear all",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "cleared 1 state entry (all)\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 44,
+      "timed_out": false
+    },
+    {
+      "turn": 13,
+      "tool_use_id": "call_b1b2f154ca124b5c840e9c06",
+      "command": "./cli/bin/ctl fetch /docs/auth",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "# Authentication\n\nctl does not authenticate. The mock backend trusts the caller entirely.\nThere is no token store, no API key, no session cookie. Every request is\neffectively anonymous. Do not try to log in.\n\n(You are reading this page because someone ran `ctl cache clear` and\nrepaired the persistent auth-page 404 cache entry. If you get a\n404-looking body on this slug instead, that is the stale-cache anomaly;\nrun `ctl cache clear` and retry.)\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 41,
+      "timed_out": false
+    }
+  ],
+  "setup_calls": [],
+  "rejected_commands": [],
+  "usage": {
+    "input_tokens": 41060,
+    "output_tokens": 1282,
+    "cache_read_input_tokens": 38592,
+    "cache_creation_input_tokens": 0,
+    "total_calls": 15
+  },
+  "final_text": "Here's the most relevant page and its summary:\n\n**Page:** `/docs/auth` (fetched via `ctl fetch /docs/auth`)\n\n**Summary:** The `/docs/auth` page explains that the `ctl` CLI operates without any authentication mechanism whatsoever — there is no token store, no API key, and no session cookie. The mock backend is entirely trust-based, treating every request as anonymous, so users should not attempt to log in. The page also notes a known anomaly: the auth page can sometimes appear as a stale 404 due to a caching issue caused by certain pipeline runs, which can be resolved by running `ctl cache clear` and retrying the fetch.",
+  "stop_reason": "end_turn",
+  "api_errors": [],
+  "dry_run": false,
+  "writable_prefixes_resolved": [
+    "/tmp/"
+  ],
+  "skills_loaded": [],
+  "skill_load_calls": [],
+  "artifact_files_copied": []
+}

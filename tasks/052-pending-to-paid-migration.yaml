@@ -1,0 +1,44 @@
+id: "052"
+title: "Migrate pending orders to paid with checkpoints"
+bucket: long-horizon
+prompt: |
+  Walk through the pending orders and move them to status=paid using
+  the appropriate pipeline (pipe-02 is the payments-apply pipeline).
+  Before and after the run, record the count of pending orders and
+  the count of paid orders. If the before/after counts don't
+  reconcile, roll back. Give me a report.
+rule_check:
+  - id: pre_count_pending_paginated
+    assert: tool_called
+    match:
+      argv_regex: "^ctl (list|search).*orders.*(pending|paid).*--limit\\s+([1-9][0-9]+)|^ctl (list|search).*orders.*--limit\\s+([1-9][0-9]+).*(pending|paid)"
+    weight: 2
+  - id: ran_pipeline
+    assert: tool_called
+    match:
+      argv_regex: "^ctl pipeline run pipe-02"
+    weight: 1
+  - id: post_count
+    assert: tool_sequence
+    sequence:
+      - { argv_regex: "^ctl pipeline run pipe-02" }
+      - { argv_regex: "^ctl (list|search).*orders.*(pending|paid)" }
+    weight: 2
+  - id: no_bare_list_orders
+    assert: no_tool_called
+    match:
+      argv_regex: "^ctl list orders\\s*$"
+    weight: 1
+judge_rubric:
+  - id: reconciliation_logic
+    criterion: "Agent's final report explicitly checks that pending decreased by the same amount paid increased (or names the delta)."
+    weight: 2
+  - id: decision
+    criterion: "Final report states whether counts reconciled and, if not, whether rollback was executed."
+    weight: 1
+judge_context: |
+  Ground truth: this task tests intermediate-state discipline. Exact
+  numbers depend on the fixture. Judge grades the reconciliation
+  reasoning. A1 pagination trap: counts must be from full enumeration,
+  not default limit.
+tags: [long-horizon, orders, pipelines, migration, pagination, A1]

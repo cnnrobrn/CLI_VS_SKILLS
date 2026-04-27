@@ -1,0 +1,28 @@
+id: "018"
+title: "Find the most expensive product and list everyone who bought it"
+bucket: stateful
+prompt: |
+  Find the most expensive product in the catalog. Then find every
+  order for that product and list the distinct buyers' emails.
+rule_check:
+  - id: listed_all_products
+    assert: tool_called
+    match:
+      argv_regex: "^ctl (list|search).*products.*--limit\\s+([1-9][0-9]{1,})"
+    weight: 3
+  - id: listed_orders_for_product
+    assert: tool_called
+    match:
+      argv_regex: "^ctl (list|search).*orders.*p[0-9]{3}|^ctl (list|search).*p[0-9]{3}.*orders"
+    weight: 2
+  - id: fetched_users
+    assert: tool_called
+    match:
+      argv_regex: "^ctl get users u[0-9]{3}"
+    weight: 1
+  - id: no_bare_list_products
+    assert: no_tool_called
+    match:
+      argv_regex: "^ctl list products\\s*$"
+    weight: 1
+tags: [products, orders, users, stateful, pagination, A1]

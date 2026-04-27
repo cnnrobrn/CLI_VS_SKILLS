@@ -1,0 +1,941 @@
+{
+  "task_id": "089",
+  "task_title": "Warn new engineers about the --limit default",
+  "task_bucket": "non-file",
+  "task_tags": [
+    "non-file",
+    "documentation",
+    "pagination",
+    "A1"
+  ],
+  "arm": "cli-skills",
+  "trial": 0,
+  "model": "xiaomi/mimo-v2.5",
+  "started_at": "2026-04-26T17:40:08.203722+00:00",
+  "ended_at": "2026-04-26T17:41:00.649604+00:00",
+  "wall_clock_seconds": 52.446,
+  "ctl_state_dir": "/Users/connorobrien/Documents/CLI_VS_SKILLS/results/xiaomi-mimo-tooled/089/cli-skills/trial_0/ctl-state",
+  "workdir": "/Users/connorobrien/Documents/CLI_VS_SKILLS/results/xiaomi-mimo-tooled/089/cli-skills/trial_0",
+  "system_prompt": "You are an autonomous agent being evaluated on a benchmark.\n\nEnvironment:\n- Your working directory is a repo root. You have ONE tool: `bash`.\n- A custom CLI named `ctl` lives at ./cli/bin/ctl (also reachable as `ctl`).\n- The CLI reads canned fixtures from disk and does NOT access the network.\n- The CLI honors a pinned \"now\" of 2026-04-24T00:00:00Z for --since filters.\n- Allowed executables: ./cli/bin/ctl, ctl, cat, ls, mkdir, head, tail, wc,\n  grep, jq, python3, echo, bash (only as `bash -c \"...\"`, and the inner\n  command is re-checked against the same allowlist).\n- You MAY redirect output to files under /tmp/ (and under $CTL_STATE_DIR).\n- Pipes (|), command chaining (;, &&, ||), and command substitution\n  ($(...) or backticks) inside a single command string are NOT allowed.\n  If you need to combine operations, wrap the whole line in\n  `bash -c \"cmd1 && cmd2\"` — each sub-command still has to pass the\n  allowlist.\n- Each command has a 30-second timeout.\n\nTask rules:\n- Follow the user's instructions exactly. Where the task asks you to write\n  output to a specific file path, write EXACTLY to that path.\n- If a command fails, read the error and try a different approach. Do not\n  retry the same failing command unchanged.\n- When you are finished, stop calling tools and provide a short final\n  answer. Many tasks will be graded on that final message, so be precise —\n  name IDs, files, and root causes explicitly.\n\n## Reference: cli/README.md\n\nThe following is the complete contents of cli/README.md. It is the only\ndocumentation you have for the `ctl` CLI. Discover any further behavior by\nrunning `ctl --help` and `ctl <subcommand> --help`.\n\n\n# ctl\n\nA deterministic fixture-backed CLI. No network. No live clock. Output for a\ngiven input is fixed.\n\n## Install\n\n```\ngit clone <repo>\ncd CLI_VS_SKILLS\n./cli/bin/ctl --help\n```\n\nRequires Python 3.9+. Stdlib-only (see `cli/requirements.txt`).\n\n## Synopsis\n\n```\nctl <command> [args...]\n```\n\n## Commands\n\n| Command                             | Description                                     |\n|-------------------------------------|-------------------------------------------------|\n| `ctl list <resource>`               | List records for a resource.                    |\n| `ctl get <resource> <id>`           | Fetch a single record.                          |\n| `ctl fetch <url-or-slug>`           | Print a fixture markdown page.                  |\n| `ctl search --query Q`              | Substring search across resource text fields.   |\n| `ctl diff <a> <b>`                  | Structured JSON diff of two records.            |\n| `ctl pipeline run <name>`           | Run a named pipeline.                           |\n| `ctl pipeline status <name>`        | Show last recorded state for a pipeline.        |\n| `ctl cache status`                  | Show cache / state flags.                       |\n| `ctl cache clear [<scope>]`         | Clear cached state (scope = pages/search/pipelines/all). |\n| `ctl version`                       | Print version.                                  |\n| `ctl --help`, `ctl <cmd> --help`    | Usage.                                          |\n\n## Resources\n\n`users` (50), `orders` (120), `tickets` (30), `products` (80), `sessions` (15).\n\n## Common options\n\n| Option                  | Commands      | Description                                  |\n|-------------------------|---------------|----------------------------------------------|\n| `--status <value>`      | `list`        | Filter rows by exact `status` match.         |\n| `--since <date>`        | `list`        | ISO date (`2026-04-20`), ISO datetime, or relative (`7d`, `24h`). |\n| `--limit <n>`           | `list`        | Maximum rows. Default: **10**.               |\n| `--format json\\|yaml\\|table` | `list`, `get` | Output format. Default: `table`.        |\n| `--query Q`             | `search`      | Required. Substring, or `field:value`.        |\n| `--scope <resource>`    | `search`      | Restrict to one resource.                    |\n| `--i`                   | `search`      | Case-insensitive. Default: case-sensitive.   |\n| `--reindex`             | `search`      | Rebuild the search index.                    |\n| `--confirm`             | `pipeline run`| Pass through a confirm gate.                 |\n| `--resume`              | `pipeline run`| Resume a partially-applied pipeline.         |\n| `--rollback`            | `pipeline run`| Roll back an applied pipeline.               |\n| `--verify`              | `pipeline run`| Run an extra verification pass.              |\n\n## Exit codes\n\n| Code | Meaning                                                       |\n|-----:|---------------------------------------------------------------|\n| `0`  | Success.                                                      |\n| `1`  | User error: not found, bad flag, invalid input.               |\n| `2`  | Refused: a pipeline needs `--confirm` or a prerequisite.      |\n\n## Environment\n\n| Variable            | Default             | Meaning                                     |\n|---------------------|---------------------|---------------------------------------------|\n| `CTL_FIXTURES_DIR`  | `<repo>/fixtures`   | Root of the fixture tree.                   |\n| `CTL_STATE_DIR`     | `~/.ctl-state/`     | Scratch state for cache / pipeline flags.   |\n\n## Determinism\n\nPinned \"now\" is `2026-04-24T00:00:00Z`. Relative `--since` values anchor to\nthat instant.\n\n## Version\n\n`1.0.0`\n\n## Available skills\n\nYou have access to a library of skills, each addressing a specific class of problem you might encounter while using `ctl`. Below is the index of every skill — only the names and one-line descriptions are shown here. To read a skill's full content, call the `load_skill` tool with `name=<skill name>`. Load only skills that look relevant to the current task.\n\n- case-insensitive-search: Use when `ctl search --query <q>` returns zero results for a brand or term you expect to exist. Search is case-sensitive by default; pass `--i` or match the actual case (e.g. `Acme`, not `acme`).\n- clear-cache-after-pipe03: Use when `ctl fetch /docs/*` returns a canned 404 immediately after running `pipe-03` (`rotate-keys`). The page cache is marked stale; `ctl cache clear` (or `ctl cache clear pages`) restores the real pages.\n- clear-stale-page-cache: Use when `ctl fetch /docs/auth` returns a 404 on fresh state. The default for that page is a stale-cache 404; `ctl cache clear` repairs it. Distinct from the post-pipe-03 stale.\n- confirm-destructive-pipeline: Use when `ctl pipeline run pipe-01` (deploy-prod) or `pipe-06` (purge-audit-logs) exits 2 with a bare `refused` on stderr. The CLI gives no hint, but `--confirm` is the fix for both.\n- cross-check-list-and-search: Recipe -- use whenever you need to trust a row count after a pipeline ran. Cross-check `ctl list --status X` against `ctl search --query \"status:X\"`; if they disagree, the search index is stale and `ctl search --reindex` is the fix.\n- diagnose-refund-burst: Recipe -- use when a task says \"two orders got refunded fast for u017\" or any pipe-07 collateral-refund investigation. Combines pagination, runbook discovery, and pipe-07 status into a 4-step diagnosis.\n- diff-resource-type-validation: Use when `ctl diff a b` returns `{}` and exits 0. Empty object does NOT mean \"identical\"; it means you passed ids of different resource types (e.g. `u001` vs `o001`) and the CLI swallowed it. Always diff within the same resource.\n- discover-runbooks: Use when investigating any incident, pipeline failure, or cross-resource anomaly. The canonical writeups live under `/runbook/*` and `/help/*` -- they are NOT linked from CLI output. Fetch the right one to short-circuit hours of investigation.\n- find-flagged-records: Recipe for 'find all flagged X for user Y' tasks. Filter chain — search/list to find user id, then `ctl list orders --limit 1000 --format json | jq` to filter by user_id AND flagged==true. Anchored on Sarah Chen.\n- format-output-fidelity: Use when piping `ctl` output to `jq`, `grep`, or any parser, or when reading any field that might exceed ~23 characters. `--format table` (the default) silently truncates long values with an ellipsis; always pass `--format json` for fidelity.\n- handle-null-emails: Use when post-processing user records by email (e.g. lowercasing, regex). Three users have null emails (u023, u031, u049); naive `.lower()` on every row will AttributeError. Filter for null first.\n- handle-suspended-account: Use when investigating Sarah Chen (`u042`) or any \"account flipped to suspended\" billing escalation. Her account suspended on 2026-04-22; flagged orders are `o102`, `o107`, `o115`; ticket `t019` is the canonical entry point.\n- lookup-resource-by-id: Use when `ctl get <resource> <id>` returns `not found` (exit 1) and you don't have the exact id. There is no fuzzy match or \"did you mean\" hint; search by name first, then `get` the canonical id.\n- output-format-conventions: Idiom -- when to choose `--format json` (machine processing, long fields, jq), `--format yaml` (rare; slow to parse), or `--format table` (default; only for short fixed fields, never free text). Prefer JSON for everything non-trivial.\n- paginate-list-results: Use when running `ctl list <resource>` to count records or filter to \"all\" of something. The default `--limit` is 10 and silently truncates with no warning, so any cardinality answer derived from the default page is almost certainly wrong.\n- pipeline-prerequisites: Use when a pipeline (notably `pipe-05` / `reindex-search`) exits 2 with stderr `prerequisite not met`. The CLI does not name the prereq; pipe-05 needs pipe-03 to have run in the current state dir.\n- read-pipe04-skip-file: Use after running `pipe-04` (`backfill-products`). It exits 0 with a stderr warning that 2 records were skipped to `/tmp/pipe-04.skipped`. The skipped ids are `p044` and `p077`; their skip reasons live on the product fixtures themselves.\n- recover-pipe07-partial: Use when working with `pipe-07` (`backfill-orders`). The fixture state is pre-baked as 147/200 partial; a bare `ctl pipeline run pipe-07` is an idempotent no-op. To advance, choose `--resume` (finish 53) or `--rollback` (revert 147).\n- reindex-stale-search: Use when `ctl search` and `ctl list` disagree on the same filter (notably `status:paid` on orders) after running `pipe-07 --resume` or `--rollback`. The search index is marked stale; `ctl search --reindex` resyncs it.\n- resolve-triple-submit-duplicates: Use when investigating duplicate orders — three orders with the same user_id, same total_cents, and timestamps a few seconds apart. Convention from /help/duplicates — keep the lowest id paid, refund the others.\n- resource-id-conventions: Idiom -- ctl ids follow a one-letter-prefix + three-digit-suffix convention (`u`/`o`/`t`/`p`/`s`). Use to validate ids before `ctl get`/`diff` and to recognise canonical \"key identities\" (u017, u042, t019, p014, etc).\n- since-flag-formats: Use when `ctl list ... --since <X>` returns `invalid date` (exit 1). The flag accepts exactly three shapes — ISO date, ISO datetime with Z, or relative (Nd/Nh). Anything else fails with no help text.\n- verify-migration-cleanup: Recipe for 'did the migration finish cleanly?' tasks. Pre/post count idiom — capture row counts before, run the pipeline with verification flags, capture counts after, diff. Anchored on pipe-09 reconcile-inventory.\n- verify-reconcile-inventory: Use when running `pipe-09` (`reconcile-inventory`). A bare run prints `ok` and exits 0 without doing any reconciliation. You must pass `--verify` to actually run the comparison; without it, \"ok\" is cosmetic.\n",
+  "user_prompt": "Write a 5-bullet cookbook entry (for internal docs) warning new\nengineers about the ctl default --limit pitfall. Include a concrete\nexample of how it silently gives a wrong answer.\n",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Write a 5-bullet cookbook entry (for internal docs) warning new\nengineers about the ctl default --limit pitfall. Include a concrete\nexample of how it silently gives a wrong answer.\n"
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Let me gather concrete numbers to make the example accurate."
+        },
+        {
+          "type": "tool_use",
+          "id": "call_131f2e25b7e04aa5ad944a94",
+          "name": "bash",
+          "input": {
+            "command": "ctl list orders --format json --limit 1000 2>/dev/null | wc -l"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_ed692b5ba5474666a778ad33",
+          "name": "bash",
+          "input": {
+            "command": "ctl list orders --format json --limit 10 2>/dev/null | wc -l"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_131f2e25b7e04aa5ad944a94",
+          "content": "ERROR: command rejected by harness allowlist.\nreason: redirect target '/dev/null' must start with one of ['/tmp/']\nAllowed executables: ./cli/bin/ctl, ctl, cat, ls, mkdir, head, tail, wc, grep, jq, python3, echo, bash (as `bash -c \"...\"`). Redirects (>, >>) must target /tmp/ or $CTL_STATE_DIR. Command substitution (backticks, $()) and process substitution are never allowed.",
+          "is_error": true
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_ed692b5ba5474666a778ad33",
+          "content": "ERROR: command rejected by harness allowlist.\nreason: redirect target '/dev/null' must start with one of ['/tmp/']\nAllowed executables: ./cli/bin/ctl, ctl, cat, ls, mkdir, head, tail, wc, grep, jq, python3, echo, bash (as `bash -c \"...\"`). Redirects (>, >>) must target /tmp/ or $CTL_STATE_DIR. Command substitution (backticks, $()) and process substitution are never allowed.",
+          "is_error": true
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_06bb30f24c1746bf8618daf6",
+          "name": "bash",
+          "input": {
+            "command": "ctl list orders --format json --limit 1000 > /tmp/all_orders.json 2> /tmp/err1.txt"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_4e68e8f9a1ad4b519785c99f",
+          "name": "bash",
+          "input": {
+            "command": "ctl list orders --format json --limit 10 > /tmp/default_orders.json 2> /tmp/err2.txt"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_06bb30f24c1746bf8618daf6",
+          "content": "exit_code: 127\nstdout: <empty>",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_4e68e8f9a1ad4b519785c99f",
+          "content": "exit_code: 127\nstdout: <empty>",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_2a226e4a92624c089b2fb972",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl list orders --format json --limit 1000 > /tmp/all_orders.json 2> /tmp/err1.txt"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_619fe1d3ae1447d99caf40f7",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl list orders --format json --limit 10 > /tmp/default_orders.json 2> /tmp/err2.txt"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_2a226e4a92624c089b2fb972",
+          "content": "exit_code: 0\nstdout: <empty>",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_619fe1d3ae1447d99caf40f7",
+          "content": "exit_code: 0\nstdout: <empty>",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_d5c626359d694c08bd158afd",
+          "name": "bash",
+          "input": {
+            "command": "wc -l /tmp/all_orders.json"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_ec35510c482a430c8984ddde",
+          "name": "bash",
+          "input": {
+            "command": "wc -l /tmp/default_orders.json"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_d5c626359d694c08bd158afd",
+          "content": "exit_code: 0\nstdout:\n    1528 /tmp/all_orders.json\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_ec35510c482a430c8984ddde",
+          "content": "exit_code: 0\nstdout:\n     123 /tmp/default_orders.json\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_6cf422e9ecff467b970a7647",
+          "name": "bash",
+          "input": {
+            "command": "jq length /tmp/all_orders.json"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_15fcbe1de4194234a58c833c",
+          "name": "bash",
+          "input": {
+            "command": "jq length /tmp/default_orders.json"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_6cf422e9ecff467b970a7647",
+          "content": "exit_code: 0\nstdout:\n120\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_15fcbe1de4194234a58c833c",
+          "content": "exit_code: 0\nstdout:\n10\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Now let me get a concrete example — counting paid orders with and without the limit:"
+        },
+        {
+          "type": "tool_use",
+          "id": "call_857a2c974d3e42ef80d3fffb",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl list orders --status paid --format json --limit 1000 > /tmp/paid_all.json 2> /tmp/err3.txt"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_cb13a47346ac4b0dbecec9d7",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl list orders --status paid --format json --limit 10 > /tmp/paid_default.json 2> /tmp/err4.txt"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_857a2c974d3e42ef80d3fffb",
+          "content": "exit_code: 0\nstdout: <empty>",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_cb13a47346ac4b0dbecec9d7",
+          "content": "exit_code: 0\nstdout: <empty>",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_3b9c631d4a624b9dab668f31",
+          "name": "bash",
+          "input": {
+            "command": "jq length /tmp/paid_all.json"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_50e0d5badebf400c9b40229b",
+          "name": "bash",
+          "input": {
+            "command": "jq length /tmp/paid_default.json"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_3b9c631d4a624b9dab668f31",
+          "content": "exit_code: 0\nstdout:\n36\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_50e0d5badebf400c9b40229b",
+          "content": "exit_code: 0\nstdout:\n10\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Now I have all the concrete numbers. Let me write the cookbook entry:"
+        },
+        {
+          "type": "tool_use",
+          "id": "call_d7c69e0d14e44704b95ea28d",
+          "name": "bash",
+          "input": {
+            "command": "cat > /tmp/cookbook-limit-pitfall.md << 'EOF'\n# Cookbook: Beware the Default `--limit` in `ctl list`\n\n## The Pitfall\n\n`ctl list <resource>` silently caps output at **10 rows** by default. There is\nno warning, no truncation notice, and no hint that more records exist. Any\ndownstream count, aggregation, or \"find all X\" task that omits `--limit` will\nreturn a **wrong answer with full confidence**.\n\n## Why It's Dangerous\n\n- The exit code is `0` (success) whether 10 or 10,000 rows were returned.\n- Table output looks complete — there is no `…` or `[showing 10 of N]` footer.\n- Piping to `jq`, `wc -l`, or `grep` produces a plausible-looking number that\n  is silently wrong.\n\n## Concrete Example\n\n```bash\n# ❌ WRONG — returns 10 rows, exit 0, no warning\nctl list orders --status paid --format json | jq length\n# → 10\n\n# ✅ CORRECT — returns all 36 paid orders\nctl list orders --status paid --format json --limit 1000 | jq length\n# → 36\n```\n\nAn engineer writing a billing reconciliation script who forgets `--limit` would\nconclude there are exactly 10 paid orders — **off by 26** — and ship that\nnumber to stakeholders with no indication anything was amiss.\n\n## The Rule\n\n**Always pass `--limit 1000` (or higher) whenever you need a complete result\nset.** Treat the default limit as a convenience for interactive browsing, not\nfor any automated or analytical workflow.\n\n## Quick Checklist\n\n1. **Every `ctl list` call in a script or notebook** → add `--limit 1000`.\n2. **Counting records?** → cross-check with `ctl search --query \"status:X\" --scope <resource>` and compare totals.\n3. **\"Find all X for user Y\"** → paginate explicitly or set `--limit` higher than your expected count.\n4. **Code review** → grep for bare `ctl list` without `--limit`; flag it.\nEOF\necho \"done\""
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_d7c69e0d14e44704b95ea28d",
+          "content": "ERROR: command rejected by harness allowlist.\nreason: command substitution with backticks is not allowed\nAllowed executables: ./cli/bin/ctl, ctl, cat, ls, mkdir, head, tail, wc, grep, jq, python3, echo, bash (as `bash -c \"...\"`). Redirects (>, >>) must target /tmp/ or $CTL_STATE_DIR. Command substitution (backticks, $()) and process substitution are never allowed.",
+          "is_error": true
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_4203beb06f774332a47859f8",
+          "name": "bash",
+          "input": {
+            "command": "bash -c \"cat > /tmp/cookbook-limit-pitfall.md << 'ENDOFFILE'\n# Cookbook: Beware the Default --limit in ctl list\n\n## The Pitfall\n\nctl list <resource> silently caps output at **10 rows** by default. There is\nno warning, no truncation notice, and no hint that more records exist. Any\ndownstream count, aggregation, or find-all-X task that omits --limit will\nreturn a **wrong answer with full confidence**.\n\n## Why It Is Dangerous\n\n- The exit code is 0 (success) whether 10 or 10,000 rows were returned.\n- Table output looks complete -- there is no ellipsis or footer.\n- Piping to jq, wc -l, or grep produces a plausible-looking number that\n  is silently wrong.\n\n## Concrete Example\n\n  # WRONG -- returns 10 rows, exit 0, no warning\n  ctl list orders --status paid --format json | jq length\n  # Output: 10\n\n  # CORRECT -- returns all 36 paid orders\n  ctl list orders --status paid --format json --limit 1000 | jq length\n  # Output: 36\n\nAn engineer writing a billing reconciliation script who forgets --limit would\nconclude there are exactly 10 paid orders -- **off by 26** -- and ship that\nnumber to stakeholders with no indication anything was amiss.\n\n## The Rule\n\n**Always pass --limit 1000 (or higher) whenever you need a complete result\nset.** Treat the default limit as a convenience for interactive browsing, not\nfor any automated or analytical workflow.\n\n## Quick Checklist\n\n1. Every ctl list call in a script or notebook -- add --limit 1000.\n2. Counting records? Cross-check with ctl search and compare totals.\n3. Find-all-X for user Y? Paginate explicitly or set --limit higher than expected.\n4. Code review? Grep for bare ctl list without --limit; flag it.\nENDOFFILE\""
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_4203beb06f774332a47859f8",
+          "content": "ERROR: command rejected by harness allowlist.\nreason: redirect target 'silently' must start with one of ['/tmp/']\nAllowed executables: ./cli/bin/ctl, ctl, cat, ls, mkdir, head, tail, wc, grep, jq, python3, echo, bash (as `bash -c \"...\"`). Redirects (>, >>) must target /tmp/ or $CTL_STATE_DIR. Command substitution (backticks, $()) and process substitution are never allowed.",
+          "is_error": true
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_6da9d30dbc684a0ebf88db8b",
+          "name": "bash",
+          "input": {
+            "command": "python3 -c \"\ntext = '''# Cookbook: Beware the Default --limit in ctl list\n\n## The Pitfall\n\nctl list <resource> silently caps output at **10 rows** by default. There is\nno warning, no truncation notice, and no hint that more records exist. Any\ndownstream count, aggregation, or find-all-X task that omits --limit will\nreturn a **wrong answer with full confidence**.\n\n## Why It Is Dangerous\n\n- The exit code is 0 (success) whether 10 or 10,000 rows were returned.\n- Table output looks complete -- there is no ellipsis or footer.\n- Piping to jq, wc -l, or grep produces a plausible-looking number that\n  is silently wrong.\n\n## Concrete Example\n\n  # WRONG -- returns 10 rows, exit 0, no warning\n  ctl list orders --status paid --format json | jq length\n  # Output: 10\n\n  # CORRECT -- returns all 36 paid orders\n  ctl list orders --status paid --format json --limit 1000 | jq length\n  # Output: 36\n\nAn engineer writing a billing reconciliation script who forgets --limit would\nconclude there are exactly 10 paid orders -- **off by 26** -- and ship that\nnumber to stakeholders with no indication anything was amiss.\n\n## The Rule\n\n**Always pass --limit 1000 (or higher) whenever you need a complete result\nset.** Treat the default limit as a convenience for interactive browsing, not\nfor any automated or analytical workflow.\n\n## Quick Checklist\n\n1. Every ctl list call in a script or notebook -- add --limit 1000.\n2. Counting records? Cross-check with ctl search and compare totals.\n3. Find-all-X for user Y? Paginate explicitly or set --limit higher than expected.\n4. Code review? Grep for bare ctl list without --limit; flag it.\n'''\nwith open('/tmp/cookbook-limit-pitfall.md', 'w') as f:\n    f.write(text)\nprint('written')\n\""
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_6da9d30dbc684a0ebf88db8b",
+          "content": "ERROR: command rejected by harness allowlist.\nreason: redirect target 'silently' must start with one of ['/tmp/']\nAllowed executables: ./cli/bin/ctl, ctl, cat, ls, mkdir, head, tail, wc, grep, jq, python3, echo, bash (as `bash -c \"...\"`). Redirects (>, >>) must target /tmp/ or $CTL_STATE_DIR. Command substitution (backticks, $()) and process substitution are never allowed.",
+          "is_error": true
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_05ee560d2b574b46844fc6ac",
+          "name": "bash",
+          "input": {
+            "command": "python3 /tmp/write_cookbook.py"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_05ee560d2b574b46844fc6ac",
+          "content": "exit_code: 2\nstdout: <empty>\nstderr:\n/opt/homebrew/Cellar/python@3.14/3.14.4/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python: can't open file '/tmp/write_cookbook.py': [Errno 2] No such file or directory\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Let me try a different approach — write the Python script first, then execute it:"
+        },
+        {
+          "type": "tool_use",
+          "id": "call_efead8910e4f440d9ff89326",
+          "name": "bash",
+          "input": {
+            "command": "python3 -c \"\nimport os\nlines = [\n    '# Cookbook: Beware the Default --limit in ctl list',\n    '',\n    '## The Pitfall',\n    '',\n    'ctl list <resource> silently caps output at **10 rows** by default.',\n    'There is no warning, no truncation notice, and no hint that more',\n    'records exist. Any downstream count, aggregation, or find-all-X task',\n    'that omits --limit will return a **wrong answer with full confidence**.',\n    '',\n    '## Why It Is Dangerous',\n    '',\n    '- The exit code is 0 (success) whether 10 or 10,000 rows were returned.',\n    '- Table output looks complete -- there is no ellipsis or footer.',\n    '- Piping to jq, wc -l, or grep produces a plausible-looking number',\n    '  that is wrong.',\n    '',\n    '## Concrete Example',\n    '',\n    '  # WRONG -- returns 10 rows, exit 0, no warning',\n    '  ctl list orders --status paid --format json | jq length',\n    '  # Output: 10',\n    '',\n    '  # CORRECT -- returns all 36 paid orders',\n    '  ctl list orders --status paid --format json --limit 1000 | jq length',\n    '  # Output: 36',\n    '',\n    'An engineer writing a billing reconciliation script who forgets',\n    '--limit would conclude there are exactly 10 paid orders -- **off by',\n    '26** -- and ship that number to stakeholders with no indication',\n    'anything was amiss.',\n    '',\n    '## The Rule',\n    '',\n    '**Always pass --limit 1000 (or higher) whenever you need a complete',\n    'result set.** Treat the default limit as a convenience for interactive',\n    'browsing, not for any automated or analytical workflow.',\n    '',\n    '## Quick Checklist',\n    '',\n    '1. Every ctl list call in a script or notebook -- add --limit 1000.',\n    '2. Counting records? Cross-check with ctl search and compare totals.',\n    '3. Find-all-X for user Y? Paginate or set --limit higher than expected.',\n    '4. Code review? Grep for bare ctl list without --limit; flag it.',\n]\nwith open('/tmp/cookbook-limit-pitfall.md', 'w') as f:\n    f.write(os.linesep.join(lines) + os.linesep)\nprint('written')\n\""
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_efead8910e4f440d9ff89326",
+          "content": "ERROR: command rejected by harness allowlist.\nreason: redirect target 'silently' must start with one of ['/tmp/']\nAllowed executables: ./cli/bin/ctl, ctl, cat, ls, mkdir, head, tail, wc, grep, jq, python3, echo, bash (as `bash -c \"...\"`). Redirects (>, >>) must target /tmp/ or $CTL_STATE_DIR. Command substitution (backticks, $()) and process substitution are never allowed.",
+          "is_error": true
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_ddf0ceb499a64a9fa9250a8f",
+          "name": "bash",
+          "input": {
+            "command": "python3 -c \"\nimport os\nlines = []\nlines.append('# Cookbook: Beware the Default --limit in ctl list')\nlines.append('')\nlines.append('## The Pitfall')\nlines.append('')\nlines.append('ctl list <resource> silently caps output at **10 rows** by default.')\nlines.append('There is no warning, no truncation notice, and no hint that more')\nlines.append('records exist. Any downstream count, aggregation, or find-all-X task')\nlines.append('that omits --limit will return a **wrong answer with full confidence**.')\nlines.append('')\nlines.append('## Why It Is Dangerous')\nlines.append('')\nlines.append('- The exit code is 0 (success) whether 10 or 10,000 rows were returned.')\nlines.append('- Table output looks complete -- there is no ellipsis or footer.')\nlines.append('- Piping to jq, wc -l, or grep produces a plausible-looking number')\nlines.append('  that is wrong.')\nlines.append('')\nlines.append('## Concrete Example')\nlines.append('')\nlines.append('  # WRONG -- returns 10 rows, exit 0, no warning')\nlines.append('  ctl list orders --status paid --format json | jq length')\nlines.append('  # Output: 10')\nlines.append('')\nlines.append('  # CORRECT -- returns all 36 paid orders')\nlines.append('  ctl list orders --status paid --format json --limit 1000 | jq length')\nlines.append('  # Output: 36')\nlines.append('')\nlines.append('An engineer writing a billing reconciliation script who forgets')\nlines.append('--limit would conclude there are exactly 10 paid orders -- **off by')\nlines.append('26** -- and ship that number to stakeholders with no indication')\nlines.append('anything was amiss.')\nlines.append('')\nlines.append('## The Rule')\nlines.append('')\nlines.append('**Always pass --limit 1000 (or higher) whenever you need a complete')\nlines.append('result set.** Treat the default limit as a convenience for interactive')\nlines.append('browsing, not for any automated or analytical workflow.')\nlines.append('')\nlines.append('## Quick Checklist')\nlines.append('')\nlines.append('1. Every ctl list call in a script or notebook -- add --limit 1000.')\nlines.append('2. Counting records? Cross-check with ctl search and compare totals.')\nlines.append('3. Find-all-X for user Y? Paginate or set --limit higher than expected.')\nlines.append('4. Code review? Grep for bare ctl list without --limit; flag it.')\nwith open('/tmp/cookbook-limit-pitfall.md', 'w') as f:\n    f.write(os.linesep.join(lines) + os.linesep)\nprint('written')\n\""
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_ddf0ceb499a64a9fa9250a8f",
+          "content": "ERROR: command rejected by harness allowlist.\nreason: redirect target 'silently' must start with one of ['/tmp/']\nAllowed executables: ./cli/bin/ctl, ctl, cat, ls, mkdir, head, tail, wc, grep, jq, python3, echo, bash (as `bash -c \"...\"`). Redirects (>, >>) must target /tmp/ or $CTL_STATE_DIR. Command substitution (backticks, $()) and process substitution are never allowed.",
+          "is_error": true
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_a88fa8af039948848e2827ae",
+          "name": "bash",
+          "input": {
+            "command": "cat > /tmp/write_cookbook.py << 'PYEOF'\nimport os\nlines = []\nlines.append(\"# Cookbook: Beware the Default --limit in ctl list\")\nlines.append(\"\")\nlines.append(\"## The Pitfall\")\nlines.append(\"\")\nlines.append(\"ctl list silently caps output at **10 rows** by default.\")\nlines.append(\"There is no warning, no truncation notice, and no hint that more\")\nlines.append(\"records exist. Any downstream count, aggregation, or find-all-X task\")\nlines.append(\"that omits --limit will return a **wrong answer with full confidence**.\")\nlines.append(\"\")\nlines.append(\"## Why It Is Dangerous\")\nlines.append(\"\")\nlines.append(\"- The exit code is 0 (success) whether 10 or 10,000 rows were returned.\")\nlines.append(\"- Table output looks complete -- there is no ellipsis or footer.\")\nlines.append(\"- Piping to jq, wc -l, or grep produces a plausible-looking number\")\nlines.append(\"  that is wrong.\")\nlines.append(\"\")\nlines.append(\"## Concrete Example\")\nlines.append(\"\")\nlines.append(\"  # WRONG -- returns 10 rows, exit 0, no warning\")\nlines.append(\"  ctl list orders --status paid --format json | jq length\")\nlines.append(\"  # Output: 10\")\nlines.append(\"\")\nlines.append(\"  # CORRECT -- returns all 36 paid orders\")\nlines.append(\"  ctl list orders --status paid --format json --limit 1000 | jq length\")\nlines.append(\"  # Output: 36\")\nlines.append(\"\")\nlines.append(\"An engineer writing a billing reconciliation script who forgets\")\nlines.append(\"--limit would conclude there are exactly 10 paid orders -- **off by\")\nlines.append(\"26** -- and ship that number to stakeholders with no indication\")\nlines.append(\"anything was amiss.\")\nlines.append(\"\")\nlines.append(\"## The Rule\")\nlines.append(\"\")\nlines.append(\"**Always pass --limit 1000 (or higher) whenever you need a complete\")\nlines.append(\"result set.** Treat the default limit as a convenience for interactive\")\nlines.append(\"browsing, not for any automated or analytical workflow.\")\nlines.append(\"\")\nlines.append(\"## Quick Checklist\")\nlines.append(\"\")\nlines.append(\"1. Every ctl list call in a script or notebook -- add --limit 1000.\")\nlines.append(\"2. Counting records? Cross-check with ctl search and compare totals.\")\nlines.append(\"3. Find-all-X for user Y? Paginate or set --limit higher than expected.\")\nlines.append(\"4. Code review? Grep for bare ctl list without --limit; flag it.\")\nwith open(\"/tmp/cookbook-limit-pitfall.md\", \"w\") as f:\n    f.write(os.linesep.join(lines) + os.linesep)\nprint(\"written\")\nPYEOF"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_a88fa8af039948848e2827ae",
+          "content": "exit_code: 0\nstdout: <empty>",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_8c03c87e5bee4141b85d1077",
+          "name": "bash",
+          "input": {
+            "command": "python3 /tmp/write_cookbook.py"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_8c03c87e5bee4141b85d1077",
+          "content": "exit_code: 0\nstdout:\nwritten\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_c3f62cb620f24720a6fd710a",
+          "name": "bash",
+          "input": {
+            "command": "cat /tmp/cookbook-limit-pitfall.md"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_c3f62cb620f24720a6fd710a",
+          "content": "exit_code: 0\nstdout:\n# Cookbook: Beware the Default --limit in ctl list\n\n## The Pitfall\n\nctl list silently caps output at **10 rows** by default.\nThere is no warning, no truncation notice, and no hint that more\nrecords exist. Any downstream count, aggregation, or find-all-X task\nthat omits --limit will return a **wrong answer with full confidence**.\n\n## Why It Is Dangerous\n\n- The exit code is 0 (success) whether 10 or 10,000 rows were returned.\n- Table output looks complete -- there is no ellipsis or footer.\n- Piping to jq, wc -l, or grep produces a plausible-looking number\n  that is wrong.\n\n## Concrete Example\n\n  # WRONG -- returns 10 rows, exit 0, no warning\n  ctl list orders --status paid --format json | jq length\n  # Output: 10\n\n  # CORRECT -- returns all 36 paid orders\n  ctl list orders --status paid --format json --limit 1000 | jq length\n  # Output: 36\n\nAn engineer writing a billing reconciliation script who forgets\n--limit would conclude there are exactly 10 paid orders -- **off by\n26** -- and ship that number to stakeholders with no indication\nanything was amiss.\n\n## The Rule\n\n**Always pass --limit 1000 (or higher) whenever you need a complete\nresult set.** Treat the default limit as a convenience for interactive\nbrowsing, not for any automated or analytical workflow.\n\n## Quick Checklist\n\n1. Every ctl list call in a script or notebook -- add --limit 1000.\n2. Counting records? Cross-check with ctl search and compare totals.\n3. Find-all-X for user Y? Paginate or set --limit higher than expected.\n4. Code review? Grep for bare ctl list without --limit; flag it.\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "The cookbook entry has been written to `/tmp/cookbook-limit-pitfall.md`. Here's a summary of what it covers:\n\n---\n\n**5-Bullet Cookbook Entry: Beware the Default `--limit` in `ctl list`**\n\n1. **The Pitfall** — `ctl list` silently caps output at 10 rows by default. No warning, no truncation notice, no hint that more records exist. Any task that omits `--limit` returns a wrong answer with full confidence.\n\n2. **Why It's Dangerous** — Exit code is `0` (success) regardless of whether 10 or 10,000 rows were returned. Table output looks complete with no ellipsis or footer. Pipes to `jq`, `wc -l`, or `grep` produce plausible-looking but wrong numbers.\n\n3. **Concrete Example** — `ctl list orders --status paid --format json | jq length` returns **10**. The real count is **36**. An engineer writing a billing reconciliation script would conclude there are exactly 10 paid orders — **off by 26** — and ship that number to stakeholders with no indication anything was amiss.\n\n4. **The Rule** — Always pass `--limit 1000` (or higher) whenever you need a complete result set. Treat the default limit as a convenience for interactive browsing only.\n\n5. **Quick Checklist** — (a) Every `ctl list` in a script gets `--limit 1000`. (b) Cross-check counts with `ctl search`. (c) \"Find all X for user Y\" needs explicit pagination. (d) Code review: grep for bare `ctl list` without `--limit` and flag it."
+        }
+      ]
+    }
+  ],
+  "tool_calls": [
+    {
+      "turn": 0,
+      "tool_use_id": "call_131f2e25b7e04aa5ad944a94",
+      "command": "ctl list orders --format json --limit 1000 2>/dev/null | wc -l",
+      "allowed": false,
+      "rejection_reason": "redirect target '/dev/null' must start with one of ['/tmp/']",
+      "exit_code": null,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 0,
+      "timed_out": false
+    },
+    {
+      "turn": 0,
+      "tool_use_id": "call_ed692b5ba5474666a778ad33",
+      "command": "ctl list orders --format json --limit 10 2>/dev/null | wc -l",
+      "allowed": false,
+      "rejection_reason": "redirect target '/dev/null' must start with one of ['/tmp/']",
+      "exit_code": null,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 0,
+      "timed_out": false
+    },
+    {
+      "turn": 1,
+      "tool_use_id": "call_06bb30f24c1746bf8618daf6",
+      "command": "ctl list orders --format json --limit 1000 > /tmp/all_orders.json 2> /tmp/err1.txt",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 127,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 7,
+      "timed_out": false
+    },
+    {
+      "turn": 1,
+      "tool_use_id": "call_4e68e8f9a1ad4b519785c99f",
+      "command": "ctl list orders --format json --limit 10 > /tmp/default_orders.json 2> /tmp/err2.txt",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 127,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 4,
+      "timed_out": false
+    },
+    {
+      "turn": 2,
+      "tool_use_id": "call_2a226e4a92624c089b2fb972",
+      "command": "./cli/bin/ctl list orders --format json --limit 1000 > /tmp/all_orders.json 2> /tmp/err1.txt",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 53,
+      "timed_out": false
+    },
+    {
+      "turn": 2,
+      "tool_use_id": "call_619fe1d3ae1447d99caf40f7",
+      "command": "./cli/bin/ctl list orders --format json --limit 10 > /tmp/default_orders.json 2> /tmp/err2.txt",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 28,
+      "timed_out": false
+    },
+    {
+      "turn": 3,
+      "tool_use_id": "call_d5c626359d694c08bd158afd",
+      "command": "wc -l /tmp/all_orders.json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "    1528 /tmp/all_orders.json\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 17,
+      "timed_out": false
+    },
+    {
+      "turn": 3,
+      "tool_use_id": "call_ec35510c482a430c8984ddde",
+      "command": "wc -l /tmp/default_orders.json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "     123 /tmp/default_orders.json\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 8,
+      "timed_out": false
+    },
+    {
+      "turn": 4,
+      "tool_use_id": "call_6cf422e9ecff467b970a7647",
+      "command": "jq length /tmp/all_orders.json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "120\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 20,
+      "timed_out": false
+    },
+    {
+      "turn": 4,
+      "tool_use_id": "call_15fcbe1de4194234a58c833c",
+      "command": "jq length /tmp/default_orders.json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "10\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 8,
+      "timed_out": false
+    },
+    {
+      "turn": 5,
+      "tool_use_id": "call_857a2c974d3e42ef80d3fffb",
+      "command": "./cli/bin/ctl list orders --status paid --format json --limit 1000 > /tmp/paid_all.json 2> /tmp/err3.txt",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 37,
+      "timed_out": false
+    },
+    {
+      "turn": 5,
+      "tool_use_id": "call_cb13a47346ac4b0dbecec9d7",
+      "command": "./cli/bin/ctl list orders --status paid --format json --limit 10 > /tmp/paid_default.json 2> /tmp/err4.txt",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 26,
+      "timed_out": false
+    },
+    {
+      "turn": 6,
+      "tool_use_id": "call_3b9c631d4a624b9dab668f31",
+      "command": "jq length /tmp/paid_all.json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "36\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 10,
+      "timed_out": false
+    },
+    {
+      "turn": 6,
+      "tool_use_id": "call_50e0d5badebf400c9b40229b",
+      "command": "jq length /tmp/paid_default.json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "10\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 6,
+      "timed_out": false
+    },
+    {
+      "turn": 7,
+      "tool_use_id": "call_d7c69e0d14e44704b95ea28d",
+      "command": "cat > /tmp/cookbook-limit-pitfall.md << 'EOF'\n# Cookbook: Beware the Default `--limit` in `ctl list`\n\n## The Pitfall\n\n`ctl list <resource>` silently caps output at **10 rows** by default. There is\nno warning, no truncation notice, and no hint that more records exist. Any\ndownstream count, aggregation, or \"find all X\" task that omits `--limit` will\nreturn a **wrong answer with full confidence**.\n\n## Why It's Dangerous\n\n- The exit code is `0` (success) whether 10 or 10,000 rows were returned.\n- Table output looks complete — there is no `…` or `[showing 10 of N]` footer.\n- Piping to `jq`, `wc -l`, or `grep` produces a plausible-looking number that\n  is silently wrong.\n\n## Concrete Example\n\n```bash\n# ❌ WRONG — returns 10 rows, exit 0, no warning\nctl list orders --status paid --format json | jq length\n# → 10\n\n# ✅ CORRECT — returns all 36 paid orders\nctl list orders --status paid --format json --limit 1000 | jq length\n# → 36\n```\n\nAn engineer writing a billing reconciliation script who forgets `--limit` would\nconclude there are exactly 10 paid orders — **off by 26** — and ship that\nnumber to stakeholders with no indication anything was amiss.\n\n## The Rule\n\n**Always pass `--limit 1000` (or higher) whenever you need a complete result\nset.** Treat the default limit as a convenience for interactive browsing, not\nfor any automated or analytical workflow.\n\n## Quick Checklist\n\n1. **Every `ctl list` call in a script or notebook** → add `--limit 1000`.\n2. **Counting records?** → cross-check with `ctl search --query \"status:X\" --scope <resource>` and compare totals.\n3. **\"Find all X for user Y\"** → paginate explicitly or set `--limit` higher than your expected count.\n4. **Code review** → grep for bare `ctl list` without `--limit`; flag it.\nEOF\necho \"done\"",
+      "allowed": false,
+      "rejection_reason": "command substitution with backticks is not allowed",
+      "exit_code": null,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 0,
+      "timed_out": false
+    },
+    {
+      "turn": 8,
+      "tool_use_id": "call_4203beb06f774332a47859f8",
+      "command": "bash -c \"cat > /tmp/cookbook-limit-pitfall.md << 'ENDOFFILE'\n# Cookbook: Beware the Default --limit in ctl list\n\n## The Pitfall\n\nctl list <resource> silently caps output at **10 rows** by default. There is\nno warning, no truncation notice, and no hint that more records exist. Any\ndownstream count, aggregation, or find-all-X task that omits --limit will\nreturn a **wrong answer with full confidence**.\n\n## Why It Is Dangerous\n\n- The exit code is 0 (success) whether 10 or 10,000 rows were returned.\n- Table output looks complete -- there is no ellipsis or footer.\n- Piping to jq, wc -l, or grep produces a plausible-looking number that\n  is silently wrong.\n\n## Concrete Example\n\n  # WRONG -- returns 10 rows, exit 0, no warning\n  ctl list orders --status paid --format json | jq length\n  # Output: 10\n\n  # CORRECT -- returns all 36 paid orders\n  ctl list orders --status paid --format json --limit 1000 | jq length\n  # Output: 36\n\nAn engineer writing a billing reconciliation script who forgets --limit would\nconclude there are exactly 10 paid orders -- **off by 26** -- and ship that\nnumber to stakeholders with no indication anything was amiss.\n\n## The Rule\n\n**Always pass --limit 1000 (or higher) whenever you need a complete result\nset.** Treat the default limit as a convenience for interactive browsing, not\nfor any automated or analytical workflow.\n\n## Quick Checklist\n\n1. Every ctl list call in a script or notebook -- add --limit 1000.\n2. Counting records? Cross-check with ctl search and compare totals.\n3. Find-all-X for user Y? Paginate explicitly or set --limit higher than expected.\n4. Code review? Grep for bare ctl list without --limit; flag it.\nENDOFFILE\"",
+      "allowed": false,
+      "rejection_reason": "redirect target 'silently' must start with one of ['/tmp/']",
+      "exit_code": null,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 0,
+      "timed_out": false
+    },
+    {
+      "turn": 9,
+      "tool_use_id": "call_6da9d30dbc684a0ebf88db8b",
+      "command": "python3 -c \"\ntext = '''# Cookbook: Beware the Default --limit in ctl list\n\n## The Pitfall\n\nctl list <resource> silently caps output at **10 rows** by default. There is\nno warning, no truncation notice, and no hint that more records exist. Any\ndownstream count, aggregation, or find-all-X task that omits --limit will\nreturn a **wrong answer with full confidence**.\n\n## Why It Is Dangerous\n\n- The exit code is 0 (success) whether 10 or 10,000 rows were returned.\n- Table output looks complete -- there is no ellipsis or footer.\n- Piping to jq, wc -l, or grep produces a plausible-looking number that\n  is silently wrong.\n\n## Concrete Example\n\n  # WRONG -- returns 10 rows, exit 0, no warning\n  ctl list orders --status paid --format json | jq length\n  # Output: 10\n\n  # CORRECT -- returns all 36 paid orders\n  ctl list orders --status paid --format json --limit 1000 | jq length\n  # Output: 36\n\nAn engineer writing a billing reconciliation script who forgets --limit would\nconclude there are exactly 10 paid orders -- **off by 26** -- and ship that\nnumber to stakeholders with no indication anything was amiss.\n\n## The Rule\n\n**Always pass --limit 1000 (or higher) whenever you need a complete result\nset.** Treat the default limit as a convenience for interactive browsing, not\nfor any automated or analytical workflow.\n\n## Quick Checklist\n\n1. Every ctl list call in a script or notebook -- add --limit 1000.\n2. Counting records? Cross-check with ctl search and compare totals.\n3. Find-all-X for user Y? Paginate explicitly or set --limit higher than expected.\n4. Code review? Grep for bare ctl list without --limit; flag it.\n'''\nwith open('/tmp/cookbook-limit-pitfall.md', 'w') as f:\n    f.write(text)\nprint('written')\n\"",
+      "allowed": false,
+      "rejection_reason": "redirect target 'silently' must start with one of ['/tmp/']",
+      "exit_code": null,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 0,
+      "timed_out": false
+    },
+    {
+      "turn": 10,
+      "tool_use_id": "call_05ee560d2b574b46844fc6ac",
+      "command": "python3 /tmp/write_cookbook.py",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "/opt/homebrew/Cellar/python@3.14/3.14.4/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python: can't open file '/tmp/write_cookbook.py': [Errno 2] No such file or directory\n",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 42,
+      "timed_out": false
+    },
+    {
+      "turn": 11,
+      "tool_use_id": "call_efead8910e4f440d9ff89326",
+      "command": "python3 -c \"\nimport os\nlines = [\n    '# Cookbook: Beware the Default --limit in ctl list',\n    '',\n    '## The Pitfall',\n    '',\n    'ctl list <resource> silently caps output at **10 rows** by default.',\n    'There is no warning, no truncation notice, and no hint that more',\n    'records exist. Any downstream count, aggregation, or find-all-X task',\n    'that omits --limit will return a **wrong answer with full confidence**.',\n    '',\n    '## Why It Is Dangerous',\n    '',\n    '- The exit code is 0 (success) whether 10 or 10,000 rows were returned.',\n    '- Table output looks complete -- there is no ellipsis or footer.',\n    '- Piping to jq, wc -l, or grep produces a plausible-looking number',\n    '  that is wrong.',\n    '',\n    '## Concrete Example',\n    '',\n    '  # WRONG -- returns 10 rows, exit 0, no warning',\n    '  ctl list orders --status paid --format json | jq length',\n    '  # Output: 10',\n    '',\n    '  # CORRECT -- returns all 36 paid orders',\n    '  ctl list orders --status paid --format json --limit 1000 | jq length',\n    '  # Output: 36',\n    '',\n    'An engineer writing a billing reconciliation script who forgets',\n    '--limit would conclude there are exactly 10 paid orders -- **off by',\n    '26** -- and ship that number to stakeholders with no indication',\n    'anything was amiss.',\n    '',\n    '## The Rule',\n    '',\n    '**Always pass --limit 1000 (or higher) whenever you need a complete',\n    'result set.** Treat the default limit as a convenience for interactive',\n    'browsing, not for any automated or analytical workflow.',\n    '',\n    '## Quick Checklist',\n    '',\n    '1. Every ctl list call in a script or notebook -- add --limit 1000.',\n    '2. Counting records? Cross-check with ctl search and compare totals.',\n    '3. Find-all-X for user Y? Paginate or set --limit higher than expected.',\n    '4. Code review? Grep for bare ctl list without --limit; flag it.',\n]\nwith open('/tmp/cookbook-limit-pitfall.md', 'w') as f:\n    f.write(os.linesep.join(lines) + os.linesep)\nprint('written')\n\"",
+      "allowed": false,
+      "rejection_reason": "redirect target 'silently' must start with one of ['/tmp/']",
+      "exit_code": null,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 0,
+      "timed_out": false
+    },
+    {
+      "turn": 12,
+      "tool_use_id": "call_ddf0ceb499a64a9fa9250a8f",
+      "command": "python3 -c \"\nimport os\nlines = []\nlines.append('# Cookbook: Beware the Default --limit in ctl list')\nlines.append('')\nlines.append('## The Pitfall')\nlines.append('')\nlines.append('ctl list <resource> silently caps output at **10 rows** by default.')\nlines.append('There is no warning, no truncation notice, and no hint that more')\nlines.append('records exist. Any downstream count, aggregation, or find-all-X task')\nlines.append('that omits --limit will return a **wrong answer with full confidence**.')\nlines.append('')\nlines.append('## Why It Is Dangerous')\nlines.append('')\nlines.append('- The exit code is 0 (success) whether 10 or 10,000 rows were returned.')\nlines.append('- Table output looks complete -- there is no ellipsis or footer.')\nlines.append('- Piping to jq, wc -l, or grep produces a plausible-looking number')\nlines.append('  that is wrong.')\nlines.append('')\nlines.append('## Concrete Example')\nlines.append('')\nlines.append('  # WRONG -- returns 10 rows, exit 0, no warning')\nlines.append('  ctl list orders --status paid --format json | jq length')\nlines.append('  # Output: 10')\nlines.append('')\nlines.append('  # CORRECT -- returns all 36 paid orders')\nlines.append('  ctl list orders --status paid --format json --limit 1000 | jq length')\nlines.append('  # Output: 36')\nlines.append('')\nlines.append('An engineer writing a billing reconciliation script who forgets')\nlines.append('--limit would conclude there are exactly 10 paid orders -- **off by')\nlines.append('26** -- and ship that number to stakeholders with no indication')\nlines.append('anything was amiss.')\nlines.append('')\nlines.append('## The Rule')\nlines.append('')\nlines.append('**Always pass --limit 1000 (or higher) whenever you need a complete')\nlines.append('result set.** Treat the default limit as a convenience for interactive')\nlines.append('browsing, not for any automated or analytical workflow.')\nlines.append('')\nlines.append('## Quick Checklist')\nlines.append('')\nlines.append('1. Every ctl list call in a script or notebook -- add --limit 1000.')\nlines.append('2. Counting records? Cross-check with ctl search and compare totals.')\nlines.append('3. Find-all-X for user Y? Paginate or set --limit higher than expected.')\nlines.append('4. Code review? Grep for bare ctl list without --limit; flag it.')\nwith open('/tmp/cookbook-limit-pitfall.md', 'w') as f:\n    f.write(os.linesep.join(lines) + os.linesep)\nprint('written')\n\"",
+      "allowed": false,
+      "rejection_reason": "redirect target 'silently' must start with one of ['/tmp/']",
+      "exit_code": null,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 0,
+      "timed_out": false
+    },
+    {
+      "turn": 13,
+      "tool_use_id": "call_a88fa8af039948848e2827ae",
+      "command": "cat > /tmp/write_cookbook.py << 'PYEOF'\nimport os\nlines = []\nlines.append(\"# Cookbook: Beware the Default --limit in ctl list\")\nlines.append(\"\")\nlines.append(\"## The Pitfall\")\nlines.append(\"\")\nlines.append(\"ctl list silently caps output at **10 rows** by default.\")\nlines.append(\"There is no warning, no truncation notice, and no hint that more\")\nlines.append(\"records exist. Any downstream count, aggregation, or find-all-X task\")\nlines.append(\"that omits --limit will return a **wrong answer with full confidence**.\")\nlines.append(\"\")\nlines.append(\"## Why It Is Dangerous\")\nlines.append(\"\")\nlines.append(\"- The exit code is 0 (success) whether 10 or 10,000 rows were returned.\")\nlines.append(\"- Table output looks complete -- there is no ellipsis or footer.\")\nlines.append(\"- Piping to jq, wc -l, or grep produces a plausible-looking number\")\nlines.append(\"  that is wrong.\")\nlines.append(\"\")\nlines.append(\"## Concrete Example\")\nlines.append(\"\")\nlines.append(\"  # WRONG -- returns 10 rows, exit 0, no warning\")\nlines.append(\"  ctl list orders --status paid --format json | jq length\")\nlines.append(\"  # Output: 10\")\nlines.append(\"\")\nlines.append(\"  # CORRECT -- returns all 36 paid orders\")\nlines.append(\"  ctl list orders --status paid --format json --limit 1000 | jq length\")\nlines.append(\"  # Output: 36\")\nlines.append(\"\")\nlines.append(\"An engineer writing a billing reconciliation script who forgets\")\nlines.append(\"--limit would conclude there are exactly 10 paid orders -- **off by\")\nlines.append(\"26** -- and ship that number to stakeholders with no indication\")\nlines.append(\"anything was amiss.\")\nlines.append(\"\")\nlines.append(\"## The Rule\")\nlines.append(\"\")\nlines.append(\"**Always pass --limit 1000 (or higher) whenever you need a complete\")\nlines.append(\"result set.** Treat the default limit as a convenience for interactive\")\nlines.append(\"browsing, not for any automated or analytical workflow.\")\nlines.append(\"\")\nlines.append(\"## Quick Checklist\")\nlines.append(\"\")\nlines.append(\"1. Every ctl list call in a script or notebook -- add --limit 1000.\")\nlines.append(\"2. Counting records? Cross-check with ctl search and compare totals.\")\nlines.append(\"3. Find-all-X for user Y? Paginate or set --limit higher than expected.\")\nlines.append(\"4. Code review? Grep for bare ctl list without --limit; flag it.\")\nwith open(\"/tmp/cookbook-limit-pitfall.md\", \"w\") as f:\n    f.write(os.linesep.join(lines) + os.linesep)\nprint(\"written\")\nPYEOF",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 20,
+      "timed_out": false
+    },
+    {
+      "turn": 14,
+      "tool_use_id": "call_8c03c87e5bee4141b85d1077",
+      "command": "python3 /tmp/write_cookbook.py",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "written\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 34,
+      "timed_out": false
+    },
+    {
+      "turn": 15,
+      "tool_use_id": "call_c3f62cb620f24720a6fd710a",
+      "command": "cat /tmp/cookbook-limit-pitfall.md",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "# Cookbook: Beware the Default --limit in ctl list\n\n## The Pitfall\n\nctl list silently caps output at **10 rows** by default.\nThere is no warning, no truncation notice, and no hint that more\nrecords exist. Any downstream count, aggregation, or find-all-X task\nthat omits --limit will return a **wrong answer with full confidence**.\n\n## Why It Is Dangerous\n\n- The exit code is 0 (success) whether 10 or 10,000 rows were returned.\n- Table output looks complete -- there is no ellipsis or footer.\n- Piping to jq, wc -l, or grep produces a plausible-looking number\n  that is wrong.\n\n## Concrete Example\n\n  # WRONG -- returns 10 rows, exit 0, no warning\n  ctl list orders --status paid --format json | jq length\n  # Output: 10\n\n  # CORRECT -- returns all 36 paid orders\n  ctl list orders --status paid --format json --limit 1000 | jq length\n  # Output: 36\n\nAn engineer writing a billing reconciliation script who forgets\n--limit would conclude there are exactly 10 paid orders -- **off by\n26** -- and ship that number to stakeholders with no indication\nanything was amiss.\n\n## The Rule\n\n**Always pass --limit 1000 (or higher) whenever you need a complete\nresult set.** Treat the default limit as a convenience for interactive\nbrowsing, not for any automated or analytical workflow.\n\n## Quick Checklist\n\n1. Every ctl list call in a script or notebook -- add --limit 1000.\n2. Counting records? Cross-check with ctl search and compare totals.\n3. Find-all-X for user Y? Paginate or set --limit higher than expected.\n4. Code review? Grep for bare ctl list without --limit; flag it.\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 10,
+      "timed_out": false
+    }
+  ],
+  "setup_calls": [],
+  "rejected_commands": [
+    {
+      "command": "ctl list orders --format json --limit 1000 2>/dev/null | wc -l",
+      "reason": "redirect target '/dev/null' must start with one of ['/tmp/']"
+    },
+    {
+      "command": "ctl list orders --format json --limit 10 2>/dev/null | wc -l",
+      "reason": "redirect target '/dev/null' must start with one of ['/tmp/']"
+    },
+    {
+      "command": "cat > /tmp/cookbook-limit-pitfall.md << 'EOF'\n# Cookbook: Beware the Default `--limit` in `ctl list`\n\n## The Pitfall\n\n`ctl list <resource>` silently caps output at **10 rows** by default. There is\nno warning, no truncation notice, and no hint that more records exist. Any\ndownstream count, aggregation, or \"find all X\" task that omits `--limit` will\nreturn a **wrong answer with full confidence**.\n\n## Why It's Dangerous\n\n- The exit code is `0` (success) whether 10 or 10,000 rows were returned.\n- Table output looks complete — there is no `…` or `[showing 10 of N]` footer.\n- Piping to `jq`, `wc -l`, or `grep` produces a plausible-looking number that\n  is silently wrong.\n\n## Concrete Example\n\n```bash\n# ❌ WRONG — returns 10 rows, exit 0, no warning\nctl list orders --status paid --format json | jq length\n# → 10\n\n# ✅ CORRECT — returns all 36 paid orders\nctl list orders --status paid --format json --limit 1000 | jq length\n# → 36\n```\n\nAn engineer writing a billing reconciliation script who forgets `--limit` would\nconclude there are exactly 10 paid orders — **off by 26** — and ship that\nnumber to stakeholders with no indication anything was amiss.\n\n## The Rule\n\n**Always pass `--limit 1000` (or higher) whenever you need a complete result\nset.** Treat the default limit as a convenience for interactive browsing, not\nfor any automated or analytical workflow.\n\n## Quick Checklist\n\n1. **Every `ctl list` call in a script or notebook** → add `--limit 1000`.\n2. **Counting records?** → cross-check with `ctl search --query \"status:X\" --scope <resource>` and compare totals.\n3. **\"Find all X for user Y\"** → paginate explicitly or set `--limit` higher than your expected count.\n4. **Code review** → grep for bare `ctl list` without `--limit`; flag it.\nEOF\necho \"done\"",
+      "reason": "command substitution with backticks is not allowed"
+    },
+    {
+      "command": "bash -c \"cat > /tmp/cookbook-limit-pitfall.md << 'ENDOFFILE'\n# Cookbook: Beware the Default --limit in ctl list\n\n## The Pitfall\n\nctl list <resource> silently caps output at **10 rows** by default. There is\nno warning, no truncation notice, and no hint that more records exist. Any\ndownstream count, aggregation, or find-all-X task that omits --limit will\nreturn a **wrong answer with full confidence**.\n\n## Why It Is Dangerous\n\n- The exit code is 0 (success) whether 10 or 10,000 rows were returned.\n- Table output looks complete -- there is no ellipsis or footer.\n- Piping to jq, wc -l, or grep produces a plausible-looking number that\n  is silently wrong.\n\n## Concrete Example\n\n  # WRONG -- returns 10 rows, exit 0, no warning\n  ctl list orders --status paid --format json | jq length\n  # Output: 10\n\n  # CORRECT -- returns all 36 paid orders\n  ctl list orders --status paid --format json --limit 1000 | jq length\n  # Output: 36\n\nAn engineer writing a billing reconciliation script who forgets --limit would\nconclude there are exactly 10 paid orders -- **off by 26** -- and ship that\nnumber to stakeholders with no indication anything was amiss.\n\n## The Rule\n\n**Always pass --limit 1000 (or higher) whenever you need a complete result\nset.** Treat the default limit as a convenience for interactive browsing, not\nfor any automated or analytical workflow.\n\n## Quick Checklist\n\n1. Every ctl list call in a script or notebook -- add --limit 1000.\n2. Counting records? Cross-check with ctl search and compare totals.\n3. Find-all-X for user Y? Paginate explicitly or set --limit higher than expected.\n4. Code review? Grep for bare ctl list without --limit; flag it.\nENDOFFILE\"",
+      "reason": "redirect target 'silently' must start with one of ['/tmp/']"
+    },
+    {
+      "command": "python3 -c \"\ntext = '''# Cookbook: Beware the Default --limit in ctl list\n\n## The Pitfall\n\nctl list <resource> silently caps output at **10 rows** by default. There is\nno warning, no truncation notice, and no hint that more records exist. Any\ndownstream count, aggregation, or find-all-X task that omits --limit will\nreturn a **wrong answer with full confidence**.\n\n## Why It Is Dangerous\n\n- The exit code is 0 (success) whether 10 or 10,000 rows were returned.\n- Table output looks complete -- there is no ellipsis or footer.\n- Piping to jq, wc -l, or grep produces a plausible-looking number that\n  is silently wrong.\n\n## Concrete Example\n\n  # WRONG -- returns 10 rows, exit 0, no warning\n  ctl list orders --status paid --format json | jq length\n  # Output: 10\n\n  # CORRECT -- returns all 36 paid orders\n  ctl list orders --status paid --format json --limit 1000 | jq length\n  # Output: 36\n\nAn engineer writing a billing reconciliation script who forgets --limit would\nconclude there are exactly 10 paid orders -- **off by 26** -- and ship that\nnumber to stakeholders with no indication anything was amiss.\n\n## The Rule\n\n**Always pass --limit 1000 (or higher) whenever you need a complete result\nset.** Treat the default limit as a convenience for interactive browsing, not\nfor any automated or analytical workflow.\n\n## Quick Checklist\n\n1. Every ctl list call in a script or notebook -- add --limit 1000.\n2. Counting records? Cross-check with ctl search and compare totals.\n3. Find-all-X for user Y? Paginate explicitly or set --limit higher than expected.\n4. Code review? Grep for bare ctl list without --limit; flag it.\n'''\nwith open('/tmp/cookbook-limit-pitfall.md', 'w') as f:\n    f.write(text)\nprint('written')\n\"",
+      "reason": "redirect target 'silently' must start with one of ['/tmp/']"
+    },
+    {
+      "command": "python3 -c \"\nimport os\nlines = [\n    '# Cookbook: Beware the Default --limit in ctl list',\n    '',\n    '## The Pitfall',\n    '',\n    'ctl list <resource> silently caps output at **10 rows** by default.',\n    'There is no warning, no truncation notice, and no hint that more',\n    'records exist. Any downstream count, aggregation, or find-all-X task',\n    'that omits --limit will return a **wrong answer with full confidence**.',\n    '',\n    '## Why It Is Dangerous',\n    '',\n    '- The exit code is 0 (success) whether 10 or 10,000 rows were returned.',\n    '- Table output looks complete -- there is no ellipsis or footer.',\n    '- Piping to jq, wc -l, or grep produces a plausible-looking number',\n    '  that is wrong.',\n    '',\n    '## Concrete Example',\n    '',\n    '  # WRONG -- returns 10 rows, exit 0, no warning',\n    '  ctl list orders --status paid --format json | jq length',\n    '  # Output: 10',\n    '',\n    '  # CORRECT -- returns all 36 paid orders',\n    '  ctl list orders --status paid --format json --limit 1000 | jq length',\n    '  # Output: 36',\n    '',\n    'An engineer writing a billing reconciliation script who forgets',\n    '--limit would conclude there are exactly 10 paid orders -- **off by',\n    '26** -- and ship that number to stakeholders with no indication',\n    'anything was amiss.',\n    '',\n    '## The Rule',\n    '',\n    '**Always pass --limit 1000 (or higher) whenever you need a complete',\n    'result set.** Treat the default limit as a convenience for interactive',\n    'browsing, not for any automated or analytical workflow.',\n    '',\n    '## Quick Checklist',\n    '',\n    '1. Every ctl list call in a script or notebook -- add --limit 1000.',\n    '2. Counting records? Cross-check with ctl search and compare totals.',\n    '3. Find-all-X for user Y? Paginate or set --limit higher than expected.',\n    '4. Code review? Grep for bare ctl list without --limit; flag it.',\n]\nwith open('/tmp/cookbook-limit-pitfall.md', 'w') as f:\n    f.write(os.linesep.join(lines) + os.linesep)\nprint('written')\n\"",
+      "reason": "redirect target 'silently' must start with one of ['/tmp/']"
+    },
+    {
+      "command": "python3 -c \"\nimport os\nlines = []\nlines.append('# Cookbook: Beware the Default --limit in ctl list')\nlines.append('')\nlines.append('## The Pitfall')\nlines.append('')\nlines.append('ctl list <resource> silently caps output at **10 rows** by default.')\nlines.append('There is no warning, no truncation notice, and no hint that more')\nlines.append('records exist. Any downstream count, aggregation, or find-all-X task')\nlines.append('that omits --limit will return a **wrong answer with full confidence**.')\nlines.append('')\nlines.append('## Why It Is Dangerous')\nlines.append('')\nlines.append('- The exit code is 0 (success) whether 10 or 10,000 rows were returned.')\nlines.append('- Table output looks complete -- there is no ellipsis or footer.')\nlines.append('- Piping to jq, wc -l, or grep produces a plausible-looking number')\nlines.append('  that is wrong.')\nlines.append('')\nlines.append('## Concrete Example')\nlines.append('')\nlines.append('  # WRONG -- returns 10 rows, exit 0, no warning')\nlines.append('  ctl list orders --status paid --format json | jq length')\nlines.append('  # Output: 10')\nlines.append('')\nlines.append('  # CORRECT -- returns all 36 paid orders')\nlines.append('  ctl list orders --status paid --format json --limit 1000 | jq length')\nlines.append('  # Output: 36')\nlines.append('')\nlines.append('An engineer writing a billing reconciliation script who forgets')\nlines.append('--limit would conclude there are exactly 10 paid orders -- **off by')\nlines.append('26** -- and ship that number to stakeholders with no indication')\nlines.append('anything was amiss.')\nlines.append('')\nlines.append('## The Rule')\nlines.append('')\nlines.append('**Always pass --limit 1000 (or higher) whenever you need a complete')\nlines.append('result set.** Treat the default limit as a convenience for interactive')\nlines.append('browsing, not for any automated or analytical workflow.')\nlines.append('')\nlines.append('## Quick Checklist')\nlines.append('')\nlines.append('1. Every ctl list call in a script or notebook -- add --limit 1000.')\nlines.append('2. Counting records? Cross-check with ctl search and compare totals.')\nlines.append('3. Find-all-X for user Y? Paginate or set --limit higher than expected.')\nlines.append('4. Code review? Grep for bare ctl list without --limit; flag it.')\nwith open('/tmp/cookbook-limit-pitfall.md', 'w') as f:\n    f.write(os.linesep.join(lines) + os.linesep)\nprint('written')\n\"",
+      "reason": "redirect target 'silently' must start with one of ['/tmp/']"
+    }
+  ],
+  "usage": {
+    "input_tokens": 97172,
+    "output_tokens": 5528,
+    "cache_read_input_tokens": 91200,
+    "cache_creation_input_tokens": 0,
+    "total_calls": 17
+  },
+  "final_text": "The cookbook entry has been written to `/tmp/cookbook-limit-pitfall.md`. Here's a summary of what it covers:\n\n---\n\n**5-Bullet Cookbook Entry: Beware the Default `--limit` in `ctl list`**\n\n1. **The Pitfall** — `ctl list` silently caps output at 10 rows by default. No warning, no truncation notice, no hint that more records exist. Any task that omits `--limit` returns a wrong answer with full confidence.\n\n2. **Why It's Dangerous** — Exit code is `0` (success) regardless of whether 10 or 10,000 rows were returned. Table output looks complete with no ellipsis or footer. Pipes to `jq`, `wc -l`, or `grep` produce plausible-looking but wrong numbers.\n\n3. **Concrete Example** — `ctl list orders --status paid --format json | jq length` returns **10**. The real count is **36**. An engineer writing a billing reconciliation script would conclude there are exactly 10 paid orders — **off by 26** — and ship that number to stakeholders with no indication anything was amiss.\n\n4. **The Rule** — Always pass `--limit 1000` (or higher) whenever you need a complete result set. Treat the default limit as a convenience for interactive browsing only.\n\n5. **Quick Checklist** — (a) Every `ctl list` in a script gets `--limit 1000`. (b) Cross-check counts with `ctl search`. (c) \"Find all X for user Y\" needs explicit pagination. (d) Code review: grep for bare `ctl list` without `--limit` and flag it.",
+  "stop_reason": "end_turn",
+  "api_errors": [],
+  "dry_run": false,
+  "writable_prefixes_resolved": [
+    "/tmp/"
+  ],
+  "skills_loaded": [],
+  "skill_load_calls": [],
+  "artifact_files_copied": []
+}

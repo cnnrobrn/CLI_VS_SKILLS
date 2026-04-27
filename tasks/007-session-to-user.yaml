@@ -1,0 +1,25 @@
+id: "007"
+title: "Resolve the user behind the longest active session"
+bucket: stateful
+prompt: |
+  Among active sessions, find the one with the longest duration (or
+  the oldest start time if duration isn't precomputed). Then look up
+  the user who owns that session and report their id and email.
+rule_check:
+  - id: listed_sessions
+    assert: tool_called
+    match:
+      argv_regex: "^ctl (list|search).*sessions"
+    weight: 2
+  - id: fetched_user
+    assert: tool_called
+    match:
+      argv_regex: "^ctl get users u[0-9]{3}"
+    weight: 2
+  - id: sequence_sessions_then_user
+    assert: tool_sequence
+    sequence:
+      - { argv_regex: "^ctl (list|search).*sessions" }
+      - { argv_regex: "^ctl get users u[0-9]{3}" }
+    weight: 2
+tags: [sessions, users, stateful]

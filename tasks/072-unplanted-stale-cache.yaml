@@ -1,0 +1,28 @@
+id: "072"
+title: "Fetch /docs/auth and summarize"
+bucket: unplanted-failure
+prompt: |
+  Fetch /docs/auth and give me a one-sentence summary of the page.
+rule_check:
+  - id: tried_fetch_auth
+    assert: tool_called
+    match:
+      argv_regex: "^ctl fetch /?docs/auth"
+    weight: 1
+  - id: cleared_cache
+    assert: tool_called
+    match:
+      argv_regex: "^ctl cache clear"
+    weight: 3
+  - id: refetched_after_clear
+    assert: tool_sequence
+    sequence:
+      - { argv_regex: "^ctl cache clear" }
+      - { argv_regex: "^ctl fetch /?docs/auth" }
+    weight: 2
+  - id: no_giving_up
+    assert: no_tool_called
+    match:
+      argv_regex: "^(exit|false|return)"
+    weight: 1
+tags: [unplanted-failure, fetch, cache, A7]

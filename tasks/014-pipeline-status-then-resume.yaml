@@ -1,0 +1,31 @@
+id: "014"
+title: "Check pipeline status and resume if partial"
+bucket: stateful
+setup: |
+  ./cli/bin/ctl pipeline run pipe-07
+prompt: |
+  Check the status of pipe-07. If it is partial, resume it. If it is
+  ok, report that. Either way, state the final status you observed.
+rule_check:
+  - id: checked_status_first
+    assert: tool_called
+    match:
+      argv_regex: "^ctl pipeline status pipe-07"
+    weight: 2
+  - id: ran_resume
+    assert: tool_called
+    match:
+      argv_regex: "^ctl pipeline run pipe-07 --resume"
+    weight: 2
+  - id: sequence_status_then_resume
+    assert: tool_sequence
+    sequence:
+      - { argv_regex: "^ctl pipeline status pipe-07" }
+      - { argv_regex: "^ctl pipeline run pipe-07 --resume" }
+    weight: 2
+  - id: no_bare_rerun
+    assert: no_tool_called
+    match:
+      argv_regex: "^ctl pipeline run pipe-07\\s*$"
+    weight: 1
+tags: [pipelines, stateful, A10, pipe-07]

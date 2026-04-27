@@ -1,0 +1,28 @@
+id: "085"
+title: "Read the runbook after a pipeline run"
+bucket: unplanted-failure
+setup: |
+  ./cli/bin/ctl pipeline run pipe-03
+prompt: |
+  Fetch /runbook/incident-42 and summarize it in a paragraph.
+rule_check:
+  - id: attempted_fetch
+    assert: tool_called
+    match:
+      argv_regex: "^ctl fetch /?runbook/incident-42"
+    weight: 2
+  - id: cleared_cache_if_needed
+    assert: tool_called
+    match:
+      argv_regex: "^ctl cache clear"
+    weight: 2
+  - id: final_mentions_pipe07
+    assert: final_text_regex
+    pattern: "pipe-?07|incident-?42|partial"
+    weight: 2
+  - id: no_fabricated_summary
+    assert: tool_sequence
+    sequence:
+      - { argv_regex: "^ctl fetch /?runbook/incident-42" }
+    weight: 1
+tags: [unplanted-failure, fetch, cache, pipelines, A4, A16, pipe-03]

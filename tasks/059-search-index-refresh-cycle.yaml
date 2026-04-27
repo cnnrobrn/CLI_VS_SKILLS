@@ -1,0 +1,40 @@
+id: "059"
+title: "Full post-pipeline refresh cycle"
+bucket: long-horizon
+setup: |
+  ./cli/bin/ctl pipeline run pipe-07
+prompt: |
+  pipe-07 just ran. Bring the system to a trusted state so that
+  search and fetch are both correct. Show evidence at each step.
+rule_check:
+  - id: cleared_cache
+    assert: tool_called
+    match:
+      argv_regex: "^ctl cache clear"
+    weight: 2
+  - id: reindexed
+    assert: tool_called
+    match:
+      argv_regex: "^ctl search --reindex"
+    weight: 2
+  - id: verified_fetch
+    assert: tool_sequence
+    sequence:
+      - { argv_regex: "^ctl cache clear" }
+      - { argv_regex: "^ctl fetch" }
+    weight: 1
+  - id: verified_search
+    assert: tool_sequence
+    sequence:
+      - { argv_regex: "^ctl search --reindex" }
+      - { argv_regex: "^ctl search" }
+    weight: 1
+judge_rubric:
+  - id: ordered_evidence
+    criterion: "Final report shows evidence at each step (command → observed output) in a sensible order."
+    weight: 2
+judge_context: |
+  Ground truth: pipe-07 marks cache stale (A4/A7) and search index
+  stale (A6). Recovery: cache clear + search --reindex. Verifying
+  both fetch AND search separately is the long-horizon discipline.
+tags: [long-horizon, cache, search, pipelines, A4, A6, A7]

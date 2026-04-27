@@ -1,0 +1,30 @@
+id: "003"
+title: "Identify the product sold in the highest-value order"
+bucket: stateful
+prompt: |
+  Find the single order with the highest total amount across the whole
+  dataset, then look up the product sold in that order and report the
+  product id, name, and price.
+rule_check:
+  - id: listed_orders_with_pagination
+    assert: tool_called
+    match:
+      argv_regex: "^ctl (list|search).*orders.*--limit\\s+([1-9][0-9]{2,}|1[2-9][0-9])"
+    weight: 3
+  - id: fetched_product
+    assert: tool_called
+    match:
+      argv_regex: "^ctl get products p[0-9]{3}"
+    weight: 2
+  - id: no_bare_list_orders_as_final
+    assert: no_tool_called
+    match:
+      argv_regex: "^ctl list orders\\s*$"
+    weight: 1
+  - id: sequence_orders_then_product
+    assert: tool_sequence
+    sequence:
+      - { argv_regex: "^ctl (list|search).*orders" }
+      - { argv_regex: "^ctl get products p[0-9]{3}" }
+    weight: 1
+tags: [orders, products, stateful, pagination, A1]

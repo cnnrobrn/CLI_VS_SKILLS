@@ -1,0 +1,1446 @@
+{
+  "task_id": "063",
+  "task_title": "Prod deploy with pre-flight and verification",
+  "task_bucket": "long-horizon",
+  "task_tags": [
+    "long-horizon",
+    "pipelines",
+    "A2",
+    "pipe-01"
+  ],
+  "arm": "cli-only",
+  "trial": 0,
+  "model": "z-ai/glm-5.1",
+  "started_at": "2026-04-26T19:39:45.391198+00:00",
+  "ended_at": "2026-04-26T19:41:13.720807+00:00",
+  "wall_clock_seconds": 88.33,
+  "ctl_state_dir": "/Users/connorobrien/Documents/CLI_VS_SKILLS/results/zai-glm-tooled/063/cli-only/trial_0/ctl-state",
+  "workdir": "/Users/connorobrien/Documents/CLI_VS_SKILLS/results/zai-glm-tooled/063/cli-only/trial_0",
+  "system_prompt": "You are an autonomous agent being evaluated on a benchmark.\n\nEnvironment:\n- Your working directory is a repo root. You have ONE tool: `bash`.\n- A custom CLI named `ctl` lives at ./cli/bin/ctl (also reachable as `ctl`).\n- The CLI reads canned fixtures from disk and does NOT access the network.\n- The CLI honors a pinned \"now\" of 2026-04-24T00:00:00Z for --since filters.\n- Allowed executables: ./cli/bin/ctl, ctl, cat, ls, mkdir, head, tail, wc,\n  grep, jq, python3, echo, bash (only as `bash -c \"...\"`, and the inner\n  command is re-checked against the same allowlist).\n- You MAY redirect output to files under /tmp/ (and under $CTL_STATE_DIR).\n- Pipes (|), command chaining (;, &&, ||), and command substitution\n  ($(...) or backticks) inside a single command string are NOT allowed.\n  If you need to combine operations, wrap the whole line in\n  `bash -c \"cmd1 && cmd2\"` — each sub-command still has to pass the\n  allowlist.\n- Each command has a 30-second timeout.\n\nTask rules:\n- Follow the user's instructions exactly. Where the task asks you to write\n  output to a specific file path, write EXACTLY to that path.\n- If a command fails, read the error and try a different approach. Do not\n  retry the same failing command unchanged.\n- When you are finished, stop calling tools and provide a short final\n  answer. Many tasks will be graded on that final message, so be precise —\n  name IDs, files, and root causes explicitly.\n\n## Reference: cli/README.md\n\nThe following is the complete contents of cli/README.md. It is the only\ndocumentation you have for the `ctl` CLI. Discover any further behavior by\nrunning `ctl --help` and `ctl <subcommand> --help`.\n\n\n# ctl\n\nA deterministic fixture-backed CLI. No network. No live clock. Output for a\ngiven input is fixed.\n\n## Install\n\n```\ngit clone <repo>\ncd CLI_VS_SKILLS\n./cli/bin/ctl --help\n```\n\nRequires Python 3.9+. Stdlib-only (see `cli/requirements.txt`).\n\n## Synopsis\n\n```\nctl <command> [args...]\n```\n\n## Commands\n\n| Command                             | Description                                     |\n|-------------------------------------|-------------------------------------------------|\n| `ctl list <resource>`               | List records for a resource.                    |\n| `ctl get <resource> <id>`           | Fetch a single record.                          |\n| `ctl fetch <url-or-slug>`           | Print a fixture markdown page.                  |\n| `ctl search --query Q`              | Substring search across resource text fields.   |\n| `ctl diff <a> <b>`                  | Structured JSON diff of two records.            |\n| `ctl pipeline run <name>`           | Run a named pipeline.                           |\n| `ctl pipeline status <name>`        | Show last recorded state for a pipeline.        |\n| `ctl cache status`                  | Show cache / state flags.                       |\n| `ctl cache clear [<scope>]`         | Clear cached state (scope = pages/search/pipelines/all). |\n| `ctl version`                       | Print version.                                  |\n| `ctl --help`, `ctl <cmd> --help`    | Usage.                                          |\n\n## Resources\n\n`users` (50), `orders` (120), `tickets` (30), `products` (80), `sessions` (15).\n\n## Common options\n\n| Option                  | Commands      | Description                                  |\n|-------------------------|---------------|----------------------------------------------|\n| `--status <value>`      | `list`        | Filter rows by exact `status` match.         |\n| `--since <date>`        | `list`        | ISO date (`2026-04-20`), ISO datetime, or relative (`7d`, `24h`). |\n| `--limit <n>`           | `list`        | Maximum rows. Default: **10**.               |\n| `--format json\\|yaml\\|table` | `list`, `get` | Output format. Default: `table`.        |\n| `--query Q`             | `search`      | Required. Substring, or `field:value`.        |\n| `--scope <resource>`    | `search`      | Restrict to one resource.                    |\n| `--i`                   | `search`      | Case-insensitive. Default: case-sensitive.   |\n| `--reindex`             | `search`      | Rebuild the search index.                    |\n| `--confirm`             | `pipeline run`| Pass through a confirm gate.                 |\n| `--resume`              | `pipeline run`| Resume a partially-applied pipeline.         |\n| `--rollback`            | `pipeline run`| Roll back an applied pipeline.               |\n| `--verify`              | `pipeline run`| Run an extra verification pass.              |\n\n## Exit codes\n\n| Code | Meaning                                                       |\n|-----:|---------------------------------------------------------------|\n| `0`  | Success.                                                      |\n| `1`  | User error: not found, bad flag, invalid input.               |\n| `2`  | Refused: a pipeline needs `--confirm` or a prerequisite.      |\n\n## Environment\n\n| Variable            | Default             | Meaning                                     |\n|---------------------|---------------------|---------------------------------------------|\n| `CTL_FIXTURES_DIR`  | `<repo>/fixtures`   | Root of the fixture tree.                   |\n| `CTL_STATE_DIR`     | `~/.ctl-state/`     | Scratch state for cache / pipeline flags.   |\n\n## Determinism\n\nPinned \"now\" is `2026-04-24T00:00:00Z`. Relative `--since` values anchor to\nthat instant.\n\n## Version\n\n`1.0.0`\n",
+  "user_prompt": "Run pipe-01 (deploy-prod) safely. Before running, capture a\nsnapshot of what's about to change. Use --confirm. After, verify\nthe deploy succeeded and no cache/search invariants are broken.\n",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Run pipe-01 (deploy-prod) safely. Before running, capture a\nsnapshot of what's about to change. Use --confirm. After, verify\nthe deploy succeeded and no cache/search invariants are broken.\n"
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "I'll work through this step by step: first understand the current state, then capture a pre-deploy snapshot, run the pipeline with `--confirm`, and finally verify everything is healthy.\n\n## Step 1: Understand the current state"
+        },
+        {
+          "type": "tool_use",
+          "id": "call_fd564e40a1e546a585338f2b",
+          "name": "bash",
+          "input": {
+            "command": "ctl pipeline status pipe-01"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_ac7dfaa527de4cb98c5f967c",
+          "name": "bash",
+          "input": {
+            "command": "ctl cache status"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_d8eb4d8c15a44abdaf0e2775",
+          "name": "bash",
+          "input": {
+            "command": "ctl pipeline run pipe-01 --help"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_fd564e40a1e546a585338f2b",
+          "content": "exit_code: 127\nstdout: <empty>\nstderr:\nexecutable not found: [Errno 2] No such file or directory: 'ctl'",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_ac7dfaa527de4cb98c5f967c",
+          "content": "exit_code: 127\nstdout: <empty>\nstderr:\nexecutable not found: [Errno 2] No such file or directory: 'ctl'",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_d8eb4d8c15a44abdaf0e2775",
+          "content": "exit_code: 127\nstdout: <empty>\nstderr:\nexecutable not found: [Errno 2] No such file or directory: 'ctl'",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_93bc3d32e362444fbef7b6a6",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl pipeline status pipe-01"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_0308355311054614a1204e9f",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl cache status"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_ced833852e4b4abda671a0b6",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl pipeline run --help"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_93bc3d32e362444fbef7b6a6",
+          "content": "exit_code: 0\nstdout:\npipeline: pipe-01 (pipe-01)\nran_in_session: no\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_0308355311054614a1204e9f",
+          "content": "exit_code: 0\nstdout:\npages_cache_stale: no\nauth_page_ok: no\nsearch_index_stale: no\npipe-03_ran_in_session: no\npipe-07_state: clean\nstate_files: (none)\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_ced833852e4b4abda671a0b6",
+          "content": "exit_code: 0\nstdout:\nusage: ctl pipeline run <name> [--confirm] [--resume] [--rollback] [--verify]\n       ctl pipeline status <name>\n\n`run` executes the named pipeline; output is read from the fixture (no\nreal work is performed). `status` prints the last recorded state for\nthat pipeline (or `clean` if it has never run in this state dir).\n\nArguments:\n  name              Pipeline name (e.g. deploy-prod, backfill-orders).\n\nOptions:\n  --confirm         Pass through the `requires_confirm` gate.\n  --resume          Continue a partially-applied pipeline from checkpoint.\n  --rollback        Roll back the applied portion of a partial pipeline.\n  --verify          Run an extra verification pass (pipelines that\n                    support it will report discrepancies).\n  -h, --help        Show this message and exit.\n\nExit codes:\n  0    success (including safe no-ops like bare run in partial state)\n  1    unknown pipeline / bad state\n  2    refused (requires --confirm) or prerequisite unmet\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Good. The pipeline hasn't run yet and the cache/search state is clean. Let me capture a pre-deploy snapshot.\n\n## Step 2: Capture pre-deploy snapshot"
+        },
+        {
+          "type": "tool_use",
+          "id": "call_396f8a9cab284a619c6667f6",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl pipeline status pipe-01 --format json"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_62775dcb71ff48358129edf8",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl cache status --format json"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_900200550bea497399855c2d",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl list orders --status pending --limit 120 --format json"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_5b3a65ccd19e47d1b748c349",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl list products --limit 80 --format json"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_396f8a9cab284a619c6667f6",
+          "content": "exit_code: 0\nstdout:\npipeline: pipe-01 (pipe-01)\nran_in_session: no\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_62775dcb71ff48358129edf8",
+          "content": "exit_code: 0\nstdout:\npages_cache_stale: no\nauth_page_ok: no\nsearch_index_stale: no\npipe-03_ran_in_session: no\npipe-07_state: clean\nstate_files: (none)\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_900200550bea497399855c2d",
+          "content": "exit_code: 0\nstdout:\n[\n  {\n    \"id\": \"o007\",\n    \"user_id\": \"u013\",\n    \"total_cents\": 5541,\n    \"currency\": \"GBP\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p032\"\n    ],\n    \"created_at\": \"2026-04-12T10:04:30Z\"\n  },\n  {\n    \"id\": \"o022\",\n    \"user_id\": \"u048\",\n    \"total_cents\": 140672,\n    \"currency\": \"GBP\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p041\",\n      \"p016\"\n    ],\n    \"created_at\": \"2026-04-14T16:50:19Z\"\n  },\n  {\n    \"id\": \"o025\",\n    \"user_id\": \"u004\",\n    \"total_cents\": 145258,\n    \"currency\": \"EUR\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p036\",\n      \"p006\"\n    ],\n    \"created_at\": \"2026-03-24T00:49:41Z\"\n  },\n  {\n    \"id\": \"o028\",\n    \"user_id\": \"u041\",\n    \"total_cents\": 180148,\n    \"currency\": \"USD\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p074\"\n    ],\n    \"created_at\": \"2026-04-16T18:10:20Z\"\n  },\n  {\n    \"id\": \"o029\",\n    \"user_id\": \"u036\",\n    \"total_cents\": 109296,\n    \"currency\": \"GBP\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p011\",\n      \"p032\",\n      \"p016\"\n    ],\n    \"created_at\": \"2026-03-17T08:15:06Z\"\n  },\n  {\n    \"id\": \"o035\",\n    \"user_id\": \"u010\",\n    \"total_cents\": 18918,\n    \"currency\": \"USD\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p020\",\n      \"p035\"\n    ],\n    \"created_at\": \"2026-03-16T12:31:15Z\"\n  },\n  {\n    \"id\": \"o048\",\n    \"user_id\": \"u039\",\n    \"total_cents\": 133431,\n    \"currency\": \"GBP\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p050\",\n      \"p025\"\n    ],\n    \"created_at\": \"2026-03-13T01:20:09Z\"\n  },\n  {\n    \"id\": \"o060\",\n    \"user_id\": \"u034\",\n    \"total_cents\": 108215,\n    \"currency\": \"GBP\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p056\",\n      \"p019\",\n      \"p032\"\n    ],\n    \"created_at\": \"2026-04-15T17:57:17Z\"\n  },\n  {\n    \"id\": \"o061\",\n    \"user_id\": \"u025\",\n    \"total_cents\": 162652,\n    \"currency\": \"GBP\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p011\",\n      \"p079\"\n    ],\n    \"created_at\": \"2026-03-30T20:10:33Z\"\n  },\n  {\n    \"id\": \"o063\",\n    \"user_id\": \"u019\",\n    \"total_cents\": 177830,\n    \"currency\": \"GBP\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p060\"\n    ],\n    \"created_at\": \"2026-04-20T09:56:41Z\"\n  },\n  {\n    \"id\": \"o070\",\n    \"user_id\": \"u034\",\n    \"total_cents\": 131741,\n    \"currency\": \"EUR\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p070\",\n      \"p047\"\n    ],\n    \"created_at\": \"2026-04-11T12:36:30Z\"\n  },\n  {\n    \"id\": \"o080\",\n    \"user_id\": \"u004\",\n    \"total_cents\": 87626,\n    \"currency\": \"USD\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p077\",\n      \"p003\"\n    ],\n    \"created_at\": \"2026-03-16T19:06:15Z\"\n  },\n  {\n    \"id\": \"o081\",\n    \"user_id\": \"u014\",\n    \"total_cents\": 153915,\n    \"currency\": \"USD\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p009\",\n      \"p071\"\n    ],\n    \"created_at\": \"2026-04-08T01:12:02Z\"\n  },\n  {\n    \"id\": \"o083\",\n    \"user_id\": \"u009\",\n    \"total_cents\": 4094,\n    \"currency\": \"EUR\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p015\",\n      \"p004\"\n    ],\n    \"created_at\": \"2026-03-26T09:56:12Z\"\n  },\n  {\n    \"id\": \"o100\",\n    \"user_id\": \"u043\",\n    \"total_cents\": 105262,\n    \"currency\": \"USD\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p019\",\n      \"p073\"\n    ],\n    \"created_at\": \"2026-03-19T00:42:31Z\"\n  },\n  {\n    \"id\": \"o112\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 195707,\n    \"currency\": \"EUR\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p051\"\n    ],\n    \"created_at\": \"2026-04-07T19:56:49Z\"\n  },\n  {\n    \"id\": \"o113\",\n    \"user_id\": \"u041\",\n    \"total_cents\": 30090,\n    \"currency\": \"GBP\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p010\",\n      \"p066\"\n    ],\n    \"created_at\": \"2026-03-11T00:31:25Z\"\n  },\n  {\n    \"id\": \"o114\",\n    \"user_id\": \"u007\",\n    \"total_cents\": 38588,\n    \"currency\": \"EUR\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p045\",\n      \"p019\",\n      \"p031\"\n    ],\n    \"created_at\": \"2026-04-15T13:51:33Z\"\n  }\n]\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_5b3a65ccd19e47d1b748c349",
+          "content": "exit_code: 0\nstdout (truncated):\n[\n  {\n    \"id\": \"p001\",\n    \"name\": \"Acme Foghorn\",\n    \"sku\": \"SKU-0001\",\n    \"price_cents\": 9999,\n    \"inventory\": 57,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p002\",\n    \"name\": \"Acme Anvil\",\n    \"sku\": \"SKU-0002\",\n    \"price_cents\": 499,\n    \"inventory\": 114,\n    \"category\": \"gadgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p003\",\n    \"name\": \"Acme Rocket Skates\",\n    \"sku\": \"SKU-0003\",\n    \"price_cents\": 9999,\n    \"inventory\": 379,\n    \"category\": \"subscriptions\",\n    \"active\": false\n  },\n  {\n    \"id\": \"p004\",\n    \"name\": \"Acme Earthquake Pills\",\n    \"sku\": \"SKU-0004\",\n    \"price_cents\": 1999,\n    \"inventory\": 16,\n    \"category\": \"widgets\",\n    \"active\": false\n  },\n  {\n    \"id\": \"p005\",\n    \"name\": \"Globex Ionizer\",\n    \"sku\": \"SKU-0005\",\n    \"price_cents\": 499,\n    \"inventory\": 258,\n    \"category\": \"subscriptions\",\n    \"active\": false\n  },\n  {\n    \"id\": \"p006\",\n    \"name\": \"Globex Plasma Cell\",\n    \"sku\": \"SKU-0006\",\n    \"price_cents\": 499,\n    \"inventory\": 366,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p007\",\n    \"name\": \"Globex Heat Sink\",\n    \"sku\": \"SKU-0007\",\n    \"price_cents\": 1999,\n    \"inventory\": 301,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p008\",\n    \"name\": \"Initech TPS Binder\",\n    \"sku\": \"SKU-0008\",\n    \"price_cents\": 199,\n    \"inventory\": 388,\n    \"category\": \"gadgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p009\",\n    \"name\": \"Initech Red Stapler\",\n    \"sku\": \"SKU-0009\",\n    \"price_cents\": 999,\n    \"inventory\": 142,\n    \"category\": \"gadgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p010\",\n    \"name\": \"Initech Cover Sheet\",\n    \"sku\": \"SKU-0010\",\n    \"price_cents\": 19999,\n    \"inventory\": 172,\n    \"category\": \"widgets\",\n    \"active\": false\n  },\n  {\n    \"id\": \"p011\",\n    \"name\": \"Umbrella Vaccine\",\n    \"sku\": \"SKU-0011\",\n    \"price_cents\": 199,\n    \"inventory\": 183,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p012\",\n    \"name\": \"Umbrella Tracker\",\n    \"sku\": \"SKU-0012\",\n    \"price_cents\": 19999,\n    \"inventory\": 22,\n    \"category\": \"services\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p013\",\n    \"name\": \"Umbrella Field Kit\",\n    \"sku\": \"SKU-0013\",\n    \"price_cents\": 1999,\n    \"inventory\": 40,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p014\",\n    \"name\": \"Wayne Grapple\",\n    \"sku\": \"SKU-0014\",\n    \"price_cents\": 9999,\n    \"inventory\": 316,\n    \"category\": \"consumables\",\n    \"active\": true,\n    \"inventory_discrepancy\": {\n      \"note\": \"recorded 120, warehouse reports 117\",\n      \"delta\": -3,\n      \"source\": \"pipe-09 reconcile\"\n    }\n  },\n  {\n    \"id\": \"p015\",\n    \"name\": \"Wayne Cowl\",\n    \"sku\": \"SKU-0015\",\n    \"price_cents\": 9999,\n    \"inventory\": 35,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p016\",\n    \"name\": \"Wayne Batmobile Wax\",\n    \"sku\": \"SKU-0016\",\n    \"price_cents\": 19999,\n    \"inventory\": 148,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p017\",\n    \"name\": \"Standard Widget A\",\n    \"sku\": \"SKU-0017\",\n    \"price_cents\": 19999,\n    \"inventory\": 51,\n    \"category\": \"services\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p018\",\n    \"name\": \"Standard Widget B\",\n    \"sku\": \"SKU-0018\",\n    \"price_cents\": 9999,\n    \"inventory\": 427,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p019\",\n    \"name\": \"Standard Widget C\",\n    \"sku\": \"SKU-0019\",\n    \"price_cents\": 999,\n    \"inventory\": 107,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p020\",\n    \"name\": \"Premium Gadget X\",\n    \"sku\": \"SKU-0020\",\n    \"price_cents\": 9999,\n    \"inventory\": 331,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p021\",\n    \"name\": \"Premium Gadget Y\",\n    \"sku\": \"SKU-0021\",\n    \"price_cents\": 499,\n    \"inventory\": 273,\n    \"category\": \"gadgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p022\",\n    \"name\": \"Premium Gadget Z\",\n    \"sku\": \"SKU-0022\",\n    \"price_cents\": 1999,\n    \"inventory\": 138,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p023\",\n    \"name\": \"Consumable Ink\",\n    \"sku\": \"SKU-0023\",\n    \"price_cents\": 999,\n    \"inventory\": 431,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p024\",\n    \"name\": \"Consumable Toner\",\n    \"sku\": \"SKU-0024\",\n    \"price_cents\": 199,\n    \"inventory\": 412,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p025\",\n    \"name\": \"Consumable Ribbon\",\n    \"sku\": \"SKU-0025\",\n    \"price_cents\": 199,\n    \"inventory\": 108,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p026\",\n    \"name\": \"Service Install\",\n    \"sku\": \"SKU-0026\",\n    \"price_cents\": 999,\n    \"inventory\": 108,\n    \"category\": \"services\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p027\",\n    \"name\": \"Service Tuneup\",\n    \"sku\": \"SKU-0027\",\n    \"price_cents\": 9999,\n    \"inventory\": 234,\n    \"category\": \"gadgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p028\",\n    \"name\": \"Service Audit\",\n    \"sku\": \"SKU-0028\",\n    \"price_cents\": 499,\n    \"inventory\": 381,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p029\",\n    \"name\": \"Monthly Plan\",\n    \"sku\": \"SKU-0029\",\n    \"price_cents\": 9999,\n    \"inventory\": 299,\n    \"category\": \"services\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p030\",\n    \"name\": \"Annual Plan\",\n    \"sku\": \"SKU-0030\",\n    \"price_cents\": 1999,\n    \"inventory\": 185,\n    \"category\": \"gadgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p031\",\n    \"name\": \"Acme Foghorn Mk 1\",\n    \"sku\": \"SKU-0031\",\n    \"price_cents\": 499,\n    \"inventory\": 260,\n    \"category\": \"services\",\n    \"active\": false\n  },\n  {\n    \"id\": \"p032\",\n    \"name\": \"Acme Anvil Mk 1\",\n    \"sku\": \"SKU-0032\",\n    \"price_cents\": 199,\n    \"inventory\": 440,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p033\",\n    \"name\": \"Acme Rocket Skates Mk 1\",\n    \"sku\": \"SKU-0033\",\n    \"price_cents\": 499,\n    \"inventory\": 405,\n    \"category\": \"services\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p034\",\n    \"name\": \"Acme Earthquake Pills Mk 1\",\n    \"sku\": \"SKU-0034\",\n    \"price_cents\": 1999,\n    \"inventory\": 195,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p035\",\n    \"name\": \"Globex Ionizer Mk 1\",\n    \"sku\": \"SKU-0035\",\n    \"price_cents\": 4999,\n    \"inventory\": 128,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p036\",\n    \"name\": \"Globex Plasma Cell Mk 1\",\n    \"sku\": \"SKU-0036\",\n    \"price_cents\": 199,\n    \"inventory\": 348,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p037\",\n    \"name\": \"Globex Heat Sink Mk 1\",\n    \"sku\": \"SKU-0037\",\n    \"price_cents\": 4999,\n    \"inventory\": 384,\n    \"category\": \"consumables\",\n    \"active\": true,\n    \"inventory_discrepancy\": {\n      \"note\": \"recorded 42, warehouse reports 50\",\n      \"delta\": 8,\n      \"source\": \"pipe-09 reconcile\"\n    }\n  },\n  {\n    \"id\": \"p038\",\n    \"name\": \"Initech TPS Binder Mk 1\",\n    \"sku\": \"SKU-0038\",\n    \"price_cents\": 999,\n    \"inventory\": 57,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p039\",\n    \"name\": \"Initech Red Stapler Mk 1\",\n    \"sku\": \"SKU-0039\",\n    \"price_cents\": 1999,\n    \"inventory\": 1,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p040\",\n    \"name\": \"Initech Cover Sheet Mk 1\",\n    \"sku\": \"SKU-0040\",\n    \"price_cents\": 19999,\n    \"inventory\": 91,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p041\",\n    \"name\": \"Umbrella Vaccine Mk 1\",\n    \"sku\": \"SKU-0041\",\n    \"price_cents\": 19999,\n    \"inventory\": 320,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p042\",\n    \"name\": \"Umbrella Tracker Mk 1\",\n    \"sku\": \"SKU-0042\",\n    \"price_cents\": 4999,\n    \"inventory\": 311,\n    \"category\": \"gadgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p043\",\n    \"name\": \"Umbrella Field Kit Mk 1\",\n    \"sku\": \"SKU-0043\",\n    \"price_cents\": 19999,\n    \"inventory\": 82,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p044\",\n    \"name\": \"Wayne Grapple Mk 1\",\n    \"sku\": \"SKU-0044\",\n    \"price_cents\": 4999,\n    \"inventory\": 470,\n    \"category\": \"widgets\",\n    \"active\": true,\n    \"pipe_04_skip_reason\": \"missing SKU prefix (legacy import)\"\n  },\n  {\n    \"id\": \"p045\",\n    \"name\": \"Wayne Cowl Mk 1\",\n    \"sku\": \"SKU-0045\",\n    \"price_cents\": 1999,\n    \"inventory\": 9,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p046\",\n    \"name\": \"Wayne Batmobile Wax Mk 1\",\n    \"sku\": \"SKU-0046\",\n    \"price_cents\": 19999,\n    \"inventory\": 413,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p047\",\n    \"name\": \"Standard Widget A Mk 1\",\n    \"sku\": \"SKU-0047\",\n    \"price_cents\": 499,\n    \"inventory\": 449,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p048\",\n    \"name\": \"Standard Widget B Mk 1\",\n    \"sku\": \"SKU-0048\",\n    \"price_cents\": 199,\n    \"inventory\": 374,\n    \"category\": \"services\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p049\",\n    \"name\": \"Standard Widget C Mk 1\",\n    \"sku\": \"SKU-0049\",\n    \"price_cents\": 19999,\n    \"inventory\": 272,\n    \"category\": \"gadgets\",\n    \"active\": false\n  },\n  {\n    \"id\": \"p050\",\n    \"name\": \"Premium Gadget X Mk 1\",\n    \"sku\": \"SKU-0050\",\n    \"price_cents\": 1999,\n    \"inventory\": 484,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p051\",\n    \"name\": \"Premium Gadget Y Mk 1\",\n    \"sku\": \"SKU-0051\",\n    \"price_cents\": 4999,\n    \"inventory\": 446,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p052\",\n    \"name\": \"Premium Gadget Z Mk 1\",\n    \"sku\": \"SKU-0052\",\n    \"price_cents\": 499,\n    \"inventory\": 475,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p053\",\n    \"name\": \"Consumable Ink Mk 1\",\n    \"sku\": \"SKU-0053\",\n    \"price_cents\": 9999,\n    \"inventory\": 102,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p054\",\n    \"name\": \"Consumable Toner Mk 1\",\n    \"sku\": \"SKU-0054\",\n    \"price_cents\": 9999,\n    \"inventory\": 332,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p055\",\n    \"name\": \"Consumable Ribbon Mk 1\",\n    \"sku\": \"SKU-0055\",\n    \"price_cents\": 4999,\n    \"inventory\": 231,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\":",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Let me save the full pre-deploy snapshot and also check what the pipeline will change."
+        },
+        {
+          "type": "tool_use",
+          "id": "call_be4426d8476447869b961ab9",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl list orders --limit 120 --format json > /tmp/pre_deploy_orders.json"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_659b9436a0094196be73ce80",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl list products --limit 80 --format json > /tmp/pre_deploy_products.json"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_beba3c09f51941bcb1ae86da",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl list tickets --limit 30 --format json > /tmp/pre_deploy_tickets.json"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_c472e63af6a942da89ae2d7a",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl list users --limit 50 --format json > /tmp/pre_deploy_users.json"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_63b483793c2e489b93e86f04",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl list sessions --limit 15 --format json > /tmp/pre_deploy_sessions.json"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_be4426d8476447869b961ab9",
+          "content": "exit_code: 0\nstdout: <empty>",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_659b9436a0094196be73ce80",
+          "content": "exit_code: 0\nstdout: <empty>",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_beba3c09f51941bcb1ae86da",
+          "content": "exit_code: 0\nstdout: <empty>",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_c472e63af6a942da89ae2d7a",
+          "content": "exit_code: 0\nstdout: <empty>",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_63b483793c2e489b93e86f04",
+          "content": "exit_code: 0\nstdout: <empty>",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Good, snapshots saved. Now let me also capture the search index state and cache state before the deploy."
+        },
+        {
+          "type": "tool_use",
+          "id": "call_cadd69dff4b94596aad61823",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl search --query \"deploy\" --format json"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_ba7b47167b8747e0baf45f79",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl search --query \"prod\" --format json"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_cadd69dff4b94596aad61823",
+          "content": "exit_code: 1\nstdout: <empty>\nstderr:\nunknown argument: --format\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_ba7b47167b8747e0baf45f79",
+          "content": "exit_code: 1\nstdout: <empty>\nstderr:\nunknown argument: --format\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_b5a87db693b34ea093a8bd97",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl search --query \"deploy\""
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_66e67b0986b04ffd84025c2c",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl search --query \"prod\""
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_b5a87db693b34ea093a8bd97",
+          "content": "exit_code: 0\nstdout:\n[\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t010\",\n    \"match\": {\n      \"subject\": \"API key rotation broke our production deploy\",\n      \"body\": \"Customer reports: api key rotation broke our production deploy.\"\n    }\n  }\n]\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_66e67b0986b04ffd84025c2c",
+          "content": "exit_code: 0\nstdout:\n[\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t009\",\n    \"match\": {\n      \"subject\": \"Bulk delete hangs on large product catalogs\",\n      \"body\": \"Customer reports: bulk delete hangs on large product catalogs.\"\n    }\n  },\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t010\",\n    \"match\": {\n      \"subject\": \"API key rotation broke our production deploy\",\n      \"body\": \"Customer reports: api key rotation broke our production deploy.\"\n    }\n  },\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t029\",\n    \"match\": {\n      \"body\": \"Customer reports: product sku conflict when duplicating a catalog.\"\n    }\n  }\n]\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Good. Now let me also try a dry-run to see what the pipeline would do (without --confirm, it should be refused):"
+        },
+        {
+          "type": "tool_use",
+          "id": "call_3fc7f30f768945258806109c",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl pipeline run pipe-01"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_3fc7f30f768945258806109c",
+          "content": "exit_code: 2\nstdout: <empty>\nstderr:\nrefused\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "As expected — it requires `--confirm`. Now let me run it properly with `--confirm` and `--verify`.\n\n## Step 3: Run the pipeline with --confirm and --verify"
+        },
+        {
+          "type": "tool_use",
+          "id": "call_e6dfe6d035b54c8c96293c22",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl pipeline run pipe-01 --confirm --verify"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_e6dfe6d035b54c8c96293c22",
+          "content": "exit_code: 0\nstdout:\n[1/4] build: ok\n[2/4] test: ok\n[3/4] push-image: ok\n[4/4] rollout: ok\npipeline deploy-prod: ok\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Pipeline ran successfully — all 4 stages passed (build, test, push-image, rollout).\n\n## Step 4: Verify the deploy succeeded"
+        },
+        {
+          "type": "tool_use",
+          "id": "call_4a3f9b2eba2c45a6abf1ccf8",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl pipeline status pipe-01"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_4a3f9b2eba2c45a6abf1ccf8",
+          "content": "exit_code: 0\nstdout:\npipeline: pipe-01 (pipe-01)\nran_in_session: yes\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Pipeline status confirms it ran in the session. Now let me verify cache/search invariants.\n\n## Step 5: Verify cache and search invariants"
+        },
+        {
+          "type": "tool_use",
+          "id": "call_1d85b06df7de456ca096d42b",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl cache status"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_67974f4461f149a4a050ede6",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl search --query \"deploy\""
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_4389399cc7824c79b2e8e186",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl search --query \"prod\""
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_1d85b06df7de456ca096d42b",
+          "content": "exit_code: 0\nstdout:\npages_cache_stale: no\nauth_page_ok: no\nsearch_index_stale: no\npipe-03_ran_in_session: no\npipe-07_state: clean\nstate_files: pipe-01_ran.json\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_67974f4461f149a4a050ede6",
+          "content": "exit_code: 0\nstdout:\n[\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t010\",\n    \"match\": {\n      \"subject\": \"API key rotation broke our production deploy\",\n      \"body\": \"Customer reports: api key rotation broke our production deploy.\"\n    }\n  }\n]\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_4389399cc7824c79b2e8e186",
+          "content": "exit_code: 0\nstdout:\n[\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t009\",\n    \"match\": {\n      \"subject\": \"Bulk delete hangs on large product catalogs\",\n      \"body\": \"Customer reports: bulk delete hangs on large product catalogs.\"\n    }\n  },\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t010\",\n    \"match\": {\n      \"subject\": \"API key rotation broke our production deploy\",\n      \"body\": \"Customer reports: api key rotation broke our production deploy.\"\n    }\n  },\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t029\",\n    \"match\": {\n      \"body\": \"Customer reports: product sku conflict when duplicating a catalog.\"\n    }\n  }\n]\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Let me also verify the data resources are intact by comparing counts:"
+        },
+        {
+          "type": "tool_use",
+          "id": "call_bd31a300ed024d7da4c1e6b3",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl list orders --limit 120 --format json > /tmp/post_deploy_orders.json"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_6bb3391b6d484988a7673e6d",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl list products --limit 80 --format json > /tmp/post_deploy_products.json"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_92dc086d87414019ad24acef",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl list tickets --limit 30 --format json > /tmp/post_deploy_tickets.json"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_dd1d6ecb8f934fe68a71b891",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl list users --limit 50 --format json > /tmp/post_deploy_users.json"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_b5ddb6bd699d4884b382e0f0",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl list sessions --limit 15 --format json > /tmp/post_deploy_sessions.json"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_bd31a300ed024d7da4c1e6b3",
+          "content": "exit_code: 0\nstdout: <empty>",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_6bb3391b6d484988a7673e6d",
+          "content": "exit_code: 0\nstdout: <empty>",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_92dc086d87414019ad24acef",
+          "content": "exit_code: 0\nstdout: <empty>",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_dd1d6ecb8f934fe68a71b891",
+          "content": "exit_code: 0\nstdout: <empty>",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_b5ddb6bd699d4884b382e0f0",
+          "content": "exit_code: 0\nstdout: <empty>",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_8b73bab359914fef85faee34",
+          "name": "bash",
+          "input": {
+            "command": "bash -c \"diff /tmp/pre_deploy_orders.json /tmp/post_deploy_orders.json && echo 'ORDERS: NO CHANGE' || echo 'ORDERS: CHANGED'\""
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_e38ba96bee814b5cbccfecb1",
+          "name": "bash",
+          "input": {
+            "command": "bash -c \"diff /tmp/pre_deploy_products.json /tmp/post_deploy_products.json && echo 'PRODUCTS: NO CHANGE' || echo 'PRODUCTS: CHANGED'\""
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_7aa4757055b645678bd10732",
+          "name": "bash",
+          "input": {
+            "command": "bash -c \"diff /tmp/pre_deploy_tickets.json /tmp/post_deploy_tickets.json && echo 'TICKETS: NO CHANGE' || echo 'TICKETS: CHANGED'\""
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_fa7913b4be604f1c80ff0124",
+          "name": "bash",
+          "input": {
+            "command": "bash -c \"diff /tmp/pre_deploy_users.json /tmp/post_deploy_users.json && echo 'USERS: NO CHANGE' || echo 'USERS: CHANGED'\""
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_51fd016ffbb6482cb05b6569",
+          "name": "bash",
+          "input": {
+            "command": "bash -c \"diff /tmp/pre_deploy_sessions.json /tmp/post_deploy_sessions.json && echo 'SESSIONS: NO CHANGE' || echo 'SESSIONS: CHANGED'\""
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_8b73bab359914fef85faee34",
+          "content": "ERROR: command rejected by harness allowlist.\nreason: bash -c inner command rejected: sub-command 'diff /tmp/pre_deploy_orders.json /tmp/post_deploy_orders.json' rejected: argv[0]='diff' is not in the allowlist. Allowed: ['./cli/bin/ctl', 'ctl', 'cat', 'ls', 'mkdir', 'head', 'tail', 'wc', 'grep', 'jq', 'python3', 'echo', 'bash']\nAllowed executables: ./cli/bin/ctl, ctl, cat, ls, mkdir, head, tail, wc, grep, jq, python3, echo, bash (as `bash -c \"...\"`). Redirects (>, >>) must target /tmp/ or $CTL_STATE_DIR. Command substitution (backticks, $()) and process substitution are never allowed.",
+          "is_error": true
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_e38ba96bee814b5cbccfecb1",
+          "content": "ERROR: command rejected by harness allowlist.\nreason: bash -c inner command rejected: sub-command 'diff /tmp/pre_deploy_products.json /tmp/post_deploy_products.json' rejected: argv[0]='diff' is not in the allowlist. Allowed: ['./cli/bin/ctl', 'ctl', 'cat', 'ls', 'mkdir', 'head', 'tail', 'wc', 'grep', 'jq', 'python3', 'echo', 'bash']\nAllowed executables: ./cli/bin/ctl, ctl, cat, ls, mkdir, head, tail, wc, grep, jq, python3, echo, bash (as `bash -c \"...\"`). Redirects (>, >>) must target /tmp/ or $CTL_STATE_DIR. Command substitution (backticks, $()) and process substitution are never allowed.",
+          "is_error": true
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_7aa4757055b645678bd10732",
+          "content": "ERROR: command rejected by harness allowlist.\nreason: bash -c inner command rejected: sub-command 'diff /tmp/pre_deploy_tickets.json /tmp/post_deploy_tickets.json' rejected: argv[0]='diff' is not in the allowlist. Allowed: ['./cli/bin/ctl', 'ctl', 'cat', 'ls', 'mkdir', 'head', 'tail', 'wc', 'grep', 'jq', 'python3', 'echo', 'bash']\nAllowed executables: ./cli/bin/ctl, ctl, cat, ls, mkdir, head, tail, wc, grep, jq, python3, echo, bash (as `bash -c \"...\"`). Redirects (>, >>) must target /tmp/ or $CTL_STATE_DIR. Command substitution (backticks, $()) and process substitution are never allowed.",
+          "is_error": true
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_fa7913b4be604f1c80ff0124",
+          "content": "ERROR: command rejected by harness allowlist.\nreason: bash -c inner command rejected: sub-command 'diff /tmp/pre_deploy_users.json /tmp/post_deploy_users.json' rejected: argv[0]='diff' is not in the allowlist. Allowed: ['./cli/bin/ctl', 'ctl', 'cat', 'ls', 'mkdir', 'head', 'tail', 'wc', 'grep', 'jq', 'python3', 'echo', 'bash']\nAllowed executables: ./cli/bin/ctl, ctl, cat, ls, mkdir, head, tail, wc, grep, jq, python3, echo, bash (as `bash -c \"...\"`). Redirects (>, >>) must target /tmp/ or $CTL_STATE_DIR. Command substitution (backticks, $()) and process substitution are never allowed.",
+          "is_error": true
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_51fd016ffbb6482cb05b6569",
+          "content": "ERROR: command rejected by harness allowlist.\nreason: bash -c inner command rejected: sub-command 'diff /tmp/pre_deploy_sessions.json /tmp/post_deploy_sessions.json' rejected: argv[0]='diff' is not in the allowlist. Allowed: ['./cli/bin/ctl', 'ctl', 'cat', 'ls', 'mkdir', 'head', 'tail', 'wc', 'grep', 'jq', 'python3', 'echo', 'bash']\nAllowed executables: ./cli/bin/ctl, ctl, cat, ls, mkdir, head, tail, wc, grep, jq, python3, echo, bash (as `bash -c \"...\"`). Redirects (>, >>) must target /tmp/ or $CTL_STATE_DIR. Command substitution (backticks, $()) and process substitution are never allowed.",
+          "is_error": true
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "No `diff` available. Let me use Python to compare the snapshots:"
+        },
+        {
+          "type": "tool_use",
+          "id": "call_3127aff62655412ab31d8fbb",
+          "name": "bash",
+          "input": {
+            "command": "python3 -c \"\nimport json\nresources = ['orders','products','tickets','users','sessions']\nfor r in resources:\n    with open(f'/tmp/pre_deploy_{r}.json') as f: pre = json.load(f)\n    with open(f'/tmp/post_deploy_{r}.json') as f: post = json.load(f)\n    if pre == post:\n        print(f'{r}: NO CHANGE (count={len(pre)})')\n    else:\n        print(f'{r}: CHANGED (pre={len(pre)}, post={len(post)})')\n\""
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_3127aff62655412ab31d8fbb",
+          "content": "exit_code: 0\nstdout:\norders: NO CHANGE (count=120)\nproducts: NO CHANGE (count=80)\ntickets: NO CHANGE (count=30)\nusers: NO CHANGE (count=50)\nsessions: NO CHANGE (count=15)\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "All data resources are unchanged. Let me also verify the search index is not stale and do a reindex check:"
+        },
+        {
+          "type": "tool_use",
+          "id": "call_f7cf9b0f385046c7827e6760",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl search --query \"deploy\" --reindex"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_c2a3f006e70b4c85814467d8",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl cache status"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_f7cf9b0f385046c7827e6760",
+          "content": "exit_code: 0\nstdout:\n[\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t010\",\n    \"match\": {\n      \"subject\": \"API key rotation broke our production deploy\",\n      \"body\": \"Customer reports: api key rotation broke our production deploy.\"\n    }\n  }\n]\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_c2a3f006e70b4c85814467d8",
+          "content": "exit_code: 0\nstdout:\npages_cache_stale: no\nauth_page_ok: no\nsearch_index_stale: no\npipe-03_ran_in_session: no\npipe-07_state: clean\nstate_files: pipe-01_ran.json\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "All invariants hold. Here's the full summary:\n\n---\n\n## Summary\n\n### Pre-deploy snapshot captured\n- All 5 resources saved to `/tmp/pre_deploy_*.json` (orders: 120, products: 80, tickets: 30, users: 50, sessions: 15)\n- Cache state: `pages_cache_stale: no`, `search_index_stale: no`, no state files\n- Pipeline `pipe-01` had not yet run in the session\n\n### Pipeline execution\n- **Command:** `ctl pipeline run pipe-01 --confirm --verify`\n- **Result:** All 4 stages passed:\n  1. `build: ok`\n  2. `test: ok`\n  3. `push-image: ok`\n  4. `rollout: ok`\n- **Pipeline status:** `ran_in_session: yes`\n- **State file created:** `pipe-01_ran.json`\n\n### Post-deploy verification\n- **Data integrity:** All 5 resources (orders, products, tickets, users, sessions) are **unchanged** — pre/post snapshots are identical\n- **Cache invariants:** `pages_cache_stale: no`, `search_index_stale: no` — no cache corruption\n- **Search invariants:** Search results for \"deploy\" and \"prod\" return the same results as before; reindex produces identical output\n- **No stale state:** Only expected state file is `pipe-01_ran.json`\n\n**Conclusion:** Pipeline `pipe-01` (deploy-prod) ran successfully with `--confirm` and `--verify`. No cache or search invariants were broken."
+        }
+      ]
+    }
+  ],
+  "tool_calls": [
+    {
+      "turn": 0,
+      "tool_use_id": "call_fd564e40a1e546a585338f2b",
+      "command": "ctl pipeline status pipe-01",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 127,
+      "stdout": "",
+      "stderr": "executable not found: [Errno 2] No such file or directory: 'ctl'",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 4,
+      "timed_out": false
+    },
+    {
+      "turn": 0,
+      "tool_use_id": "call_ac7dfaa527de4cb98c5f967c",
+      "command": "ctl cache status",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 127,
+      "stdout": "",
+      "stderr": "executable not found: [Errno 2] No such file or directory: 'ctl'",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 2,
+      "timed_out": false
+    },
+    {
+      "turn": 0,
+      "tool_use_id": "call_d8eb4d8c15a44abdaf0e2775",
+      "command": "ctl pipeline run pipe-01 --help",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 127,
+      "stdout": "",
+      "stderr": "executable not found: [Errno 2] No such file or directory: 'ctl'",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 2,
+      "timed_out": false
+    },
+    {
+      "turn": 1,
+      "tool_use_id": "call_93bc3d32e362444fbef7b6a6",
+      "command": "./cli/bin/ctl pipeline status pipe-01",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "pipeline: pipe-01 (pipe-01)\nran_in_session: no\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 29,
+      "timed_out": false
+    },
+    {
+      "turn": 1,
+      "tool_use_id": "call_0308355311054614a1204e9f",
+      "command": "./cli/bin/ctl cache status",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "pages_cache_stale: no\nauth_page_ok: no\nsearch_index_stale: no\npipe-03_ran_in_session: no\npipe-07_state: clean\nstate_files: (none)\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 28,
+      "timed_out": false
+    },
+    {
+      "turn": 1,
+      "tool_use_id": "call_ced833852e4b4abda671a0b6",
+      "command": "./cli/bin/ctl pipeline run --help",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "usage: ctl pipeline run <name> [--confirm] [--resume] [--rollback] [--verify]\n       ctl pipeline status <name>\n\n`run` executes the named pipeline; output is read from the fixture (no\nreal work is performed). `status` prints the last recorded state for\nthat pipeline (or `clean` if it has never run in this state dir).\n\nArguments:\n  name              Pipeline name (e.g. deploy-prod, backfill-orders).\n\nOptions:\n  --confirm         Pass through the `requires_confirm` gate.\n  --resume          Continue a partially-applied pipeline from checkpoint.\n  --rollback        Roll back the applied portion of a partial pipeline.\n  --verify          Run an extra verification pass (pipelines that\n                    support it will report discrepancies).\n  -h, --help        Show this message and exit.\n\nExit codes:\n  0    success (including safe no-ops like bare run in partial state)\n  1    unknown pipeline / bad state\n  2    refused (requires --confirm) or prerequisite unmet\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 27,
+      "timed_out": false
+    },
+    {
+      "turn": 2,
+      "tool_use_id": "call_396f8a9cab284a619c6667f6",
+      "command": "./cli/bin/ctl pipeline status pipe-01 --format json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "pipeline: pipe-01 (pipe-01)\nran_in_session: no\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 42,
+      "timed_out": false
+    },
+    {
+      "turn": 2,
+      "tool_use_id": "call_62775dcb71ff48358129edf8",
+      "command": "./cli/bin/ctl cache status --format json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "pages_cache_stale: no\nauth_page_ok: no\nsearch_index_stale: no\npipe-03_ran_in_session: no\npipe-07_state: clean\nstate_files: (none)\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 26,
+      "timed_out": false
+    },
+    {
+      "turn": 2,
+      "tool_use_id": "call_900200550bea497399855c2d",
+      "command": "./cli/bin/ctl list orders --status pending --limit 120 --format json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[\n  {\n    \"id\": \"o007\",\n    \"user_id\": \"u013\",\n    \"total_cents\": 5541,\n    \"currency\": \"GBP\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p032\"\n    ],\n    \"created_at\": \"2026-04-12T10:04:30Z\"\n  },\n  {\n    \"id\": \"o022\",\n    \"user_id\": \"u048\",\n    \"total_cents\": 140672,\n    \"currency\": \"GBP\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p041\",\n      \"p016\"\n    ],\n    \"created_at\": \"2026-04-14T16:50:19Z\"\n  },\n  {\n    \"id\": \"o025\",\n    \"user_id\": \"u004\",\n    \"total_cents\": 145258,\n    \"currency\": \"EUR\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p036\",\n      \"p006\"\n    ],\n    \"created_at\": \"2026-03-24T00:49:41Z\"\n  },\n  {\n    \"id\": \"o028\",\n    \"user_id\": \"u041\",\n    \"total_cents\": 180148,\n    \"currency\": \"USD\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p074\"\n    ],\n    \"created_at\": \"2026-04-16T18:10:20Z\"\n  },\n  {\n    \"id\": \"o029\",\n    \"user_id\": \"u036\",\n    \"total_cents\": 109296,\n    \"currency\": \"GBP\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p011\",\n      \"p032\",\n      \"p016\"\n    ],\n    \"created_at\": \"2026-03-17T08:15:06Z\"\n  },\n  {\n    \"id\": \"o035\",\n    \"user_id\": \"u010\",\n    \"total_cents\": 18918,\n    \"currency\": \"USD\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p020\",\n      \"p035\"\n    ],\n    \"created_at\": \"2026-03-16T12:31:15Z\"\n  },\n  {\n    \"id\": \"o048\",\n    \"user_id\": \"u039\",\n    \"total_cents\": 133431,\n    \"currency\": \"GBP\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p050\",\n      \"p025\"\n    ],\n    \"created_at\": \"2026-03-13T01:20:09Z\"\n  },\n  {\n    \"id\": \"o060\",\n    \"user_id\": \"u034\",\n    \"total_cents\": 108215,\n    \"currency\": \"GBP\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p056\",\n      \"p019\",\n      \"p032\"\n    ],\n    \"created_at\": \"2026-04-15T17:57:17Z\"\n  },\n  {\n    \"id\": \"o061\",\n    \"user_id\": \"u025\",\n    \"total_cents\": 162652,\n    \"currency\": \"GBP\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p011\",\n      \"p079\"\n    ],\n    \"created_at\": \"2026-03-30T20:10:33Z\"\n  },\n  {\n    \"id\": \"o063\",\n    \"user_id\": \"u019\",\n    \"total_cents\": 177830,\n    \"currency\": \"GBP\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p060\"\n    ],\n    \"created_at\": \"2026-04-20T09:56:41Z\"\n  },\n  {\n    \"id\": \"o070\",\n    \"user_id\": \"u034\",\n    \"total_cents\": 131741,\n    \"currency\": \"EUR\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p070\",\n      \"p047\"\n    ],\n    \"created_at\": \"2026-04-11T12:36:30Z\"\n  },\n  {\n    \"id\": \"o080\",\n    \"user_id\": \"u004\",\n    \"total_cents\": 87626,\n    \"currency\": \"USD\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p077\",\n      \"p003\"\n    ],\n    \"created_at\": \"2026-03-16T19:06:15Z\"\n  },\n  {\n    \"id\": \"o081\",\n    \"user_id\": \"u014\",\n    \"total_cents\": 153915,\n    \"currency\": \"USD\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p009\",\n      \"p071\"\n    ],\n    \"created_at\": \"2026-04-08T01:12:02Z\"\n  },\n  {\n    \"id\": \"o083\",\n    \"user_id\": \"u009\",\n    \"total_cents\": 4094,\n    \"currency\": \"EUR\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p015\",\n      \"p004\"\n    ],\n    \"created_at\": \"2026-03-26T09:56:12Z\"\n  },\n  {\n    \"id\": \"o100\",\n    \"user_id\": \"u043\",\n    \"total_cents\": 105262,\n    \"currency\": \"USD\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p019\",\n      \"p073\"\n    ],\n    \"created_at\": \"2026-03-19T00:42:31Z\"\n  },\n  {\n    \"id\": \"o112\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 195707,\n    \"currency\": \"EUR\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p051\"\n    ],\n    \"created_at\": \"2026-04-07T19:56:49Z\"\n  },\n  {\n    \"id\": \"o113\",\n    \"user_id\": \"u041\",\n    \"total_cents\": 30090,\n    \"currency\": \"GBP\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p010\",\n      \"p066\"\n    ],\n    \"created_at\": \"2026-03-11T00:31:25Z\"\n  },\n  {\n    \"id\": \"o114\",\n    \"user_id\": \"u007\",\n    \"total_cents\": 38588,\n    \"currency\": \"EUR\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p045\",\n      \"p019\",\n      \"p031\"\n    ],\n    \"created_at\": \"2026-04-15T13:51:33Z\"\n  }\n]\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 24,
+      "timed_out": false
+    },
+    {
+      "turn": 2,
+      "tool_use_id": "call_5b3a65ccd19e47d1b748c349",
+      "command": "./cli/bin/ctl list products --limit 80 --format json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[\n  {\n    \"id\": \"p001\",\n    \"name\": \"Acme Foghorn\",\n    \"sku\": \"SKU-0001\",\n    \"price_cents\": 9999,\n    \"inventory\": 57,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p002\",\n    \"name\": \"Acme Anvil\",\n    \"sku\": \"SKU-0002\",\n    \"price_cents\": 499,\n    \"inventory\": 114,\n    \"category\": \"gadgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p003\",\n    \"name\": \"Acme Rocket Skates\",\n    \"sku\": \"SKU-0003\",\n    \"price_cents\": 9999,\n    \"inventory\": 379,\n    \"category\": \"subscriptions\",\n    \"active\": false\n  },\n  {\n    \"id\": \"p004\",\n    \"name\": \"Acme Earthquake Pills\",\n    \"sku\": \"SKU-0004\",\n    \"price_cents\": 1999,\n    \"inventory\": 16,\n    \"category\": \"widgets\",\n    \"active\": false\n  },\n  {\n    \"id\": \"p005\",\n    \"name\": \"Globex Ionizer\",\n    \"sku\": \"SKU-0005\",\n    \"price_cents\": 499,\n    \"inventory\": 258,\n    \"category\": \"subscriptions\",\n    \"active\": false\n  },\n  {\n    \"id\": \"p006\",\n    \"name\": \"Globex Plasma Cell\",\n    \"sku\": \"SKU-0006\",\n    \"price_cents\": 499,\n    \"inventory\": 366,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p007\",\n    \"name\": \"Globex Heat Sink\",\n    \"sku\": \"SKU-0007\",\n    \"price_cents\": 1999,\n    \"inventory\": 301,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p008\",\n    \"name\": \"Initech TPS Binder\",\n    \"sku\": \"SKU-0008\",\n    \"price_cents\": 199,\n    \"inventory\": 388,\n    \"category\": \"gadgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p009\",\n    \"name\": \"Initech Red Stapler\",\n    \"sku\": \"SKU-0009\",\n    \"price_cents\": 999,\n    \"inventory\": 142,\n    \"category\": \"gadgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p010\",\n    \"name\": \"Initech Cover Sheet\",\n    \"sku\": \"SKU-0010\",\n    \"price_cents\": 19999,\n    \"inventory\": 172,\n    \"category\": \"widgets\",\n    \"active\": false\n  },\n  {\n    \"id\": \"p011\",\n    \"name\": \"Umbrella Vaccine\",\n    \"sku\": \"SKU-0011\",\n    \"price_cents\": 199,\n    \"inventory\": 183,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p012\",\n    \"name\": \"Umbrella Tracker\",\n    \"sku\": \"SKU-0012\",\n    \"price_cents\": 19999,\n    \"inventory\": 22,\n    \"category\": \"services\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p013\",\n    \"name\": \"Umbrella Field Kit\",\n    \"sku\": \"SKU-0013\",\n    \"price_cents\": 1999,\n    \"inventory\": 40,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p014\",\n    \"name\": \"Wayne Grapple\",\n    \"sku\": \"SKU-0014\",\n    \"price_cents\": 9999,\n    \"inventory\": 316,\n    \"category\": \"consumables\",\n    \"active\": true,\n    \"inventory_discrepancy\": {\n      \"note\": \"recorded 120, warehouse reports 117\",\n      \"delta\": -3,\n      \"source\": \"pipe-09 reconcile\"\n    }\n  },\n  {\n    \"id\": \"p015\",\n    \"name\": \"Wayne Cowl\",\n    \"sku\": \"SKU-0015\",\n    \"price_cents\": 9999,\n    \"inventory\": 35,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p016\",\n    \"name\": \"Wayne Batmobile Wax\",\n    \"sku\": \"SKU-0016\",\n    \"price_cents\": 19999,\n    \"inventory\": 148,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p017\",\n    \"name\": \"Standard Widget A\",\n    \"sku\": \"SKU-0017\",\n    \"price_cents\": 19999,\n    \"inventory\": 51,\n    \"category\": \"services\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p018\",\n    \"name\": \"Standard Widget B\",\n    \"sku\": \"SKU-0018\",\n    \"price_cents\": 9999,\n    \"inventory\": 427,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p019\",\n    \"name\": \"Standard Widget C\",\n    \"sku\": \"SKU-0019\",\n    \"price_cents\": 999,\n    \"inventory\": 107,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p020\",\n    \"name\": \"Premium Gadget X\",\n    \"sku\": \"SKU-0020\",\n    \"price_cents\": 9999,\n    \"inventory\": 331,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p021\",\n    \"name\": \"Premium Gadget Y\",\n    \"sku\": \"SKU-0021\",\n    \"price_cents\": 499,\n    \"inventory\": 273,\n    \"category\": \"gadgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p022\",\n    \"name\": \"Premium Gadget Z\",\n    \"sku\": \"SKU-0022\",\n    \"price_cents\": 1999,\n    \"inventory\": 138,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p023\",\n    \"name\": \"Consumable Ink\",\n    \"sku\": \"SKU-0023\",\n    \"price_cents\": 999,\n    \"inventory\": 431,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p024\",\n    \"name\": \"Consumable Toner\",\n    \"sku\": \"SKU-0024\",\n    \"price_cents\": 199,\n    \"inventory\": 412,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p025\",\n    \"name\": \"Consumable Ribbon\",\n    \"sku\": \"SKU-0025\",\n    \"price_cents\": 199,\n    \"inventory\": 108,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p026\",\n    \"name\": \"Service Install\",\n    \"sku\": \"SKU-0026\",\n    \"price_cents\": 999,\n    \"inventory\": 108,\n    \"category\": \"services\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p027\",\n    \"name\": \"Service Tuneup\",\n    \"sku\": \"SKU-0027\",\n    \"price_cents\": 9999,\n    \"inventory\": 234,\n    \"category\": \"gadgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p028\",\n    \"name\": \"Service Audit\",\n    \"sku\": \"SKU-0028\",\n    \"price_cents\": 499,\n    \"inventory\": 381,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p029\",\n    \"name\": \"Monthly Plan\",\n    \"sku\": \"SKU-0029\",\n    \"price_cents\": 9999,\n    \"inventory\": 299,\n    \"category\": \"services\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p030\",\n    \"name\": \"Annual Plan\",\n    \"sku\": \"SKU-0030\",\n    \"price_cents\": 1999,\n    \"inventory\": 185,\n    \"category\": \"gadgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p031\",\n    \"name\": \"Acme Foghorn Mk 1\",\n    \"sku\": \"SKU-0031\",\n    \"price_cents\": 499,\n    \"inventory\": 260,\n    \"category\": \"services\",\n    \"active\": false\n  },\n  {\n    \"id\": \"p032\",\n    \"name\": \"Acme Anvil Mk 1\",\n    \"sku\": \"SKU-0032\",\n    \"price_cents\": 199,\n    \"inventory\": 440,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p033\",\n    \"name\": \"Acme Rocket Skates Mk 1\",\n    \"sku\": \"SKU-0033\",\n    \"price_cents\": 499,\n    \"inventory\": 405,\n    \"category\": \"services\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p034\",\n    \"name\": \"Acme Earthquake Pills Mk 1\",\n    \"sku\": \"SKU-0034\",\n    \"price_cents\": 1999,\n    \"inventory\": 195,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p035\",\n    \"name\": \"Globex Ionizer Mk 1\",\n    \"sku\": \"SKU-0035\",\n    \"price_cents\": 4999,\n    \"inventory\": 128,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p036\",\n    \"name\": \"Globex Plasma Cell Mk 1\",\n    \"sku\": \"SKU-0036\",\n    \"price_cents\": 199,\n    \"inventory\": 348,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p037\",\n    \"name\": \"Globex Heat Sink Mk 1\",\n    \"sku\": \"SKU-0037\",\n    \"price_cents\": 4999,\n    \"inventory\": 384,\n    \"category\": \"consumables\",\n    \"active\": true,\n    \"inventory_discrepancy\": {\n      \"note\": \"recorded 42, warehouse reports 50\",\n      \"delta\": 8,\n      \"source\": \"pipe-09 reconcile\"\n    }\n  },\n  {\n    \"id\": \"p038\",\n    \"name\": \"Initech TPS Binder Mk 1\",\n    \"sku\": \"SKU-0038\",\n    \"price_cents\": 999,\n    \"inventory\": 57,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p039\",\n    \"name\": \"Initech Red Stapler Mk 1\",\n    \"sku\": \"SKU-0039\",\n    \"price_cents\": 1999,\n    \"inventory\": 1,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p040\",\n    \"name\": \"Initech Cover Sheet Mk 1\",\n    \"sku\": \"SKU-0040\",\n    \"price_cents\": 19999,\n    \"inventory\": 91,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p041\",\n    \"name\": \"Umbrella Vaccine Mk 1\",\n    \"sku\": \"SKU-0041\",\n    \"price_cents\": 19999,\n    \"inventory\": 320,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p042\",\n    \"name\": \"Umbrella Tracker Mk 1\",\n    \"sku\": \"SKU-0042\",\n    \"price_cents\": 4999,\n    \"inventory\": 311,\n    \"category\": \"gadgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p043\",\n    \"name\": \"Umbrella Field Kit Mk 1\",\n    \"sku\": \"SKU-0043\",\n    \"price_cents\": 19999,\n    \"inventory\": 82,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p044\",\n    \"name\": \"Wayne Grapple Mk 1\",\n    \"sku\": \"SKU-0044\",\n    \"price_cents\": 4999,\n    \"inventory\": 470,\n    \"category\": \"widgets\",\n    \"active\": true,\n    \"pipe_04_skip_reason\": \"missing SKU prefix (legacy import)\"\n  },\n  {\n    \"id\": \"p045\",\n    \"name\": \"Wayne Cowl Mk 1\",\n    \"sku\": \"SKU-0045\",\n    \"price_cents\": 1999,\n    \"inventory\": 9,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p046\",\n    \"name\": \"Wayne Batmobile Wax Mk 1\",\n    \"sku\": \"SKU-0046\",\n    \"price_cents\": 19999,\n    \"inventory\": 413,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p047\",\n    \"name\": \"Standard Widget A Mk 1\",\n    \"sku\": \"SKU-0047\",\n    \"price_cents\": 499,\n    \"inventory\": 449,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p048\",\n    \"name\": \"Standard Widget B Mk 1\",\n    \"sku\": \"SKU-0048\",\n    \"price_cents\": 199,\n    \"inventory\": 374,\n    \"category\": \"services\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p049\",\n    \"name\": \"Standard Widget C Mk 1\",\n    \"sku\": \"SKU-0049\",\n    \"price_cents\": 19999,\n    \"inventory\": 272,\n    \"category\": \"gadgets\",\n    \"active\": false\n  },\n  {\n    \"id\": \"p050\",\n    \"name\": \"Premium Gadget X Mk 1\",\n    \"sku\": \"SKU-0050\",\n    \"price_cents\": 1999,\n    \"inventory\": 484,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p051\",\n    \"name\": \"Premium Gadget Y Mk 1\",\n    \"sku\": \"SKU-0051\",\n    \"price_cents\": 4999,\n    \"inventory\": 446,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p052\",\n    \"name\": \"Premium Gadget Z Mk 1\",\n    \"sku\": \"SKU-0052\",\n    \"price_cents\": 499,\n    \"inventory\": 475,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p053\",\n    \"name\": \"Consumable Ink Mk 1\",\n    \"sku\": \"SKU-0053\",\n    \"price_cents\": 9999,\n    \"inventory\": 102,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p054\",\n    \"name\": \"Consumable Toner Mk 1\",\n    \"sku\": \"SKU-0054\",\n    \"price_cents\": 9999,\n    \"inventory\": 332,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p055\",\n    \"name\": \"Consumable Ribbon Mk 1\",\n    \"sku\": \"SKU-0055\",\n    \"price_cents\": 4999,\n    \"inventory\": 231,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\":",
+      "stderr": "",
+      "stdout_truncated": true,
+      "stderr_truncated": false,
+      "wall_clock_ms": 28,
+      "timed_out": false
+    },
+    {
+      "turn": 3,
+      "tool_use_id": "call_be4426d8476447869b961ab9",
+      "command": "./cli/bin/ctl list orders --limit 120 --format json > /tmp/pre_deploy_orders.json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 48,
+      "timed_out": false
+    },
+    {
+      "turn": 3,
+      "tool_use_id": "call_659b9436a0094196be73ce80",
+      "command": "./cli/bin/ctl list products --limit 80 --format json > /tmp/pre_deploy_products.json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 28,
+      "timed_out": false
+    },
+    {
+      "turn": 3,
+      "tool_use_id": "call_beba3c09f51941bcb1ae86da",
+      "command": "./cli/bin/ctl list tickets --limit 30 --format json > /tmp/pre_deploy_tickets.json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 25,
+      "timed_out": false
+    },
+    {
+      "turn": 3,
+      "tool_use_id": "call_c472e63af6a942da89ae2d7a",
+      "command": "./cli/bin/ctl list users --limit 50 --format json > /tmp/pre_deploy_users.json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 24,
+      "timed_out": false
+    },
+    {
+      "turn": 3,
+      "tool_use_id": "call_63b483793c2e489b93e86f04",
+      "command": "./cli/bin/ctl list sessions --limit 15 --format json > /tmp/pre_deploy_sessions.json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 26,
+      "timed_out": false
+    },
+    {
+      "turn": 4,
+      "tool_use_id": "call_cadd69dff4b94596aad61823",
+      "command": "./cli/bin/ctl search --query \"deploy\" --format json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "unknown argument: --format\n",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 41,
+      "timed_out": false
+    },
+    {
+      "turn": 4,
+      "tool_use_id": "call_ba7b47167b8747e0baf45f79",
+      "command": "./cli/bin/ctl search --query \"prod\" --format json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "unknown argument: --format\n",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 26,
+      "timed_out": false
+    },
+    {
+      "turn": 5,
+      "tool_use_id": "call_b5a87db693b34ea093a8bd97",
+      "command": "./cli/bin/ctl search --query \"deploy\"",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t010\",\n    \"match\": {\n      \"subject\": \"API key rotation broke our production deploy\",\n      \"body\": \"Customer reports: api key rotation broke our production deploy.\"\n    }\n  }\n]\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 76,
+      "timed_out": false
+    },
+    {
+      "turn": 5,
+      "tool_use_id": "call_66e67b0986b04ffd84025c2c",
+      "command": "./cli/bin/ctl search --query \"prod\"",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t009\",\n    \"match\": {\n      \"subject\": \"Bulk delete hangs on large product catalogs\",\n      \"body\": \"Customer reports: bulk delete hangs on large product catalogs.\"\n    }\n  },\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t010\",\n    \"match\": {\n      \"subject\": \"API key rotation broke our production deploy\",\n      \"body\": \"Customer reports: api key rotation broke our production deploy.\"\n    }\n  },\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t029\",\n    \"match\": {\n      \"body\": \"Customer reports: product sku conflict when duplicating a catalog.\"\n    }\n  }\n]\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 32,
+      "timed_out": false
+    },
+    {
+      "turn": 6,
+      "tool_use_id": "call_3fc7f30f768945258806109c",
+      "command": "./cli/bin/ctl pipeline run pipe-01",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 2,
+      "stdout": "",
+      "stderr": "refused\n",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 50,
+      "timed_out": false
+    },
+    {
+      "turn": 7,
+      "tool_use_id": "call_e6dfe6d035b54c8c96293c22",
+      "command": "./cli/bin/ctl pipeline run pipe-01 --confirm --verify",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[1/4] build: ok\n[2/4] test: ok\n[3/4] push-image: ok\n[4/4] rollout: ok\npipeline deploy-prod: ok\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 49,
+      "timed_out": false
+    },
+    {
+      "turn": 8,
+      "tool_use_id": "call_4a3f9b2eba2c45a6abf1ccf8",
+      "command": "./cli/bin/ctl pipeline status pipe-01",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "pipeline: pipe-01 (pipe-01)\nran_in_session: yes\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 41,
+      "timed_out": false
+    },
+    {
+      "turn": 9,
+      "tool_use_id": "call_1d85b06df7de456ca096d42b",
+      "command": "./cli/bin/ctl cache status",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "pages_cache_stale: no\nauth_page_ok: no\nsearch_index_stale: no\npipe-03_ran_in_session: no\npipe-07_state: clean\nstate_files: pipe-01_ran.json\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 38,
+      "timed_out": false
+    },
+    {
+      "turn": 9,
+      "tool_use_id": "call_67974f4461f149a4a050ede6",
+      "command": "./cli/bin/ctl search --query \"deploy\"",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t010\",\n    \"match\": {\n      \"subject\": \"API key rotation broke our production deploy\",\n      \"body\": \"Customer reports: api key rotation broke our production deploy.\"\n    }\n  }\n]\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 27,
+      "timed_out": false
+    },
+    {
+      "turn": 9,
+      "tool_use_id": "call_4389399cc7824c79b2e8e186",
+      "command": "./cli/bin/ctl search --query \"prod\"",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t009\",\n    \"match\": {\n      \"subject\": \"Bulk delete hangs on large product catalogs\",\n      \"body\": \"Customer reports: bulk delete hangs on large product catalogs.\"\n    }\n  },\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t010\",\n    \"match\": {\n      \"subject\": \"API key rotation broke our production deploy\",\n      \"body\": \"Customer reports: api key rotation broke our production deploy.\"\n    }\n  },\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t029\",\n    \"match\": {\n      \"body\": \"Customer reports: product sku conflict when duplicating a catalog.\"\n    }\n  }\n]\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 27,
+      "timed_out": false
+    },
+    {
+      "turn": 10,
+      "tool_use_id": "call_bd31a300ed024d7da4c1e6b3",
+      "command": "./cli/bin/ctl list orders --limit 120 --format json > /tmp/post_deploy_orders.json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 61,
+      "timed_out": false
+    },
+    {
+      "turn": 10,
+      "tool_use_id": "call_6bb3391b6d484988a7673e6d",
+      "command": "./cli/bin/ctl list products --limit 80 --format json > /tmp/post_deploy_products.json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 33,
+      "timed_out": false
+    },
+    {
+      "turn": 10,
+      "tool_use_id": "call_92dc086d87414019ad24acef",
+      "command": "./cli/bin/ctl list tickets --limit 30 --format json > /tmp/post_deploy_tickets.json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 31,
+      "timed_out": false
+    },
+    {
+      "turn": 10,
+      "tool_use_id": "call_dd1d6ecb8f934fe68a71b891",
+      "command": "./cli/bin/ctl list users --limit 50 --format json > /tmp/post_deploy_users.json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 27,
+      "timed_out": false
+    },
+    {
+      "turn": 10,
+      "tool_use_id": "call_b5ddb6bd699d4884b382e0f0",
+      "command": "./cli/bin/ctl list sessions --limit 15 --format json > /tmp/post_deploy_sessions.json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 24,
+      "timed_out": false
+    },
+    {
+      "turn": 11,
+      "tool_use_id": "call_8b73bab359914fef85faee34",
+      "command": "bash -c \"diff /tmp/pre_deploy_orders.json /tmp/post_deploy_orders.json && echo 'ORDERS: NO CHANGE' || echo 'ORDERS: CHANGED'\"",
+      "allowed": false,
+      "rejection_reason": "bash -c inner command rejected: sub-command 'diff /tmp/pre_deploy_orders.json /tmp/post_deploy_orders.json' rejected: argv[0]='diff' is not in the allowlist. Allowed: ['./cli/bin/ctl', 'ctl', 'cat', 'ls', 'mkdir', 'head', 'tail', 'wc', 'grep', 'jq', 'python3', 'echo', 'bash']",
+      "exit_code": null,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 0,
+      "timed_out": false
+    },
+    {
+      "turn": 11,
+      "tool_use_id": "call_e38ba96bee814b5cbccfecb1",
+      "command": "bash -c \"diff /tmp/pre_deploy_products.json /tmp/post_deploy_products.json && echo 'PRODUCTS: NO CHANGE' || echo 'PRODUCTS: CHANGED'\"",
+      "allowed": false,
+      "rejection_reason": "bash -c inner command rejected: sub-command 'diff /tmp/pre_deploy_products.json /tmp/post_deploy_products.json' rejected: argv[0]='diff' is not in the allowlist. Allowed: ['./cli/bin/ctl', 'ctl', 'cat', 'ls', 'mkdir', 'head', 'tail', 'wc', 'grep', 'jq', 'python3', 'echo', 'bash']",
+      "exit_code": null,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 0,
+      "timed_out": false
+    },
+    {
+      "turn": 11,
+      "tool_use_id": "call_7aa4757055b645678bd10732",
+      "command": "bash -c \"diff /tmp/pre_deploy_tickets.json /tmp/post_deploy_tickets.json && echo 'TICKETS: NO CHANGE' || echo 'TICKETS: CHANGED'\"",
+      "allowed": false,
+      "rejection_reason": "bash -c inner command rejected: sub-command 'diff /tmp/pre_deploy_tickets.json /tmp/post_deploy_tickets.json' rejected: argv[0]='diff' is not in the allowlist. Allowed: ['./cli/bin/ctl', 'ctl', 'cat', 'ls', 'mkdir', 'head', 'tail', 'wc', 'grep', 'jq', 'python3', 'echo', 'bash']",
+      "exit_code": null,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 0,
+      "timed_out": false
+    },
+    {
+      "turn": 11,
+      "tool_use_id": "call_fa7913b4be604f1c80ff0124",
+      "command": "bash -c \"diff /tmp/pre_deploy_users.json /tmp/post_deploy_users.json && echo 'USERS: NO CHANGE' || echo 'USERS: CHANGED'\"",
+      "allowed": false,
+      "rejection_reason": "bash -c inner command rejected: sub-command 'diff /tmp/pre_deploy_users.json /tmp/post_deploy_users.json' rejected: argv[0]='diff' is not in the allowlist. Allowed: ['./cli/bin/ctl', 'ctl', 'cat', 'ls', 'mkdir', 'head', 'tail', 'wc', 'grep', 'jq', 'python3', 'echo', 'bash']",
+      "exit_code": null,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 0,
+      "timed_out": false
+    },
+    {
+      "turn": 11,
+      "tool_use_id": "call_51fd016ffbb6482cb05b6569",
+      "command": "bash -c \"diff /tmp/pre_deploy_sessions.json /tmp/post_deploy_sessions.json && echo 'SESSIONS: NO CHANGE' || echo 'SESSIONS: CHANGED'\"",
+      "allowed": false,
+      "rejection_reason": "bash -c inner command rejected: sub-command 'diff /tmp/pre_deploy_sessions.json /tmp/post_deploy_sessions.json' rejected: argv[0]='diff' is not in the allowlist. Allowed: ['./cli/bin/ctl', 'ctl', 'cat', 'ls', 'mkdir', 'head', 'tail', 'wc', 'grep', 'jq', 'python3', 'echo', 'bash']",
+      "exit_code": null,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 0,
+      "timed_out": false
+    },
+    {
+      "turn": 12,
+      "tool_use_id": "call_3127aff62655412ab31d8fbb",
+      "command": "python3 -c \"\nimport json\nresources = ['orders','products','tickets','users','sessions']\nfor r in resources:\n    with open(f'/tmp/pre_deploy_{r}.json') as f: pre = json.load(f)\n    with open(f'/tmp/post_deploy_{r}.json') as f: post = json.load(f)\n    if pre == post:\n        print(f'{r}: NO CHANGE (count={len(pre)})')\n    else:\n        print(f'{r}: CHANGED (pre={len(pre)}, post={len(post)})')\n\"",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "orders: NO CHANGE (count=120)\nproducts: NO CHANGE (count=80)\ntickets: NO CHANGE (count=30)\nusers: NO CHANGE (count=50)\nsessions: NO CHANGE (count=15)\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 46,
+      "timed_out": false
+    },
+    {
+      "turn": 13,
+      "tool_use_id": "call_f7cf9b0f385046c7827e6760",
+      "command": "./cli/bin/ctl search --query \"deploy\" --reindex",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[\n  {\n    \"resource\": \"tickets\",\n    \"id\": \"t010\",\n    \"match\": {\n      \"subject\": \"API key rotation broke our production deploy\",\n      \"body\": \"Customer reports: api key rotation broke our production deploy.\"\n    }\n  }\n]\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 29,
+      "timed_out": false
+    },
+    {
+      "turn": 13,
+      "tool_use_id": "call_c2a3f006e70b4c85814467d8",
+      "command": "./cli/bin/ctl cache status",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "pages_cache_stale: no\nauth_page_ok: no\nsearch_index_stale: no\npipe-03_ran_in_session: no\npipe-07_state: clean\nstate_files: pipe-01_ran.json\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 20,
+      "timed_out": false
+    }
+  ],
+  "setup_calls": [],
+  "rejected_commands": [
+    {
+      "command": "bash -c \"diff /tmp/pre_deploy_orders.json /tmp/post_deploy_orders.json && echo 'ORDERS: NO CHANGE' || echo 'ORDERS: CHANGED'\"",
+      "reason": "bash -c inner command rejected: sub-command 'diff /tmp/pre_deploy_orders.json /tmp/post_deploy_orders.json' rejected: argv[0]='diff' is not in the allowlist. Allowed: ['./cli/bin/ctl', 'ctl', 'cat', 'ls', 'mkdir', 'head', 'tail', 'wc', 'grep', 'jq', 'python3', 'echo', 'bash']"
+    },
+    {
+      "command": "bash -c \"diff /tmp/pre_deploy_products.json /tmp/post_deploy_products.json && echo 'PRODUCTS: NO CHANGE' || echo 'PRODUCTS: CHANGED'\"",
+      "reason": "bash -c inner command rejected: sub-command 'diff /tmp/pre_deploy_products.json /tmp/post_deploy_products.json' rejected: argv[0]='diff' is not in the allowlist. Allowed: ['./cli/bin/ctl', 'ctl', 'cat', 'ls', 'mkdir', 'head', 'tail', 'wc', 'grep', 'jq', 'python3', 'echo', 'bash']"
+    },
+    {
+      "command": "bash -c \"diff /tmp/pre_deploy_tickets.json /tmp/post_deploy_tickets.json && echo 'TICKETS: NO CHANGE' || echo 'TICKETS: CHANGED'\"",
+      "reason": "bash -c inner command rejected: sub-command 'diff /tmp/pre_deploy_tickets.json /tmp/post_deploy_tickets.json' rejected: argv[0]='diff' is not in the allowlist. Allowed: ['./cli/bin/ctl', 'ctl', 'cat', 'ls', 'mkdir', 'head', 'tail', 'wc', 'grep', 'jq', 'python3', 'echo', 'bash']"
+    },
+    {
+      "command": "bash -c \"diff /tmp/pre_deploy_users.json /tmp/post_deploy_users.json && echo 'USERS: NO CHANGE' || echo 'USERS: CHANGED'\"",
+      "reason": "bash -c inner command rejected: sub-command 'diff /tmp/pre_deploy_users.json /tmp/post_deploy_users.json' rejected: argv[0]='diff' is not in the allowlist. Allowed: ['./cli/bin/ctl', 'ctl', 'cat', 'ls', 'mkdir', 'head', 'tail', 'wc', 'grep', 'jq', 'python3', 'echo', 'bash']"
+    },
+    {
+      "command": "bash -c \"diff /tmp/pre_deploy_sessions.json /tmp/post_deploy_sessions.json && echo 'SESSIONS: NO CHANGE' || echo 'SESSIONS: CHANGED'\"",
+      "reason": "bash -c inner command rejected: sub-command 'diff /tmp/pre_deploy_sessions.json /tmp/post_deploy_sessions.json' rejected: argv[0]='diff' is not in the allowlist. Allowed: ['./cli/bin/ctl', 'ctl', 'cat', 'ls', 'mkdir', 'head', 'tail', 'wc', 'grep', 'jq', 'python3', 'echo', 'bash']"
+    }
+  ],
+  "usage": {
+    "input_tokens": 111982,
+    "output_tokens": 1883,
+    "cache_read_input_tokens": 102400,
+    "cache_creation_input_tokens": 0,
+    "total_calls": 15
+  },
+  "final_text": "All invariants hold. Here's the full summary:\n\n---\n\n## Summary\n\n### Pre-deploy snapshot captured\n- All 5 resources saved to `/tmp/pre_deploy_*.json` (orders: 120, products: 80, tickets: 30, users: 50, sessions: 15)\n- Cache state: `pages_cache_stale: no`, `search_index_stale: no`, no state files\n- Pipeline `pipe-01` had not yet run in the session\n\n### Pipeline execution\n- **Command:** `ctl pipeline run pipe-01 --confirm --verify`\n- **Result:** All 4 stages passed:\n  1. `build: ok`\n  2. `test: ok`\n  3. `push-image: ok`\n  4. `rollout: ok`\n- **Pipeline status:** `ran_in_session: yes`\n- **State file created:** `pipe-01_ran.json`\n\n### Post-deploy verification\n- **Data integrity:** All 5 resources (orders, products, tickets, users, sessions) are **unchanged** — pre/post snapshots are identical\n- **Cache invariants:** `pages_cache_stale: no`, `search_index_stale: no` — no cache corruption\n- **Search invariants:** Search results for \"deploy\" and \"prod\" return the same results as before; reindex produces identical output\n- **No stale state:** Only expected state file is `pipe-01_ran.json`\n\n**Conclusion:** Pipeline `pipe-01` (deploy-prod) ran successfully with `--confirm` and `--verify`. No cache or search invariants were broken.",
+  "stop_reason": "end_turn",
+  "api_errors": [],
+  "dry_run": false,
+  "writable_prefixes_resolved": [
+    "/tmp/"
+  ],
+  "skills_loaded": [],
+  "skill_load_calls": [],
+  "artifact_files_copied": []
+}

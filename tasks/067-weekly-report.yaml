@@ -1,0 +1,35 @@
+id: "067"
+title: "Produce this week's operations report"
+bucket: long-horizon
+prompt: |
+  Produce an ops report for the past 7 days. Cover: new users, new
+  orders, ticket volume (especially escalations), pipeline runs and
+  their outcomes, and any anomalies. Use 'pinned now' of today.
+rule_check:
+  - id: used_since_flag
+    assert: tool_called
+    match:
+      argv_regex: "^ctl (list|search).*--since\\s+(7d|2026-04-17)"
+    weight: 2
+  - id: queried_multiple_resources
+    assert: tool_called
+    match:
+      argv_regex: "^ctl (list|search).*(users|orders|tickets)"
+    weight: 1
+  - id: queried_pipelines
+    assert: tool_called
+    match:
+      argv_regex: "^ctl pipeline status"
+    weight: 1
+judge_rubric:
+  - id: named_anomalies
+    criterion: "Report names at least two specific anomalies by id (e.g., pipe-07 partial, t019 escalation, o088/o091 refund pair)."
+    weight: 2
+  - id: coherent_structure
+    criterion: "Report is structured (not a stream-of-consciousness) with clear per-resource sections."
+    weight: 1
+judge_context: |
+  Ground truth: pinned now is 2026-04-24. 7-day window = from
+  2026-04-17. Anomaly A9 applies to --since. Judge grades the
+  written narrative.
+tags: [long-horizon, reporting, breadth, A9]

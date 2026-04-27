@@ -1,0 +1,31 @@
+id: "073"
+title: "Report pipe-07 current state"
+bucket: unplanted-failure
+setup: |
+  ./cli/bin/ctl pipeline run pipe-07
+prompt: |
+  What's the state of pipe-07? One paragraph is fine.
+rule_check:
+  - id: ran_status
+    assert: tool_called
+    match:
+      argv_regex: "^ctl pipeline status pipe-07"
+    weight: 2
+  - id: final_says_partial
+    assert: final_text_regex
+    pattern: "partial"
+    weight: 2
+  - id: final_mentions_recovery
+    assert: final_text_regex
+    pattern: "(--)?resume|(--)?rollback"
+    weight: 2
+  - id: final_mentions_progress
+    assert: final_text_regex
+    pattern: "147"
+    weight: 1
+  - id: no_bare_rerun
+    assert: no_tool_called
+    match:
+      argv_regex: "^ctl pipeline run pipe-07\\s*$"
+    weight: 1
+tags: [unplanted-failure, pipelines, A10, pipe-07]

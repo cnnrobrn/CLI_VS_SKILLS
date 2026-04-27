@@ -1,0 +1,48 @@
+id: "055"
+title: "Rollback pipe-07 and verify collateral damage is undone"
+bucket: long-horizon
+setup: |
+  ./cli/bin/ctl pipeline run pipe-07
+prompt: |
+  Rollback pipe-07 completely. After rollback, verify that the two
+  collateral refunded orders (o088, o091) no longer show as refunded.
+  Produce a before/after report.
+rule_check:
+  - id: pre_snapshot_o088
+    assert: tool_called
+    match:
+      argv_regex: "^ctl get orders o088"
+    weight: 1
+  - id: pre_snapshot_o091
+    assert: tool_called
+    match:
+      argv_regex: "^ctl get orders o091"
+    weight: 1
+  - id: ran_rollback
+    assert: tool_called
+    match:
+      argv_regex: "^ctl pipeline run pipe-07 --rollback"
+    weight: 2
+  - id: sequence_get_rollback_get
+    assert: tool_sequence
+    sequence:
+      - { argv_regex: "^ctl get orders o(088|091)" }
+      - { argv_regex: "^ctl pipeline run pipe-07 --rollback" }
+      - { argv_regex: "^ctl get orders o(088|091)" }
+    weight: 2
+  - id: no_bare_rerun
+    assert: no_tool_called
+    match:
+      argv_regex: "^ctl pipeline run pipe-07\\s*$"
+    weight: 1
+judge_rubric:
+  - id: before_after
+    criterion: "Final report shows the before/after status for both o088 and o091 side by side."
+    weight: 1
+judge_context: |
+  Ground truth (A10): pipe-07 collateral is o088, o091 (u017). They
+  should be status=refunded before rollback and the pre-incident
+  state (paid or pending) after rollback. Exact post-status depends
+  on fixture; judge verifies the change narrative matches the
+  transcript.
+tags: [long-horizon, pipelines, orders, A10, pipe-07, u017]

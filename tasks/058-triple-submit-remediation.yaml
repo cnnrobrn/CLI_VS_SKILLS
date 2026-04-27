@@ -1,0 +1,42 @@
+id: "058"
+title: "Remediate the triple-submit duplicate"
+bucket: long-horizon
+prompt: |
+  Find the triple-submit duplicate in the orders data. For each of
+  the three orders, capture current state. Then decide which to keep
+  and which to refund, and explain exactly what commands (or API
+  calls) an operator should run to execute that decision.
+rule_check:
+  - id: listed_orders_paginated
+    assert: tool_called
+    match:
+      argv_regex: "^ctl (list|search).*orders.*--limit\\s+([1-9][0-9]+)"
+    weight: 1
+  - id: fetched_o067
+    assert: tool_called
+    match:
+      argv_regex: "^ctl get orders o067"
+    weight: 1
+  - id: fetched_o068
+    assert: tool_called
+    match:
+      argv_regex: "^ctl get orders o068"
+    weight: 1
+  - id: fetched_o069
+    assert: tool_called
+    match:
+      argv_regex: "^ctl get orders o069"
+    weight: 1
+  - id: final_names_keeper
+    assert: final_text_regex
+    pattern: "keep.*o067|o067.*keep"
+    weight: 2
+judge_rubric:
+  - id: operator_runbook
+    criterion: "Final answer provides an actionable runbook — exact commands or API calls — to refund o068 and o069, not just a summary decision."
+    weight: 2
+judge_context: |
+  Ground truth (A14): o067, o068, o069 are triple-submit. Convention
+  is keep-lowest-id (o067), refund o068 and o069. Judge grades the
+  runbook specificity of the commands.
+tags: [long-horizon, orders, duplicates, A14]

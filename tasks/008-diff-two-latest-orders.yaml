@@ -1,0 +1,29 @@
+id: "008"
+title: "Diff the two most recent orders"
+bucket: stateful
+prompt: |
+  Find the two most recently created orders in the system. Diff them
+  with `ctl diff` and report which fields differ.
+rule_check:
+  - id: listed_orders
+    assert: tool_called
+    match:
+      argv_regex: "^ctl (list|search).*orders"
+    weight: 1
+  - id: diffed_two_orders
+    assert: tool_called
+    match:
+      argv_regex: "^ctl diff o[0-9]{3} o[0-9]{3}"
+    weight: 3
+  - id: sequence_list_then_diff
+    assert: tool_sequence
+    sequence:
+      - { argv_regex: "^ctl (list|search).*orders" }
+      - { argv_regex: "^ctl diff o[0-9]{3} o[0-9]{3}" }
+    weight: 1
+  - id: no_type_mismatch_diff
+    assert: no_tool_called
+    match:
+      argv_regex: "^ctl diff (u[0-9]{3} o[0-9]{3}|o[0-9]{3} u[0-9]{3}|p[0-9]{3} o[0-9]{3}|o[0-9]{3} p[0-9]{3})"
+    weight: 2
+tags: [orders, stateful, diff, A8]

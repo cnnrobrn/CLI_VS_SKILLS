@@ -1,0 +1,38 @@
+id: "053"
+title: "Run pipe-04, review skips, remediate what you can"
+bucket: long-horizon
+prompt: |
+  Run pipe-04 (backfill-products). For any product that it skips,
+  fetch the current record, explain the skip reason, and propose a
+  specific remediation per product.
+rule_check:
+  - id: ran_pipe04
+    assert: tool_called
+    match:
+      argv_regex: "^ctl pipeline run pipe-04"
+    weight: 1
+  - id: read_skip_file
+    assert: tool_called
+    match:
+      argv_regex: "/tmp/pipe-04\\.skipped|pipe-04\\.skipped"
+    weight: 2
+  - id: fetched_p044
+    assert: tool_called
+    match:
+      argv_regex: "^ctl get products p044"
+    weight: 2
+  - id: fetched_p077
+    assert: tool_called
+    match:
+      argv_regex: "^ctl get products p077"
+    weight: 2
+judge_rubric:
+  - id: per_product_remediation
+    criterion: "Final report proposes a specific remediation for EACH skipped product (p044 and p077) — not a generic 'fix them all'."
+    weight: 2
+judge_context: |
+  Ground truth (A17): pipe-04 exits 0, stderr warns 2 records skipped
+  in /tmp/pipe-04.skipped. Skipped products are p044 (missing SKU
+  prefix) and p077 (price_cents null). Agent must propose a distinct
+  remediation per product.
+tags: [long-horizon, products, pipelines, A17, pipe-04]

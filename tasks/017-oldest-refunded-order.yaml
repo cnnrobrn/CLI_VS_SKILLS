@@ -1,0 +1,34 @@
+id: "017"
+title: "Find the oldest refunded order and its user"
+bucket: stateful
+prompt: |
+  Find the OLDEST order with status=refunded (by refunded_at). Tell me
+  the order id, the product in it, and the user who placed it.
+rule_check:
+  - id: listed_refunded_paginated
+    assert: tool_called
+    match:
+      argv_regex: "^ctl (list|search).*orders.*refunded.*--limit\\s+([1-9][0-9]+)|^ctl (list|search).*orders.*--limit\\s+([1-9][0-9]+).*refunded"
+    weight: 3
+  - id: fetched_user
+    assert: tool_called
+    match:
+      argv_regex: "^ctl get users u[0-9]{3}"
+    weight: 1
+  - id: fetched_product
+    assert: tool_called
+    match:
+      argv_regex: "^ctl get products p[0-9]{3}"
+    weight: 1
+  - id: no_bare_list_orders
+    assert: no_tool_called
+    match:
+      argv_regex: "^ctl list orders\\s*$"
+    weight: 1
+  - id: sequence_list_then_gets
+    assert: tool_sequence
+    sequence:
+      - { argv_regex: "^ctl (list|search).*orders.*refunded" }
+      - { argv_regex: "^ctl get (users u[0-9]{3}|products p[0-9]{3})" }
+    weight: 1
+tags: [orders, users, products, stateful, pagination, A1]

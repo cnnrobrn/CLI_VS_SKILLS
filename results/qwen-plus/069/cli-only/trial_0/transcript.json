@@ -1,0 +1,1468 @@
+{
+  "task_id": "069",
+  "task_title": "Trace an order end-to-end through the system",
+  "task_bucket": "long-horizon",
+  "task_tags": [
+    "long-horizon",
+    "orders",
+    "users",
+    "products",
+    "tickets",
+    "sessions",
+    "pipelines",
+    "A10"
+  ],
+  "arm": "cli-only",
+  "trial": 0,
+  "model": "qwen/qwen3.6-plus",
+  "started_at": "2026-04-26T17:26:43.266219+00:00",
+  "ended_at": "2026-04-26T17:29:01.193981+00:00",
+  "wall_clock_seconds": 137.928,
+  "ctl_state_dir": "/Users/connorobrien/Documents/CLI_VS_SKILLS/results/qwen-plus-tooled/069/cli-only/trial_0/ctl-state",
+  "workdir": "/Users/connorobrien/Documents/CLI_VS_SKILLS/results/qwen-plus-tooled/069/cli-only/trial_0",
+  "system_prompt": "You are an autonomous agent being evaluated on a benchmark.\n\nEnvironment:\n- Your working directory is a repo root. You have ONE tool: `bash`.\n- A custom CLI named `ctl` lives at ./cli/bin/ctl (also reachable as `ctl`).\n- The CLI reads canned fixtures from disk and does NOT access the network.\n- The CLI honors a pinned \"now\" of 2026-04-24T00:00:00Z for --since filters.\n- Allowed executables: ./cli/bin/ctl, ctl, cat, ls, mkdir, head, tail, wc,\n  grep, jq, python3, echo, bash (only as `bash -c \"...\"`, and the inner\n  command is re-checked against the same allowlist).\n- You MAY redirect output to files under /tmp/ (and under $CTL_STATE_DIR).\n- Pipes (|), command chaining (;, &&, ||), and command substitution\n  ($(...) or backticks) inside a single command string are NOT allowed.\n  If you need to combine operations, wrap the whole line in\n  `bash -c \"cmd1 && cmd2\"` — each sub-command still has to pass the\n  allowlist.\n- Each command has a 30-second timeout.\n\nTask rules:\n- Follow the user's instructions exactly. Where the task asks you to write\n  output to a specific file path, write EXACTLY to that path.\n- If a command fails, read the error and try a different approach. Do not\n  retry the same failing command unchanged.\n- When you are finished, stop calling tools and provide a short final\n  answer. Many tasks will be graded on that final message, so be precise —\n  name IDs, files, and root causes explicitly.\n\n## Reference: cli/README.md\n\nThe following is the complete contents of cli/README.md. It is the only\ndocumentation you have for the `ctl` CLI. Discover any further behavior by\nrunning `ctl --help` and `ctl <subcommand> --help`.\n\n\n# ctl\n\nA deterministic fixture-backed CLI. No network. No live clock. Output for a\ngiven input is fixed.\n\n## Install\n\n```\ngit clone <repo>\ncd CLI_VS_SKILLS\n./cli/bin/ctl --help\n```\n\nRequires Python 3.9+. Stdlib-only (see `cli/requirements.txt`).\n\n## Synopsis\n\n```\nctl <command> [args...]\n```\n\n## Commands\n\n| Command                             | Description                                     |\n|-------------------------------------|-------------------------------------------------|\n| `ctl list <resource>`               | List records for a resource.                    |\n| `ctl get <resource> <id>`           | Fetch a single record.                          |\n| `ctl fetch <url-or-slug>`           | Print a fixture markdown page.                  |\n| `ctl search --query Q`              | Substring search across resource text fields.   |\n| `ctl diff <a> <b>`                  | Structured JSON diff of two records.            |\n| `ctl pipeline run <name>`           | Run a named pipeline.                           |\n| `ctl pipeline status <name>`        | Show last recorded state for a pipeline.        |\n| `ctl cache status`                  | Show cache / state flags.                       |\n| `ctl cache clear [<scope>]`         | Clear cached state (scope = pages/search/pipelines/all). |\n| `ctl version`                       | Print version.                                  |\n| `ctl --help`, `ctl <cmd> --help`    | Usage.                                          |\n\n## Resources\n\n`users` (50), `orders` (120), `tickets` (30), `products` (80), `sessions` (15).\n\n## Common options\n\n| Option                  | Commands      | Description                                  |\n|-------------------------|---------------|----------------------------------------------|\n| `--status <value>`      | `list`        | Filter rows by exact `status` match.         |\n| `--since <date>`        | `list`        | ISO date (`2026-04-20`), ISO datetime, or relative (`7d`, `24h`). |\n| `--limit <n>`           | `list`        | Maximum rows. Default: **10**.               |\n| `--format json\\|yaml\\|table` | `list`, `get` | Output format. Default: `table`.        |\n| `--query Q`             | `search`      | Required. Substring, or `field:value`.        |\n| `--scope <resource>`    | `search`      | Restrict to one resource.                    |\n| `--i`                   | `search`      | Case-insensitive. Default: case-sensitive.   |\n| `--reindex`             | `search`      | Rebuild the search index.                    |\n| `--confirm`             | `pipeline run`| Pass through a confirm gate.                 |\n| `--resume`              | `pipeline run`| Resume a partially-applied pipeline.         |\n| `--rollback`            | `pipeline run`| Roll back an applied pipeline.               |\n| `--verify`              | `pipeline run`| Run an extra verification pass.              |\n\n## Exit codes\n\n| Code | Meaning                                                       |\n|-----:|---------------------------------------------------------------|\n| `0`  | Success.                                                      |\n| `1`  | User error: not found, bad flag, invalid input.               |\n| `2`  | Refused: a pipeline needs `--confirm` or a prerequisite.      |\n\n## Environment\n\n| Variable            | Default             | Meaning                                     |\n|---------------------|---------------------|---------------------------------------------|\n| `CTL_FIXTURES_DIR`  | `<repo>/fixtures`   | Root of the fixture tree.                   |\n| `CTL_STATE_DIR`     | `~/.ctl-state/`     | Scratch state for cache / pipeline flags.   |\n\n## Determinism\n\nPinned \"now\" is `2026-04-24T00:00:00Z`. Relative `--since` values anchor to\nthat instant.\n\n## Version\n\n`1.0.0`\n",
+  "user_prompt": "Pick the most recent order. Trace it end-to-end: the user who\nplaced it, the product, any related tickets, any session the user\nhas, and whether any pipelines touched this order (look at pipe-07\nstatus specifically since it could have refunded it). Produce a\nlineage diagram in text.\n",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Pick the most recent order. Trace it end-to-end: the user who\nplaced it, the product, any related tickets, any session the user\nhas, and whether any pipelines touched this order (look at pipe-07\nstatus specifically since it could have refunded it). Produce a\nlineage diagram in text.\n"
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_dc6848da1f3841b881110228",
+          "name": "bash",
+          "input": {
+            "command": "ctl list orders --limit 1 --format json"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_dc6848da1f3841b881110228",
+          "content": "exit_code: 127\nstdout: <empty>\nstderr:\nexecutable not found: [Errno 2] No such file or directory: 'ctl'",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_528236b2ed3c40b1865da53b",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl list orders --limit 1 --format json"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_528236b2ed3c40b1865da53b",
+          "content": "exit_code: 0\nstdout:\n[\n  {\n    \"id\": \"o001\",\n    \"user_id\": \"u018\",\n    \"total_cents\": 114450,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p063\",\n      \"p029\"\n    ],\n    \"created_at\": \"2026-04-05T02:56:55Z\"\n  }\n]\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_66552162e4e94bb9a8a917a2",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl get orders o001 --format json"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_0ae981894a0e464aac2d9fed",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl get users u018 --format json"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_fbe3f40ac8824522bbd35e86",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl get products p063 --format json"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_a2572df887194830bce4778c",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl get products p029 --format json"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_66552162e4e94bb9a8a917a2",
+          "content": "exit_code: 0\nstdout:\n{\n  \"id\": \"o001\",\n  \"user_id\": \"u018\",\n  \"total_cents\": 114450,\n  \"currency\": \"EUR\",\n  \"status\": \"paid\",\n  \"product_ids\": [\n    \"p063\",\n    \"p029\"\n  ],\n  \"created_at\": \"2026-04-05T02:56:55Z\"\n}\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_0ae981894a0e464aac2d9fed",
+          "content": "exit_code: 0\nstdout:\n{\n  \"id\": \"u018\",\n  \"email\": \"lee.yoon@wayne.inc\",\n  \"name\": \"Lee Yoon\",\n  \"status\": \"pending\",\n  \"role\": \"viewer\",\n  \"org_id\": \"org-2\",\n  \"created_at\": \"2026-04-12T12:10:52Z\"\n}\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_fbe3f40ac8824522bbd35e86",
+          "content": "exit_code: 0\nstdout:\n{\n  \"id\": \"p063\",\n  \"name\": \"Acme Rocket Skates Mk 2\",\n  \"sku\": \"SKU-0063\",\n  \"price_cents\": 499,\n  \"inventory\": 48,\n  \"category\": \"widgets\",\n  \"active\": true\n}\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_a2572df887194830bce4778c",
+          "content": "exit_code: 0\nstdout:\n{\n  \"id\": \"p029\",\n  \"name\": \"Monthly Plan\",\n  \"sku\": \"SKU-0029\",\n  \"price_cents\": 9999,\n  \"inventory\": 299,\n  \"category\": \"services\",\n  \"active\": true\n}\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_4b428ac99d1343869d018e32",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl list orders --limit 120 --format json"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_4b428ac99d1343869d018e32",
+          "content": "exit_code: 0\nstdout (truncated):\n[\n  {\n    \"id\": \"o001\",\n    \"user_id\": \"u018\",\n    \"total_cents\": 114450,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p063\",\n      \"p029\"\n    ],\n    \"created_at\": \"2026-04-05T02:56:55Z\"\n  },\n  {\n    \"id\": \"o002\",\n    \"user_id\": \"u009\",\n    \"total_cents\": 163319,\n    \"currency\": \"GBP\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p052\",\n      \"p022\",\n      \"p060\"\n    ],\n    \"created_at\": \"2026-03-10T23:21:05Z\"\n  },\n  {\n    \"id\": \"o003\",\n    \"user_id\": \"u042\",\n    \"total_cents\": 112557,\n    \"currency\": \"USD\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p076\",\n      \"p073\",\n      \"p004\",\n      \"p011\"\n    ],\n    \"created_at\": \"2026-04-15T04:16:14Z\"\n  },\n  {\n    \"id\": \"o004\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 86012,\n    \"currency\": \"USD\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p034\"\n    ],\n    \"created_at\": \"2026-04-08T03:11:50Z\"\n  },\n  {\n    \"id\": \"o005\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 21670,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p049\",\n      \"p036\",\n      \"p054\"\n    ],\n    \"created_at\": \"2026-03-18T15:19:25Z\"\n  },\n  {\n    \"id\": \"o006\",\n    \"user_id\": \"u015\",\n    \"total_cents\": 170630,\n    \"currency\": \"USD\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p045\"\n    ],\n    \"created_at\": \"2026-03-18T09:15:17Z\"\n  },\n  {\n    \"id\": \"o007\",\n    \"user_id\": \"u013\",\n    \"total_cents\": 5541,\n    \"currency\": \"GBP\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p032\"\n    ],\n    \"created_at\": \"2026-04-12T10:04:30Z\"\n  },\n  {\n    \"id\": \"o008\",\n    \"user_id\": \"u037\",\n    \"total_cents\": 57337,\n    \"currency\": \"EUR\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p061\",\n      \"p015\"\n    ],\n    \"created_at\": \"2026-03-17T18:29:57Z\"\n  },\n  {\n    \"id\": \"o009\",\n    \"user_id\": \"u050\",\n    \"total_cents\": 43129,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p022\",\n      \"p078\",\n      \"p015\"\n    ],\n    \"created_at\": \"2026-03-26T21:47:01Z\"\n  },\n  {\n    \"id\": \"o010\",\n    \"user_id\": \"u037\",\n    \"total_cents\": 177761,\n    \"currency\": \"EUR\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p040\"\n    ],\n    \"created_at\": \"2026-03-20T06:56:51Z\"\n  },\n  {\n    \"id\": \"o011\",\n    \"user_id\": \"u045\",\n    \"total_cents\": 164626,\n    \"currency\": \"USD\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p010\",\n      \"p076\"\n    ],\n    \"created_at\": \"2026-03-21T03:42:41Z\"\n  },\n  {\n    \"id\": \"o012\",\n    \"user_id\": \"u003\",\n    \"total_cents\": 91216,\n    \"currency\": \"GBP\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p077\",\n      \"p016\",\n      \"p073\"\n    ],\n    \"created_at\": \"2026-03-22T21:16:19Z\"\n  },\n  {\n    \"id\": \"o013\",\n    \"user_id\": \"u001\",\n    \"total_cents\": 110314,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p009\",\n      \"p065\",\n      \"p044\"\n    ],\n    \"created_at\": \"2026-04-02T22:54:32Z\"\n  },\n  {\n    \"id\": \"o014\",\n    \"user_id\": \"u012\",\n    \"total_cents\": 192559,\n    \"currency\": \"GBP\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p059\",\n      \"p020\",\n      \"p056\"\n    ],\n    \"created_at\": \"2026-03-25T02:24:37Z\"\n  },\n  {\n    \"id\": \"o015\",\n    \"user_id\": \"u021\",\n    \"total_cents\": 64554,\n    \"currency\": \"USD\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p060\",\n      \"p056\",\n      \"p076\",\n      \"p035\"\n    ],\n    \"created_at\": \"2026-03-12T04:49:31Z\"\n  },\n  {\n    \"id\": \"o016\",\n    \"user_id\": \"u043\",\n    \"total_cents\": 99548,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p032\",\n      \"p060\",\n      \"p073\",\n      \"p079\"\n    ],\n    \"created_at\": \"2026-03-31T00:05:29Z\"\n  },\n  {\n    \"id\": \"o017\",\n    \"user_id\": \"u023\",\n    \"total_cents\": 67924,\n    \"currency\": \"EUR\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p024\",\n      \"p063\",\n      \"p028\"\n    ],\n    \"created_at\": \"2026-03-12T06:21:11Z\"\n  },\n  {\n    \"id\": \"o018\",\n    \"user_id\": \"u013\",\n    \"total_cents\": 22641,\n    \"currency\": \"USD\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p072\",\n      \"p002\",\n      \"p067\"\n    ],\n    \"created_at\": \"2026-03-31T06:45:56Z\"\n  },\n  {\n    \"id\": \"o019\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 4719,\n    \"currency\": \"USD\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p061\",\n      \"p063\"\n    ],\n    \"created_at\": \"2026-04-13T05:49:18Z\"\n  },\n  {\n    \"id\": \"o020\",\n    \"user_id\": \"u031\",\n    \"total_cents\": 145288,\n    \"currency\": \"GBP\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p032\",\n      \"p040\",\n      \"p075\",\n      \"p048\"\n    ],\n    \"created_at\": \"2026-04-03T08:15:08Z\"\n  },\n  {\n    \"id\": \"o021\",\n    \"user_id\": \"u020\",\n    \"total_cents\": 66102,\n    \"currency\": \"USD\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p046\",\n      \"p059\",\n      \"p035\"\n    ],\n    \"created_at\": \"2026-03-19T23:38:35Z\"\n  },\n  {\n    \"id\": \"o022\",\n    \"user_id\": \"u048\",\n    \"total_cents\": 140672,\n    \"currency\": \"GBP\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p041\",\n      \"p016\"\n    ],\n    \"created_at\": \"2026-04-14T16:50:19Z\"\n  },\n  {\n    \"id\": \"o023\",\n    \"user_id\": \"u047\",\n    \"total_cents\": 154755,\n    \"currency\": \"GBP\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p062\",\n      \"p036\"\n    ],\n    \"created_at\": \"2026-04-19T02:52:43Z\"\n  },\n  {\n    \"id\": \"o024\",\n    \"user_id\": \"u024\",\n    \"total_cents\": 47238,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p038\",\n      \"p030\"\n    ],\n    \"created_at\": \"2026-03-20T15:05:56Z\"\n  },\n  {\n    \"id\": \"o025\",\n    \"user_id\": \"u004\",\n    \"total_cents\": 145258,\n    \"currency\": \"EUR\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p036\",\n      \"p006\"\n    ],\n    \"created_at\": \"2026-03-24T00:49:41Z\"\n  },\n  {\n    \"id\": \"o026\",\n    \"user_id\": \"u031\",\n    \"total_cents\": 125691,\n    \"currency\": \"EUR\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p014\",\n      \"p002\",\n      \"p074\",\n      \"p037\"\n    ],\n    \"created_at\": \"2026-04-15T01:12:03Z\"\n  },\n  {\n    \"id\": \"o027\",\n    \"user_id\": \"u031\",\n    \"total_cents\": 30106,\n    \"currency\": \"USD\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p033\"\n    ],\n    \"created_at\": \"2026-03-31T03:04:26Z\"\n  },\n  {\n    \"id\": \"o028\",\n    \"user_id\": \"u041\",\n    \"total_cents\": 180148,\n    \"currency\": \"USD\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p074\"\n    ],\n    \"created_at\": \"2026-04-16T18:10:20Z\"\n  },\n  {\n    \"id\": \"o029\",\n    \"user_id\": \"u036\",\n    \"total_cents\": 109296,\n    \"currency\": \"GBP\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p011\",\n      \"p032\",\n      \"p016\"\n    ],\n    \"created_at\": \"2026-03-17T08:15:06Z\"\n  },\n  {\n    \"id\": \"o030\",\n    \"user_id\": \"u028\",\n    \"total_cents\": 80252,\n    \"currency\": \"GBP\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p058\",\n      \"p057\",\n      \"p039\",\n      \"p076\"\n    ],\n    \"created_at\": \"2026-03-25T09:43:43Z\"\n  },\n  {\n    \"id\": \"o031\",\n    \"user_id\": \"u041\",\n    \"total_cents\": 55517,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p027\"\n    ],\n    \"created_at\": \"2026-04-16T09:00:55Z\"\n  },\n  {\n    \"id\": \"o032\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 41233,\n    \"currency\": \"USD\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p023\",\n      \"p071\"\n    ],\n    \"created_at\": \"2026-04-02T03:07:31Z\"\n  },\n  {\n    \"id\": \"o033\",\n    \"user_id\": \"u046\",\n    \"total_cents\": 74311,\n    \"currency\": \"GBP\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p038\",\n      \"p005\",\n      \"p030\",\n      \"p037\"\n    ],\n    \"created_at\": \"2026-04-20T13:04:11Z\"\n  },\n  {\n    \"id\": \"o034\",\n    \"user_id\": \"u043\",\n    \"total_cents\": 52056,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p034\",\n      \"p076\"\n    ],\n    \"created_at\": \"2026-03-28T13:32:20Z\"\n  },\n  {\n    \"id\": \"o035\",\n    \"user_id\": \"u010\",\n    \"total_cents\": 18918,\n    \"currency\": \"USD\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p020\",\n      \"p035\"\n    ],\n    \"created_at\": \"2026-03-16T12:31:15Z\"\n  },\n  {\n    \"id\": \"o036\",\n    \"user_id\": \"u029\",\n    \"total_cents\": 32797,\n    \"currency\": \"EUR\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p077\",\n      \"p073\",\n      \"p037\"\n    ],\n    \"created_at\": \"2026-03-21T00:45:05Z\"\n  },\n  {\n    \"id\": \"o037\",\n    \"user_id\": \"u029\",\n    \"total_cents\": 21286,\n    \"currency\": \"GBP\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p035\",\n      \"p065\",\n      \"p070\",\n      \"p064\"\n    ],\n    \"created_at\": \"2026-03-11T19:44:51Z\"\n  },\n  {\n    \"id\": \"o038\",\n    \"user_id\": \"u006\",\n    \"total_cents\": 60210,\n    \"currency\": \"GBP\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p042\",\n      \"p078\",\n      \"p033\",\n      \"p004\"\n    ],\n    \"created_at\": \"2026-03-17T20:59:23Z\"\n  },\n  {\n    \"id\": \"o039\",\n    \"user_id\": \"u031\",\n    \"total_cents\": 136242,\n    \"currency\": \"GBP\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p074\",\n      \"p006\",\n      \"p023\"\n    ],\n    \"created_at\": \"2026-03-10T12:41:53Z\"\n  },\n  {\n    \"id\": \"o040\",\n    \"user_id\": \"u041\",\n    \"total_cents\": 129101,\n    \"currency\": \"USD\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p024\",\n      \"p075\",\n      \"p056\"\n    ],\n    \"created_at\": \"2026-04-07T02:35:46Z\"\n  },\n  {\n    \"id\": \"o041\",\n    \"user_id\": \"u022\",\n    \"total_cents\": 108109,\n    \"currency\": \"GBP\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p043\",\n      \"p042\",\n      \"p014\",\n      \"p021\"\n    ],\n    \"created_at\": \"2026-04-10T00:12:07Z\"\n  },\n  {\n    \"id\": \"o042\",\n    \"user_id\": \"u021\",\n    \"total_cents\": 66363,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p071\",\n      \"p005\",\n      \"p059\",\n      \"p012\"\n    ],\n    \"created_at\": \"2026-03-17T11:55:00Z\"\n  },\n  {\n    \"id\": \"o043\",\n    \"user_id\": \"u027\",\n    \"total_cents\": 14408,\n    \"currency\": \"USD\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p066\",\n      \"p001\",\n      \"p070\",\n      \"p060\"\n    ],\n    \"created_at\": \"2026-03-24T18:34:45Z\"\n  },\n  {\n    \"id\": \"o044\",\n    \"user_id\": \"u036\",\n    \"total_cents\": 34543,\n    \"currency\": \"EUR\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p057\",\n      \"p007\",\n      \"p027\",\n      \"p035\"\n    ],\n    \"created_at\": \"2026-03-12T05:44:22Z\"\n  },\n  {\n    \"id\": \"o045\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 41716,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_8657fd66521b4ef4acd9f1c0",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl list orders --limit 120 --format json > /tmp/orders.json"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_8657fd66521b4ef4acd9f1c0",
+          "content": "exit_code: 0\nstdout: <empty>",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_7cc94d1ed72a44709326a29d",
+          "name": "bash",
+          "input": {
+            "command": "python3 -c \"\nimport json\nwith open('/tmp/orders.json') as f:\n    orders = json.load(f)\norders.sort(key=lambda x: x['created_at'], reverse=True)\nprint(json.dumps(orders[0], indent=2))\n\""
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_7cc94d1ed72a44709326a29d",
+          "content": "exit_code: 0\nstdout:\n{\n  \"id\": \"o099\",\n  \"user_id\": \"u017\",\n  \"total_cents\": 81197,\n  \"currency\": \"EUR\",\n  \"status\": \"refunded\",\n  \"product_ids\": [\n    \"p004\",\n    \"p024\",\n    \"p035\"\n  ],\n  \"created_at\": \"2026-04-23T16:53:11Z\"\n}\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_2e9037ea958643b5aeced157",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl get users u017 --format json"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_e442c40c73a4405b89e569a5",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl get products p004 --format json"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_31235a6fde14449ea7166c74",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl get products p024 --format json"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_64e53210173543eeba476e2f",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl get products p035 --format json"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_2e9037ea958643b5aeced157",
+          "content": "exit_code: 0\nstdout:\n{\n  \"id\": \"u017\",\n  \"email\": \"zion.brooks@initech.co\",\n  \"name\": \"Zion Brooks\",\n  \"status\": \"active\",\n  \"role\": \"viewer\",\n  \"org_id\": \"org-2\",\n  \"created_at\": \"2026-04-19T00:14:13Z\"\n}\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_e442c40c73a4405b89e569a5",
+          "content": "exit_code: 0\nstdout:\n{\n  \"id\": \"p004\",\n  \"name\": \"Acme Earthquake Pills\",\n  \"sku\": \"SKU-0004\",\n  \"price_cents\": 1999,\n  \"inventory\": 16,\n  \"category\": \"widgets\",\n  \"active\": false\n}\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_31235a6fde14449ea7166c74",
+          "content": "exit_code: 0\nstdout:\n{\n  \"id\": \"p024\",\n  \"name\": \"Consumable Toner\",\n  \"sku\": \"SKU-0024\",\n  \"price_cents\": 199,\n  \"inventory\": 412,\n  \"category\": \"consumables\",\n  \"active\": true\n}\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_64e53210173543eeba476e2f",
+          "content": "exit_code: 0\nstdout:\n{\n  \"id\": \"p035\",\n  \"name\": \"Globex Ionizer Mk 1\",\n  \"sku\": \"SKU-0035\",\n  \"price_cents\": 4999,\n  \"inventory\": 128,\n  \"category\": \"subscriptions\",\n  \"active\": true\n}\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_10457c0d662146f1924bb485",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl list tickets --limit 30 --format json > /tmp/tickets.json"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_10457c0d662146f1924bb485",
+          "content": "exit_code: 0\nstdout: <empty>",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_df8a1ab87fce4b8f8ba1fd9a",
+          "name": "bash",
+          "input": {
+            "command": "python3 -c \"\nimport json\nwith open('/tmp/tickets.json') as f:\n    tickets = json.load(f)\nfor t in tickets:\n    if t.get('order_id') == 'o099' or t.get('user_id') == 'u017':\n        print(json.dumps(t, indent=2))\n\""
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_df8a1ab87fce4b8f8ba1fd9a",
+          "content": "exit_code: 0\nstdout: <empty>",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_8fec08d83b9146bb9cc7e564",
+          "name": "bash",
+          "input": {
+            "command": "python3 -c \"\nimport json\nwith open('/tmp/tickets.json') as f:\n    tickets = json.load(f)\nprint(json.dumps(tickets[0], indent=2))\nprint('---')\nprint(len(tickets))\n\""
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_8fec08d83b9146bb9cc7e564",
+          "content": "exit_code: 0\nstdout:\n{\n  \"id\": \"t001\",\n  \"user_id\": \"u042\",\n  \"subject\": \"Cannot log in after password reset\",\n  \"body\": \"Customer reports: cannot log in after password reset.\",\n  \"status\": \"open\",\n  \"priority\": \"low\",\n  \"created_at\": \"2026-04-11T23:21:28Z\"\n}\n---\n30\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_ea554b925cc946baa13dc393",
+          "name": "bash",
+          "input": {
+            "command": "python3 -c \"\nimport json\nwith open('/tmp/tickets.json') as f:\n    tickets = json.load(f)\nfor t in tickets:\n    print(t.get('id'), t.get('user_id'), t.get('order_id', 'NO_ORDER_ID'), t.get('subject'))\n\""
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_ea554b925cc946baa13dc393",
+          "content": "exit_code: 0\nstdout:\nt001 u042 NO_ORDER_ID Cannot log in after password reset\nt002 u046 NO_ORDER_ID Invoice PDF has wrong totals\nt003 u034 NO_ORDER_ID Export CSV is missing the last column\nt004 u024 NO_ORDER_ID Need to transfer ownership of org-3 workspace\nt005 u050 NO_ORDER_ID Two-factor code never arrives by SMS\nt006 u005 NO_ORDER_ID Refund not processed after 10 business days\nt007 u044 NO_ORDER_ID Webhook retries are looping forever\nt008 u047 NO_ORDER_ID Dashboard graphs show zero for all metrics\nt009 u006 NO_ORDER_ID Bulk delete hangs on large product catalogs\nt010 u020 NO_ORDER_ID API key rotation broke our production deploy\nt011 u039 NO_ORDER_ID Feature request: scheduled exports\nt012 u036 NO_ORDER_ID Acme integration keeps disconnecting\nt013 u043 NO_ORDER_ID Session ended mid-checkout, cart was lost\nt014 u033 NO_ORDER_ID Admin console shows stale user roles\nt015 u020 NO_ORDER_ID Sub-user cannot see orders they created\nt016 u050 NO_ORDER_ID Stripe reconciliation is off by one penny\nt017 u009 NO_ORDER_ID Seats count mismatch after plan downgrade\nt018 u007 NO_ORDER_ID Email notifications are going to spam\nt019 u042 NO_ORDER_ID billing broken since the weekend\nt020 u025 NO_ORDER_ID SSO redirect loops on Safari only\nt021 u045 NO_ORDER_ID Permissions changed without any audit entry\nt022 u003 NO_ORDER_ID Export queue appears stuck since Tuesday\nt023 u029 NO_ORDER_ID Password reset emails never arrive for @gmail\nt024 u015 NO_ORDER_ID API rate limit headers missing from responses\nt025 u031 NO_ORDER_ID Upload fails silently for files over 5 MB\nt026 u029 NO_ORDER_ID Runbook incident-42 links to a 404 page\nt027 u033 NO_ORDER_ID New member invite shows as already-accepted\nt028 u013 NO_ORDER_ID Billing address cannot be updated from UI\nt029 u004 NO_ORDER_ID Product SKU conflict when duplicating a catalog\nt030 u036 NO_ORDER_ID Real-time sync falls behind during high load\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_09c1cbde75c8471a96bad562",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl list sessions --limit 15 --format json > /tmp/sessions.json"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_09c1cbde75c8471a96bad562",
+          "content": "exit_code: 0\nstdout: <empty>",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_2d5ef3d8df6e40b7a57b10fd",
+          "name": "bash",
+          "input": {
+            "command": "python3 -c \"\nimport json\nwith open('/tmp/sessions.json') as f:\n    sessions = json.load(f)\nfor s in sessions:\n    if s.get('user_id') == 'u017':\n        print(json.dumps(s, indent=2))\n\""
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_2d5ef3d8df6e40b7a57b10fd",
+          "content": "exit_code: 0\nstdout: <empty>",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_85f96e2739bc4539ad4d3bf3",
+          "name": "bash",
+          "input": {
+            "command": "python3 -c \"\nimport json\nwith open('/tmp/sessions.json') as f:\n    sessions = json.load(f)\nfor s in sessions:\n    print(s.get('id'), s.get('user_id'), s.get('status'), s.get('created_at'))\n\""
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_85f96e2739bc4539ad4d3bf3",
+          "content": "exit_code: 0\nstdout:\ns01 u011 None None\ns02 u028 None None\ns03 u023 None None\ns04 u024 None None\ns05 u002 None None\ns06 u010 None None\ns07 u009 None None\ns08 u006 None None\ns09 u047 None None\ns10 u008 None None\ns11 u008 None None\ns12 u033 None None\ns13 u001 None None\ns14 u043 None None\ns15 u035 None None\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_92b9b723e23e4ca3a3295b85",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl pipeline status pipe-07"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_92b9b723e23e4ca3a3295b85",
+          "content": "exit_code: 0\nstdout:\npipeline: pipe-07 (pipe-07)\ncompleted: 147/200, remaining: 53, state: partial\nfailed_at: 2026-04-18T14:42:09Z\ncause: apply step timed out at record 148 (downstream RDS freeze)\ncollateral_refunds: o088, o091\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_ed7d8d24bbe24187a34c7f7e",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl pipeline status pipe-01"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_2d7f8498fbda4f9dab28c432",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl pipeline status pipe-02"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_8e756f36d8aa4a11be64ef2d",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl pipeline status pipe-03"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_043fef6516b444ff9d0df58a",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl pipeline status pipe-04"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_919f956232c14cb3a6e7a2b8",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl pipeline status pipe-05"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_0842fa4a3bca4be89c58f94a",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl pipeline status pipe-06"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_9cabc7fcea6b4814824bf397",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl pipeline status pipe-08"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_82af7b8bee7646deacba571c",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl pipeline status pipe-09"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_a79f0699d559458fba000452",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl pipeline status pipe-10"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_ed7d8d24bbe24187a34c7f7e",
+          "content": "exit_code: 0\nstdout:\npipeline: pipe-01 (pipe-01)\nran_in_session: no\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_2d7f8498fbda4f9dab28c432",
+          "content": "exit_code: 0\nstdout:\npipeline: pipe-02 (pipe-02)\nran_in_session: no\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_8e756f36d8aa4a11be64ef2d",
+          "content": "exit_code: 0\nstdout:\npipeline: pipe-03 (pipe-03)\nran_in_session: no\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_043fef6516b444ff9d0df58a",
+          "content": "exit_code: 0\nstdout:\npipeline: pipe-04 (pipe-04)\nran_in_session: no\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_919f956232c14cb3a6e7a2b8",
+          "content": "exit_code: 0\nstdout:\npipeline: pipe-05 (pipe-05)\nran_in_session: no\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_0842fa4a3bca4be89c58f94a",
+          "content": "exit_code: 0\nstdout:\npipeline: pipe-06 (pipe-06)\nran_in_session: no\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_9cabc7fcea6b4814824bf397",
+          "content": "exit_code: 0\nstdout:\npipeline: pipe-08 (pipe-08)\nran_in_session: no\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_82af7b8bee7646deacba571c",
+          "content": "exit_code: 0\nstdout:\npipeline: pipe-09 (pipe-09)\nran_in_session: no\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_a79f0699d559458fba000452",
+          "content": "exit_code: 0\nstdout:\npipeline: pipe-10 (pipe-10)\nran_in_session: no\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_575a4f1c1e1b4dc186419413",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl search --query o099"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_575a4f1c1e1b4dc186419413",
+          "content": "exit_code: 0\nstdout:\n[\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o099\",\n    \"match\": {\n      \"id\": \"o099\"\n    }\n  }\n]\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_ece5399173614384a6dcc454",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl search --query u017"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_ece5399173614384a6dcc454",
+          "content": "exit_code: 0\nstdout:\n[\n  {\n    \"resource\": \"users\",\n    \"id\": \"u017\",\n    \"match\": {\n      \"id\": \"u017\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o004\",\n    \"match\": {\n      \"user_id\": \"u017\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o005\",\n    \"match\": {\n      \"user_id\": \"u017\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o019\",\n    \"match\": {\n      \"user_id\": \"u017\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o032\",\n    \"match\": {\n      \"user_id\": \"u017\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o045\",\n    \"match\": {\n      \"user_id\": \"u017\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o058\",\n    \"match\": {\n      \"user_id\": \"u017\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o072\",\n    \"match\": {\n      \"user_id\": \"u017\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o073\",\n    \"match\": {\n      \"user_id\": \"u017\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o082\",\n    \"match\": {\n      \"user_id\": \"u017\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o088\",\n    \"match\": {\n      \"user_id\": \"u017\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o091\",\n    \"match\": {\n      \"user_id\": \"u017\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o099\",\n    \"match\": {\n      \"user_id\": \"u017\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o104\",\n    \"match\": {\n      \"user_id\": \"u017\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o112\",\n    \"match\": {\n      \"user_id\": \"u017\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o118\",\n    \"match\": {\n      \"user_id\": \"u017\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o120\",\n    \"match\": {\n      \"user_id\": \"u017\"\n    }\n  }\n]\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_9ffe3a519d2641749a6f1e7b",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl search --query \"u017\" --scope tickets"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_9ffe3a519d2641749a6f1e7b",
+          "content": "exit_code: 0\nstdout:\n[]\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_a6eeddc157a240e7a3b551a5",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl get orders o099 --format json"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_a6eeddc157a240e7a3b551a5",
+          "content": "exit_code: 0\nstdout:\n{\n  \"id\": \"o099\",\n  \"user_id\": \"u017\",\n  \"total_cents\": 81197,\n  \"currency\": \"EUR\",\n  \"status\": \"refunded\",\n  \"product_ids\": [\n    \"p004\",\n    \"p024\",\n    \"p035\"\n  ],\n  \"created_at\": \"2026-04-23T16:53:11Z\"\n}\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_f960ea5428164cd4b7603271",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl search --query \"o099\" --scope tickets"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_f960ea5428164cd4b7603271",
+          "content": "exit_code: 0\nstdout:\n[]\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_0de68a20a3ee47eabcd94089",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl search --query \"o099\" --scope sessions"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_0de68a20a3ee47eabcd94089",
+          "content": "exit_code: 0\nstdout:\n[]\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_5e0f4f90304a485cabd85bdb",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl search --query \"o099\" --scope orders"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_5e0f4f90304a485cabd85bdb",
+          "content": "exit_code: 0\nstdout:\n[\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o099\",\n    \"match\": {\n      \"id\": \"o099\"\n    }\n  }\n]\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_c9d0da6fb5dc4e4fa71932bb",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl pipeline status pipe-11"
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "call_c5fadf20f9124525a493acab",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl pipeline status pipe-12"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_c9d0da6fb5dc4e4fa71932bb",
+          "content": "exit_code: 1\nstdout: <empty>\nstderr:\nnot found\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_c5fadf20f9124525a493acab",
+          "content": "exit_code: 1\nstdout: <empty>\nstderr:\nnot found\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Now I have all the data. Let me produce the final lineage diagram.\n\n---\n\n## End-to-End Lineage: Order **o099** (Most Recent Order)\n\n```\n┌─────────────────────────────────────────────────────────────────────────┐\n│  ORDER o099                                                             │\n│  Created:  2026-04-23T16:53:11Z                                         │\n│  Status:   refunded                                                     │\n│  Total:    €811.97 (81197 cents, EUR)                                   │\n│  Currency: EUR                                                          │\n└─────────────────────────────────────────────────────────────────────────┘\n        │\n        ├─── PLACED BY ───────────────────────────────────────────────┐\n        │                                                             ▼\n        │              ┌──────────────────────────────────────────────────┐\n        │              │  USER u017                                       │\n        │              │  Name:     Zion Brooks                           │\n        │              │  Email:    zion.brooks@initech.co                │\n        │              │  Status:   active                                │\n        │              │  Role:     viewer                                │\n        │              │  Org:      org-2                                 │\n        │              │  Created:  2026-04-19T00:14:13Z                  │\n        │              └──────────────────────────────────────────────────┘\n        │                                                             │\n        │              ┌─ Other orders by u017: o004, o005, o019,      │\n        │              │   o032, o045, o058, o072, o073, o082, o088,   │\n        │              │   o091, o104, o112, o118, o120 (16 total)     │\n        │              └───────────────────────────────────────────────┘\n        │\n        ├─── CONTAINS PRODUCTS ───────────────────────────────────────┐\n        │                                                             ▼\n        │              ┌──────────────────────────────────────────────────┐\n        │              │  PRODUCT p004                                    │\n        │              │  Name:     Acme Earthquake Pills                 │\n        │              │  SKU:      SKU-0004                              │\n        │              │  Price:    $19.99                                │\n        │              │  Category: widgets                               │\n        │              │  Active:   false  ⚠️ INACTIVE                    │\n        │              │  Inventory: 16                                   │\n        │              └──────────────────────────────────────────────────┘\n        │                                                             ▼\n        │              ┌──────────────────────────────────────────────────┐\n        │              │  PRODUCT p024                                    │\n        │              │  Name:     Consumable Toner                      │\n        │              │  SKU:      SKU-0024                              │\n        │              │  Price:    $1.99                                 │\n        │              │  Category: consumables                           │\n        │              │  Active:   true                                  │\n        │              │  Inventory: 412                                  │\n        │              └──────────────────────────────────────────────────┘\n        │                                                             ▼\n        │              ┌──────────────────────────────────────────────────┐\n        │              │  PRODUCT p035                                    │\n        │              │  Name:     Globex Ionizer Mk 1                   │\n        │              │  SKU:      SKU-0035                              │\n        │              │  Price:    $49.99                                │\n        │              │  Category: subscriptions                         │\n        │              │  Active:   true                                  │\n        │              │  Inventory: 128                                  │\n        │              └──────────────────────────────────────────────────┘\n        │\n        ├─── RELATED TICKETS ─────────────────────────────────────────┐\n        │                                                             ▼\n        │              ┌──────────────────────────────────────────────────┐\n        │              │  NONE                                            │\n        │              │  No tickets reference order o099 or user u017.   │\n        │              │  (All 30 tickets have no order_id field.)        │\n        │              └──────────────────────────────────────────────────┘\n        │\n        ├─── USER SESSIONS ───────────────────────────────────────────┐\n        │                                                             ▼\n        │              ┌──────────────────────────────────────────────────┐\n        │              │  NONE                                            │\n        │              │  No session found for user u017.                 │\n        │              │  (15 sessions exist for other users only.)       │\n        │              └──────────────────────────────────────────────────┘\n        │\n        └─── PIPELINE TOUCH ──────────────────────────────────────────┐\n                                                                      ▼\n                              ┌──────────────────────────────────────────┐\n                              │  pipe-07 (checked per task instructions) │\n                              │  State:    partial (147/200 completed)   │\n                              │  Failed:   2026-04-18T14:42:09Z          │\n                              │  Cause:    apply step timed out at       │\n                              │            record 148 (downstream RDS    │\n                              │            freeze)                       │\n                              │  Refunds:  o088, o091                    │\n                              │                                          │\n                              │  ❌ o099 is NOT in collateral_refunds.   │\n                              │     pipe-07 did NOT refund o099.         │\n                              └──────────────────────────────────────────┘\n                              ┌──────────────────────────────────────────┐\n                              │  pipe-01 through pipe-06, pipe-08..10    │\n                              │  All show: ran_in_session: no            │\n                              │  ❌ None touched o099.                   │\n                              └──────────────────────────────────────────┘\n```\n\n### Summary\n\n| Node | ID | Key Detail |\n|------|----|------------|\n| **Order** | `o099` | Most recent (2026-04-23), status **refunded**, €811.97 |\n| **User** | `u017` | Zion Brooks, active viewer in org-2; prolific buyer (16 orders) |\n| **Products** | `p004`, `p024`, `p035` | Earthquake Pills (⚠️ inactive), Consumable Toner, Globex Ionizer |\n| **Tickets** | — | **None** linked to this order or user |\n| **Sessions** | — | **None** for this user |\n| **pipe-07** | — | Partially failed; refunded o088 & o091, **not o099** |\n| **Other pipelines** | — | No pipeline ran in session; none touched o099 |\n\n**Root cause note:** Order o099 is marked `refunded` but **no pipeline** (including pipe-07) is responsible for the refund. The refund likely occurred through a different mechanism not captured in the pipeline fixtures."
+        }
+      ]
+    }
+  ],
+  "tool_calls": [
+    {
+      "turn": 0,
+      "tool_use_id": "call_dc6848da1f3841b881110228",
+      "command": "ctl list orders --limit 1 --format json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 127,
+      "stdout": "",
+      "stderr": "executable not found: [Errno 2] No such file or directory: 'ctl'",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 5,
+      "timed_out": false
+    },
+    {
+      "turn": 1,
+      "tool_use_id": "call_528236b2ed3c40b1865da53b",
+      "command": "./cli/bin/ctl list orders --limit 1 --format json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[\n  {\n    \"id\": \"o001\",\n    \"user_id\": \"u018\",\n    \"total_cents\": 114450,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p063\",\n      \"p029\"\n    ],\n    \"created_at\": \"2026-04-05T02:56:55Z\"\n  }\n]\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 50,
+      "timed_out": false
+    },
+    {
+      "turn": 2,
+      "tool_use_id": "call_66552162e4e94bb9a8a917a2",
+      "command": "./cli/bin/ctl get orders o001 --format json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "{\n  \"id\": \"o001\",\n  \"user_id\": \"u018\",\n  \"total_cents\": 114450,\n  \"currency\": \"EUR\",\n  \"status\": \"paid\",\n  \"product_ids\": [\n    \"p063\",\n    \"p029\"\n  ],\n  \"created_at\": \"2026-04-05T02:56:55Z\"\n}\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 34,
+      "timed_out": false
+    },
+    {
+      "turn": 2,
+      "tool_use_id": "call_0ae981894a0e464aac2d9fed",
+      "command": "./cli/bin/ctl get users u018 --format json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "{\n  \"id\": \"u018\",\n  \"email\": \"lee.yoon@wayne.inc\",\n  \"name\": \"Lee Yoon\",\n  \"status\": \"pending\",\n  \"role\": \"viewer\",\n  \"org_id\": \"org-2\",\n  \"created_at\": \"2026-04-12T12:10:52Z\"\n}\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 23,
+      "timed_out": false
+    },
+    {
+      "turn": 2,
+      "tool_use_id": "call_fbe3f40ac8824522bbd35e86",
+      "command": "./cli/bin/ctl get products p063 --format json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "{\n  \"id\": \"p063\",\n  \"name\": \"Acme Rocket Skates Mk 2\",\n  \"sku\": \"SKU-0063\",\n  \"price_cents\": 499,\n  \"inventory\": 48,\n  \"category\": \"widgets\",\n  \"active\": true\n}\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 22,
+      "timed_out": false
+    },
+    {
+      "turn": 2,
+      "tool_use_id": "call_a2572df887194830bce4778c",
+      "command": "./cli/bin/ctl get products p029 --format json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "{\n  \"id\": \"p029\",\n  \"name\": \"Monthly Plan\",\n  \"sku\": \"SKU-0029\",\n  \"price_cents\": 9999,\n  \"inventory\": 299,\n  \"category\": \"services\",\n  \"active\": true\n}\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 21,
+      "timed_out": false
+    },
+    {
+      "turn": 3,
+      "tool_use_id": "call_4b428ac99d1343869d018e32",
+      "command": "./cli/bin/ctl list orders --limit 120 --format json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[\n  {\n    \"id\": \"o001\",\n    \"user_id\": \"u018\",\n    \"total_cents\": 114450,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p063\",\n      \"p029\"\n    ],\n    \"created_at\": \"2026-04-05T02:56:55Z\"\n  },\n  {\n    \"id\": \"o002\",\n    \"user_id\": \"u009\",\n    \"total_cents\": 163319,\n    \"currency\": \"GBP\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p052\",\n      \"p022\",\n      \"p060\"\n    ],\n    \"created_at\": \"2026-03-10T23:21:05Z\"\n  },\n  {\n    \"id\": \"o003\",\n    \"user_id\": \"u042\",\n    \"total_cents\": 112557,\n    \"currency\": \"USD\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p076\",\n      \"p073\",\n      \"p004\",\n      \"p011\"\n    ],\n    \"created_at\": \"2026-04-15T04:16:14Z\"\n  },\n  {\n    \"id\": \"o004\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 86012,\n    \"currency\": \"USD\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p034\"\n    ],\n    \"created_at\": \"2026-04-08T03:11:50Z\"\n  },\n  {\n    \"id\": \"o005\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 21670,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p049\",\n      \"p036\",\n      \"p054\"\n    ],\n    \"created_at\": \"2026-03-18T15:19:25Z\"\n  },\n  {\n    \"id\": \"o006\",\n    \"user_id\": \"u015\",\n    \"total_cents\": 170630,\n    \"currency\": \"USD\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p045\"\n    ],\n    \"created_at\": \"2026-03-18T09:15:17Z\"\n  },\n  {\n    \"id\": \"o007\",\n    \"user_id\": \"u013\",\n    \"total_cents\": 5541,\n    \"currency\": \"GBP\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p032\"\n    ],\n    \"created_at\": \"2026-04-12T10:04:30Z\"\n  },\n  {\n    \"id\": \"o008\",\n    \"user_id\": \"u037\",\n    \"total_cents\": 57337,\n    \"currency\": \"EUR\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p061\",\n      \"p015\"\n    ],\n    \"created_at\": \"2026-03-17T18:29:57Z\"\n  },\n  {\n    \"id\": \"o009\",\n    \"user_id\": \"u050\",\n    \"total_cents\": 43129,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p022\",\n      \"p078\",\n      \"p015\"\n    ],\n    \"created_at\": \"2026-03-26T21:47:01Z\"\n  },\n  {\n    \"id\": \"o010\",\n    \"user_id\": \"u037\",\n    \"total_cents\": 177761,\n    \"currency\": \"EUR\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p040\"\n    ],\n    \"created_at\": \"2026-03-20T06:56:51Z\"\n  },\n  {\n    \"id\": \"o011\",\n    \"user_id\": \"u045\",\n    \"total_cents\": 164626,\n    \"currency\": \"USD\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p010\",\n      \"p076\"\n    ],\n    \"created_at\": \"2026-03-21T03:42:41Z\"\n  },\n  {\n    \"id\": \"o012\",\n    \"user_id\": \"u003\",\n    \"total_cents\": 91216,\n    \"currency\": \"GBP\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p077\",\n      \"p016\",\n      \"p073\"\n    ],\n    \"created_at\": \"2026-03-22T21:16:19Z\"\n  },\n  {\n    \"id\": \"o013\",\n    \"user_id\": \"u001\",\n    \"total_cents\": 110314,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p009\",\n      \"p065\",\n      \"p044\"\n    ],\n    \"created_at\": \"2026-04-02T22:54:32Z\"\n  },\n  {\n    \"id\": \"o014\",\n    \"user_id\": \"u012\",\n    \"total_cents\": 192559,\n    \"currency\": \"GBP\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p059\",\n      \"p020\",\n      \"p056\"\n    ],\n    \"created_at\": \"2026-03-25T02:24:37Z\"\n  },\n  {\n    \"id\": \"o015\",\n    \"user_id\": \"u021\",\n    \"total_cents\": 64554,\n    \"currency\": \"USD\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p060\",\n      \"p056\",\n      \"p076\",\n      \"p035\"\n    ],\n    \"created_at\": \"2026-03-12T04:49:31Z\"\n  },\n  {\n    \"id\": \"o016\",\n    \"user_id\": \"u043\",\n    \"total_cents\": 99548,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p032\",\n      \"p060\",\n      \"p073\",\n      \"p079\"\n    ],\n    \"created_at\": \"2026-03-31T00:05:29Z\"\n  },\n  {\n    \"id\": \"o017\",\n    \"user_id\": \"u023\",\n    \"total_cents\": 67924,\n    \"currency\": \"EUR\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p024\",\n      \"p063\",\n      \"p028\"\n    ],\n    \"created_at\": \"2026-03-12T06:21:11Z\"\n  },\n  {\n    \"id\": \"o018\",\n    \"user_id\": \"u013\",\n    \"total_cents\": 22641,\n    \"currency\": \"USD\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p072\",\n      \"p002\",\n      \"p067\"\n    ],\n    \"created_at\": \"2026-03-31T06:45:56Z\"\n  },\n  {\n    \"id\": \"o019\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 4719,\n    \"currency\": \"USD\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p061\",\n      \"p063\"\n    ],\n    \"created_at\": \"2026-04-13T05:49:18Z\"\n  },\n  {\n    \"id\": \"o020\",\n    \"user_id\": \"u031\",\n    \"total_cents\": 145288,\n    \"currency\": \"GBP\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p032\",\n      \"p040\",\n      \"p075\",\n      \"p048\"\n    ],\n    \"created_at\": \"2026-04-03T08:15:08Z\"\n  },\n  {\n    \"id\": \"o021\",\n    \"user_id\": \"u020\",\n    \"total_cents\": 66102,\n    \"currency\": \"USD\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p046\",\n      \"p059\",\n      \"p035\"\n    ],\n    \"created_at\": \"2026-03-19T23:38:35Z\"\n  },\n  {\n    \"id\": \"o022\",\n    \"user_id\": \"u048\",\n    \"total_cents\": 140672,\n    \"currency\": \"GBP\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p041\",\n      \"p016\"\n    ],\n    \"created_at\": \"2026-04-14T16:50:19Z\"\n  },\n  {\n    \"id\": \"o023\",\n    \"user_id\": \"u047\",\n    \"total_cents\": 154755,\n    \"currency\": \"GBP\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p062\",\n      \"p036\"\n    ],\n    \"created_at\": \"2026-04-19T02:52:43Z\"\n  },\n  {\n    \"id\": \"o024\",\n    \"user_id\": \"u024\",\n    \"total_cents\": 47238,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p038\",\n      \"p030\"\n    ],\n    \"created_at\": \"2026-03-20T15:05:56Z\"\n  },\n  {\n    \"id\": \"o025\",\n    \"user_id\": \"u004\",\n    \"total_cents\": 145258,\n    \"currency\": \"EUR\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p036\",\n      \"p006\"\n    ],\n    \"created_at\": \"2026-03-24T00:49:41Z\"\n  },\n  {\n    \"id\": \"o026\",\n    \"user_id\": \"u031\",\n    \"total_cents\": 125691,\n    \"currency\": \"EUR\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p014\",\n      \"p002\",\n      \"p074\",\n      \"p037\"\n    ],\n    \"created_at\": \"2026-04-15T01:12:03Z\"\n  },\n  {\n    \"id\": \"o027\",\n    \"user_id\": \"u031\",\n    \"total_cents\": 30106,\n    \"currency\": \"USD\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p033\"\n    ],\n    \"created_at\": \"2026-03-31T03:04:26Z\"\n  },\n  {\n    \"id\": \"o028\",\n    \"user_id\": \"u041\",\n    \"total_cents\": 180148,\n    \"currency\": \"USD\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p074\"\n    ],\n    \"created_at\": \"2026-04-16T18:10:20Z\"\n  },\n  {\n    \"id\": \"o029\",\n    \"user_id\": \"u036\",\n    \"total_cents\": 109296,\n    \"currency\": \"GBP\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p011\",\n      \"p032\",\n      \"p016\"\n    ],\n    \"created_at\": \"2026-03-17T08:15:06Z\"\n  },\n  {\n    \"id\": \"o030\",\n    \"user_id\": \"u028\",\n    \"total_cents\": 80252,\n    \"currency\": \"GBP\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p058\",\n      \"p057\",\n      \"p039\",\n      \"p076\"\n    ],\n    \"created_at\": \"2026-03-25T09:43:43Z\"\n  },\n  {\n    \"id\": \"o031\",\n    \"user_id\": \"u041\",\n    \"total_cents\": 55517,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p027\"\n    ],\n    \"created_at\": \"2026-04-16T09:00:55Z\"\n  },\n  {\n    \"id\": \"o032\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 41233,\n    \"currency\": \"USD\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p023\",\n      \"p071\"\n    ],\n    \"created_at\": \"2026-04-02T03:07:31Z\"\n  },\n  {\n    \"id\": \"o033\",\n    \"user_id\": \"u046\",\n    \"total_cents\": 74311,\n    \"currency\": \"GBP\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p038\",\n      \"p005\",\n      \"p030\",\n      \"p037\"\n    ],\n    \"created_at\": \"2026-04-20T13:04:11Z\"\n  },\n  {\n    \"id\": \"o034\",\n    \"user_id\": \"u043\",\n    \"total_cents\": 52056,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p034\",\n      \"p076\"\n    ],\n    \"created_at\": \"2026-03-28T13:32:20Z\"\n  },\n  {\n    \"id\": \"o035\",\n    \"user_id\": \"u010\",\n    \"total_cents\": 18918,\n    \"currency\": \"USD\",\n    \"status\": \"pending\",\n    \"product_ids\": [\n      \"p020\",\n      \"p035\"\n    ],\n    \"created_at\": \"2026-03-16T12:31:15Z\"\n  },\n  {\n    \"id\": \"o036\",\n    \"user_id\": \"u029\",\n    \"total_cents\": 32797,\n    \"currency\": \"EUR\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p077\",\n      \"p073\",\n      \"p037\"\n    ],\n    \"created_at\": \"2026-03-21T00:45:05Z\"\n  },\n  {\n    \"id\": \"o037\",\n    \"user_id\": \"u029\",\n    \"total_cents\": 21286,\n    \"currency\": \"GBP\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p035\",\n      \"p065\",\n      \"p070\",\n      \"p064\"\n    ],\n    \"created_at\": \"2026-03-11T19:44:51Z\"\n  },\n  {\n    \"id\": \"o038\",\n    \"user_id\": \"u006\",\n    \"total_cents\": 60210,\n    \"currency\": \"GBP\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p042\",\n      \"p078\",\n      \"p033\",\n      \"p004\"\n    ],\n    \"created_at\": \"2026-03-17T20:59:23Z\"\n  },\n  {\n    \"id\": \"o039\",\n    \"user_id\": \"u031\",\n    \"total_cents\": 136242,\n    \"currency\": \"GBP\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p074\",\n      \"p006\",\n      \"p023\"\n    ],\n    \"created_at\": \"2026-03-10T12:41:53Z\"\n  },\n  {\n    \"id\": \"o040\",\n    \"user_id\": \"u041\",\n    \"total_cents\": 129101,\n    \"currency\": \"USD\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p024\",\n      \"p075\",\n      \"p056\"\n    ],\n    \"created_at\": \"2026-04-07T02:35:46Z\"\n  },\n  {\n    \"id\": \"o041\",\n    \"user_id\": \"u022\",\n    \"total_cents\": 108109,\n    \"currency\": \"GBP\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p043\",\n      \"p042\",\n      \"p014\",\n      \"p021\"\n    ],\n    \"created_at\": \"2026-04-10T00:12:07Z\"\n  },\n  {\n    \"id\": \"o042\",\n    \"user_id\": \"u021\",\n    \"total_cents\": 66363,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"p071\",\n      \"p005\",\n      \"p059\",\n      \"p012\"\n    ],\n    \"created_at\": \"2026-03-17T11:55:00Z\"\n  },\n  {\n    \"id\": \"o043\",\n    \"user_id\": \"u027\",\n    \"total_cents\": 14408,\n    \"currency\": \"USD\",\n    \"status\": \"refunded\",\n    \"product_ids\": [\n      \"p066\",\n      \"p001\",\n      \"p070\",\n      \"p060\"\n    ],\n    \"created_at\": \"2026-03-24T18:34:45Z\"\n  },\n  {\n    \"id\": \"o044\",\n    \"user_id\": \"u036\",\n    \"total_cents\": 34543,\n    \"currency\": \"EUR\",\n    \"status\": \"failed\",\n    \"product_ids\": [\n      \"p057\",\n      \"p007\",\n      \"p027\",\n      \"p035\"\n    ],\n    \"created_at\": \"2026-03-12T05:44:22Z\"\n  },\n  {\n    \"id\": \"o045\",\n    \"user_id\": \"u017\",\n    \"total_cents\": 41716,\n    \"currency\": \"EUR\",\n    \"status\": \"paid\",\n    \"product_ids\": [\n      \"",
+      "stderr": "",
+      "stdout_truncated": true,
+      "stderr_truncated": false,
+      "wall_clock_ms": 32,
+      "timed_out": false
+    },
+    {
+      "turn": 4,
+      "tool_use_id": "call_8657fd66521b4ef4acd9f1c0",
+      "command": "./cli/bin/ctl list orders --limit 120 --format json > /tmp/orders.json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 56,
+      "timed_out": false
+    },
+    {
+      "turn": 5,
+      "tool_use_id": "call_7cc94d1ed72a44709326a29d",
+      "command": "python3 -c \"\nimport json\nwith open('/tmp/orders.json') as f:\n    orders = json.load(f)\norders.sort(key=lambda x: x['created_at'], reverse=True)\nprint(json.dumps(orders[0], indent=2))\n\"",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "{\n  \"id\": \"o099\",\n  \"user_id\": \"u017\",\n  \"total_cents\": 81197,\n  \"currency\": \"EUR\",\n  \"status\": \"refunded\",\n  \"product_ids\": [\n    \"p004\",\n    \"p024\",\n    \"p035\"\n  ],\n  \"created_at\": \"2026-04-23T16:53:11Z\"\n}\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 43,
+      "timed_out": false
+    },
+    {
+      "turn": 6,
+      "tool_use_id": "call_2e9037ea958643b5aeced157",
+      "command": "./cli/bin/ctl get users u017 --format json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "{\n  \"id\": \"u017\",\n  \"email\": \"zion.brooks@initech.co\",\n  \"name\": \"Zion Brooks\",\n  \"status\": \"active\",\n  \"role\": \"viewer\",\n  \"org_id\": \"org-2\",\n  \"created_at\": \"2026-04-19T00:14:13Z\"\n}\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 52,
+      "timed_out": false
+    },
+    {
+      "turn": 6,
+      "tool_use_id": "call_e442c40c73a4405b89e569a5",
+      "command": "./cli/bin/ctl get products p004 --format json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "{\n  \"id\": \"p004\",\n  \"name\": \"Acme Earthquake Pills\",\n  \"sku\": \"SKU-0004\",\n  \"price_cents\": 1999,\n  \"inventory\": 16,\n  \"category\": \"widgets\",\n  \"active\": false\n}\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 25,
+      "timed_out": false
+    },
+    {
+      "turn": 6,
+      "tool_use_id": "call_31235a6fde14449ea7166c74",
+      "command": "./cli/bin/ctl get products p024 --format json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "{\n  \"id\": \"p024\",\n  \"name\": \"Consumable Toner\",\n  \"sku\": \"SKU-0024\",\n  \"price_cents\": 199,\n  \"inventory\": 412,\n  \"category\": \"consumables\",\n  \"active\": true\n}\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 22,
+      "timed_out": false
+    },
+    {
+      "turn": 6,
+      "tool_use_id": "call_64e53210173543eeba476e2f",
+      "command": "./cli/bin/ctl get products p035 --format json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "{\n  \"id\": \"p035\",\n  \"name\": \"Globex Ionizer Mk 1\",\n  \"sku\": \"SKU-0035\",\n  \"price_cents\": 4999,\n  \"inventory\": 128,\n  \"category\": \"subscriptions\",\n  \"active\": true\n}\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 20,
+      "timed_out": false
+    },
+    {
+      "turn": 7,
+      "tool_use_id": "call_10457c0d662146f1924bb485",
+      "command": "./cli/bin/ctl list tickets --limit 30 --format json > /tmp/tickets.json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 46,
+      "timed_out": false
+    },
+    {
+      "turn": 8,
+      "tool_use_id": "call_df8a1ab87fce4b8f8ba1fd9a",
+      "command": "python3 -c \"\nimport json\nwith open('/tmp/tickets.json') as f:\n    tickets = json.load(f)\nfor t in tickets:\n    if t.get('order_id') == 'o099' or t.get('user_id') == 'u017':\n        print(json.dumps(t, indent=2))\n\"",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 47,
+      "timed_out": false
+    },
+    {
+      "turn": 9,
+      "tool_use_id": "call_8fec08d83b9146bb9cc7e564",
+      "command": "python3 -c \"\nimport json\nwith open('/tmp/tickets.json') as f:\n    tickets = json.load(f)\nprint(json.dumps(tickets[0], indent=2))\nprint('---')\nprint(len(tickets))\n\"",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "{\n  \"id\": \"t001\",\n  \"user_id\": \"u042\",\n  \"subject\": \"Cannot log in after password reset\",\n  \"body\": \"Customer reports: cannot log in after password reset.\",\n  \"status\": \"open\",\n  \"priority\": \"low\",\n  \"created_at\": \"2026-04-11T23:21:28Z\"\n}\n---\n30\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 48,
+      "timed_out": false
+    },
+    {
+      "turn": 10,
+      "tool_use_id": "call_ea554b925cc946baa13dc393",
+      "command": "python3 -c \"\nimport json\nwith open('/tmp/tickets.json') as f:\n    tickets = json.load(f)\nfor t in tickets:\n    print(t.get('id'), t.get('user_id'), t.get('order_id', 'NO_ORDER_ID'), t.get('subject'))\n\"",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "t001 u042 NO_ORDER_ID Cannot log in after password reset\nt002 u046 NO_ORDER_ID Invoice PDF has wrong totals\nt003 u034 NO_ORDER_ID Export CSV is missing the last column\nt004 u024 NO_ORDER_ID Need to transfer ownership of org-3 workspace\nt005 u050 NO_ORDER_ID Two-factor code never arrives by SMS\nt006 u005 NO_ORDER_ID Refund not processed after 10 business days\nt007 u044 NO_ORDER_ID Webhook retries are looping forever\nt008 u047 NO_ORDER_ID Dashboard graphs show zero for all metrics\nt009 u006 NO_ORDER_ID Bulk delete hangs on large product catalogs\nt010 u020 NO_ORDER_ID API key rotation broke our production deploy\nt011 u039 NO_ORDER_ID Feature request: scheduled exports\nt012 u036 NO_ORDER_ID Acme integration keeps disconnecting\nt013 u043 NO_ORDER_ID Session ended mid-checkout, cart was lost\nt014 u033 NO_ORDER_ID Admin console shows stale user roles\nt015 u020 NO_ORDER_ID Sub-user cannot see orders they created\nt016 u050 NO_ORDER_ID Stripe reconciliation is off by one penny\nt017 u009 NO_ORDER_ID Seats count mismatch after plan downgrade\nt018 u007 NO_ORDER_ID Email notifications are going to spam\nt019 u042 NO_ORDER_ID billing broken since the weekend\nt020 u025 NO_ORDER_ID SSO redirect loops on Safari only\nt021 u045 NO_ORDER_ID Permissions changed without any audit entry\nt022 u003 NO_ORDER_ID Export queue appears stuck since Tuesday\nt023 u029 NO_ORDER_ID Password reset emails never arrive for @gmail\nt024 u015 NO_ORDER_ID API rate limit headers missing from responses\nt025 u031 NO_ORDER_ID Upload fails silently for files over 5 MB\nt026 u029 NO_ORDER_ID Runbook incident-42 links to a 404 page\nt027 u033 NO_ORDER_ID New member invite shows as already-accepted\nt028 u013 NO_ORDER_ID Billing address cannot be updated from UI\nt029 u004 NO_ORDER_ID Product SKU conflict when duplicating a catalog\nt030 u036 NO_ORDER_ID Real-time sync falls behind during high load\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 43,
+      "timed_out": false
+    },
+    {
+      "turn": 11,
+      "tool_use_id": "call_09c1cbde75c8471a96bad562",
+      "command": "./cli/bin/ctl list sessions --limit 15 --format json > /tmp/sessions.json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 45,
+      "timed_out": false
+    },
+    {
+      "turn": 12,
+      "tool_use_id": "call_2d5ef3d8df6e40b7a57b10fd",
+      "command": "python3 -c \"\nimport json\nwith open('/tmp/sessions.json') as f:\n    sessions = json.load(f)\nfor s in sessions:\n    if s.get('user_id') == 'u017':\n        print(json.dumps(s, indent=2))\n\"",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 24,
+      "timed_out": false
+    },
+    {
+      "turn": 13,
+      "tool_use_id": "call_85f96e2739bc4539ad4d3bf3",
+      "command": "python3 -c \"\nimport json\nwith open('/tmp/sessions.json') as f:\n    sessions = json.load(f)\nfor s in sessions:\n    print(s.get('id'), s.get('user_id'), s.get('status'), s.get('created_at'))\n\"",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "s01 u011 None None\ns02 u028 None None\ns03 u023 None None\ns04 u024 None None\ns05 u002 None None\ns06 u010 None None\ns07 u009 None None\ns08 u006 None None\ns09 u047 None None\ns10 u008 None None\ns11 u008 None None\ns12 u033 None None\ns13 u001 None None\ns14 u043 None None\ns15 u035 None None\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 42,
+      "timed_out": false
+    },
+    {
+      "turn": 14,
+      "tool_use_id": "call_92b9b723e23e4ca3a3295b85",
+      "command": "./cli/bin/ctl pipeline status pipe-07",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "pipeline: pipe-07 (pipe-07)\ncompleted: 147/200, remaining: 53, state: partial\nfailed_at: 2026-04-18T14:42:09Z\ncause: apply step timed out at record 148 (downstream RDS freeze)\ncollateral_refunds: o088, o091\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 44,
+      "timed_out": false
+    },
+    {
+      "turn": 15,
+      "tool_use_id": "call_ed7d8d24bbe24187a34c7f7e",
+      "command": "./cli/bin/ctl pipeline status pipe-01",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "pipeline: pipe-01 (pipe-01)\nran_in_session: no\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 31,
+      "timed_out": false
+    },
+    {
+      "turn": 15,
+      "tool_use_id": "call_2d7f8498fbda4f9dab28c432",
+      "command": "./cli/bin/ctl pipeline status pipe-02",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "pipeline: pipe-02 (pipe-02)\nran_in_session: no\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 23,
+      "timed_out": false
+    },
+    {
+      "turn": 15,
+      "tool_use_id": "call_8e756f36d8aa4a11be64ef2d",
+      "command": "./cli/bin/ctl pipeline status pipe-03",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "pipeline: pipe-03 (pipe-03)\nran_in_session: no\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 20,
+      "timed_out": false
+    },
+    {
+      "turn": 15,
+      "tool_use_id": "call_043fef6516b444ff9d0df58a",
+      "command": "./cli/bin/ctl pipeline status pipe-04",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "pipeline: pipe-04 (pipe-04)\nran_in_session: no\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 21,
+      "timed_out": false
+    },
+    {
+      "turn": 15,
+      "tool_use_id": "call_919f956232c14cb3a6e7a2b8",
+      "command": "./cli/bin/ctl pipeline status pipe-05",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "pipeline: pipe-05 (pipe-05)\nran_in_session: no\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 20,
+      "timed_out": false
+    },
+    {
+      "turn": 15,
+      "tool_use_id": "call_0842fa4a3bca4be89c58f94a",
+      "command": "./cli/bin/ctl pipeline status pipe-06",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "pipeline: pipe-06 (pipe-06)\nran_in_session: no\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 20,
+      "timed_out": false
+    },
+    {
+      "turn": 15,
+      "tool_use_id": "call_9cabc7fcea6b4814824bf397",
+      "command": "./cli/bin/ctl pipeline status pipe-08",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "pipeline: pipe-08 (pipe-08)\nran_in_session: no\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 20,
+      "timed_out": false
+    },
+    {
+      "turn": 15,
+      "tool_use_id": "call_82af7b8bee7646deacba571c",
+      "command": "./cli/bin/ctl pipeline status pipe-09",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "pipeline: pipe-09 (pipe-09)\nran_in_session: no\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 20,
+      "timed_out": false
+    },
+    {
+      "turn": 15,
+      "tool_use_id": "call_a79f0699d559458fba000452",
+      "command": "./cli/bin/ctl pipeline status pipe-10",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "pipeline: pipe-10 (pipe-10)\nran_in_session: no\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 20,
+      "timed_out": false
+    },
+    {
+      "turn": 16,
+      "tool_use_id": "call_575a4f1c1e1b4dc186419413",
+      "command": "./cli/bin/ctl search --query o099",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o099\",\n    \"match\": {\n      \"id\": \"o099\"\n    }\n  }\n]\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 48,
+      "timed_out": false
+    },
+    {
+      "turn": 17,
+      "tool_use_id": "call_ece5399173614384a6dcc454",
+      "command": "./cli/bin/ctl search --query u017",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[\n  {\n    \"resource\": \"users\",\n    \"id\": \"u017\",\n    \"match\": {\n      \"id\": \"u017\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o004\",\n    \"match\": {\n      \"user_id\": \"u017\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o005\",\n    \"match\": {\n      \"user_id\": \"u017\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o019\",\n    \"match\": {\n      \"user_id\": \"u017\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o032\",\n    \"match\": {\n      \"user_id\": \"u017\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o045\",\n    \"match\": {\n      \"user_id\": \"u017\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o058\",\n    \"match\": {\n      \"user_id\": \"u017\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o072\",\n    \"match\": {\n      \"user_id\": \"u017\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o073\",\n    \"match\": {\n      \"user_id\": \"u017\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o082\",\n    \"match\": {\n      \"user_id\": \"u017\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o088\",\n    \"match\": {\n      \"user_id\": \"u017\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o091\",\n    \"match\": {\n      \"user_id\": \"u017\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o099\",\n    \"match\": {\n      \"user_id\": \"u017\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o104\",\n    \"match\": {\n      \"user_id\": \"u017\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o112\",\n    \"match\": {\n      \"user_id\": \"u017\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o118\",\n    \"match\": {\n      \"user_id\": \"u017\"\n    }\n  },\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o120\",\n    \"match\": {\n      \"user_id\": \"u017\"\n    }\n  }\n]\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 52,
+      "timed_out": false
+    },
+    {
+      "turn": 18,
+      "tool_use_id": "call_9ffe3a519d2641749a6f1e7b",
+      "command": "./cli/bin/ctl search --query \"u017\" --scope tickets",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[]\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 49,
+      "timed_out": false
+    },
+    {
+      "turn": 19,
+      "tool_use_id": "call_a6eeddc157a240e7a3b551a5",
+      "command": "./cli/bin/ctl get orders o099 --format json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "{\n  \"id\": \"o099\",\n  \"user_id\": \"u017\",\n  \"total_cents\": 81197,\n  \"currency\": \"EUR\",\n  \"status\": \"refunded\",\n  \"product_ids\": [\n    \"p004\",\n    \"p024\",\n    \"p035\"\n  ],\n  \"created_at\": \"2026-04-23T16:53:11Z\"\n}\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 51,
+      "timed_out": false
+    },
+    {
+      "turn": 20,
+      "tool_use_id": "call_f960ea5428164cd4b7603271",
+      "command": "./cli/bin/ctl search --query \"o099\" --scope tickets",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[]\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 29,
+      "timed_out": false
+    },
+    {
+      "turn": 21,
+      "tool_use_id": "call_0de68a20a3ee47eabcd94089",
+      "command": "./cli/bin/ctl search --query \"o099\" --scope sessions",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[]\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 36,
+      "timed_out": false
+    },
+    {
+      "turn": 22,
+      "tool_use_id": "call_5e0f4f90304a485cabd85bdb",
+      "command": "./cli/bin/ctl search --query \"o099\" --scope orders",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[\n  {\n    \"resource\": \"orders\",\n    \"id\": \"o099\",\n    \"match\": {\n      \"id\": \"o099\"\n    }\n  }\n]\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 47,
+      "timed_out": false
+    },
+    {
+      "turn": 23,
+      "tool_use_id": "call_c9d0da6fb5dc4e4fa71932bb",
+      "command": "./cli/bin/ctl pipeline status pipe-11",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "not found\n",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 52,
+      "timed_out": false
+    },
+    {
+      "turn": 23,
+      "tool_use_id": "call_c5fadf20f9124525a493acab",
+      "command": "./cli/bin/ctl pipeline status pipe-12",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "not found\n",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 24,
+      "timed_out": false
+    }
+  ],
+  "setup_calls": [],
+  "rejected_commands": [],
+  "usage": {
+    "input_tokens": 230620,
+    "output_tokens": 5941,
+    "cache_read_input_tokens": 0,
+    "cache_creation_input_tokens": 0,
+    "total_calls": 25
+  },
+  "final_text": "Now I have all the data. Let me produce the final lineage diagram.\n\n---\n\n## End-to-End Lineage: Order **o099** (Most Recent Order)\n\n```\n┌─────────────────────────────────────────────────────────────────────────┐\n│  ORDER o099                                                             │\n│  Created:  2026-04-23T16:53:11Z                                         │\n│  Status:   refunded                                                     │\n│  Total:    €811.97 (81197 cents, EUR)                                   │\n│  Currency: EUR                                                          │\n└─────────────────────────────────────────────────────────────────────────┘\n        │\n        ├─── PLACED BY ───────────────────────────────────────────────┐\n        │                                                             ▼\n        │              ┌──────────────────────────────────────────────────┐\n        │              │  USER u017                                       │\n        │              │  Name:     Zion Brooks                           │\n        │              │  Email:    zion.brooks@initech.co                │\n        │              │  Status:   active                                │\n        │              │  Role:     viewer                                │\n        │              │  Org:      org-2                                 │\n        │              │  Created:  2026-04-19T00:14:13Z                  │\n        │              └──────────────────────────────────────────────────┘\n        │                                                             │\n        │              ┌─ Other orders by u017: o004, o005, o019,      │\n        │              │   o032, o045, o058, o072, o073, o082, o088,   │\n        │              │   o091, o104, o112, o118, o120 (16 total)     │\n        │              └───────────────────────────────────────────────┘\n        │\n        ├─── CONTAINS PRODUCTS ───────────────────────────────────────┐\n        │                                                             ▼\n        │              ┌──────────────────────────────────────────────────┐\n        │              │  PRODUCT p004                                    │\n        │              │  Name:     Acme Earthquake Pills                 │\n        │              │  SKU:      SKU-0004                              │\n        │              │  Price:    $19.99                                │\n        │              │  Category: widgets                               │\n        │              │  Active:   false  ⚠️ INACTIVE                    │\n        │              │  Inventory: 16                                   │\n        │              └──────────────────────────────────────────────────┘\n        │                                                             ▼\n        │              ┌──────────────────────────────────────────────────┐\n        │              │  PRODUCT p024                                    │\n        │              │  Name:     Consumable Toner                      │\n        │              │  SKU:      SKU-0024                              │\n        │              │  Price:    $1.99                                 │\n        │              │  Category: consumables                           │\n        │              │  Active:   true                                  │\n        │              │  Inventory: 412                                  │\n        │              └──────────────────────────────────────────────────┘\n        │                                                             ▼\n        │              ┌──────────────────────────────────────────────────┐\n        │              │  PRODUCT p035                                    │\n        │              │  Name:     Globex Ionizer Mk 1                   │\n        │              │  SKU:      SKU-0035                              │\n        │              │  Price:    $49.99                                │\n        │              │  Category: subscriptions                         │\n        │              │  Active:   true                                  │\n        │              │  Inventory: 128                                  │\n        │              └──────────────────────────────────────────────────┘\n        │\n        ├─── RELATED TICKETS ─────────────────────────────────────────┐\n        │                                                             ▼\n        │              ┌──────────────────────────────────────────────────┐\n        │              │  NONE                                            │\n        │              │  No tickets reference order o099 or user u017.   │\n        │              │  (All 30 tickets have no order_id field.)        │\n        │              └──────────────────────────────────────────────────┘\n        │\n        ├─── USER SESSIONS ───────────────────────────────────────────┐\n        │                                                             ▼\n        │              ┌──────────────────────────────────────────────────┐\n        │              │  NONE                                            │\n        │              │  No session found for user u017.                 │\n        │              │  (15 sessions exist for other users only.)       │\n        │              └──────────────────────────────────────────────────┘\n        │\n        └─── PIPELINE TOUCH ──────────────────────────────────────────┐\n                                                                      ▼\n                              ┌──────────────────────────────────────────┐\n                              │  pipe-07 (checked per task instructions) │\n                              │  State:    partial (147/200 completed)   │\n                              │  Failed:   2026-04-18T14:42:09Z          │\n                              │  Cause:    apply step timed out at       │\n                              │            record 148 (downstream RDS    │\n                              │            freeze)                       │\n                              │  Refunds:  o088, o091                    │\n                              │                                          │\n                              │  ❌ o099 is NOT in collateral_refunds.   │\n                              │     pipe-07 did NOT refund o099.         │\n                              └──────────────────────────────────────────┘\n                              ┌──────────────────────────────────────────┐\n                              │  pipe-01 through pipe-06, pipe-08..10    │\n                              │  All show: ran_in_session: no            │\n                              │  ❌ None touched o099.                   │\n                              └──────────────────────────────────────────┘\n```\n\n### Summary\n\n| Node | ID | Key Detail |\n|------|----|------------|\n| **Order** | `o099` | Most recent (2026-04-23), status **refunded**, €811.97 |\n| **User** | `u017` | Zion Brooks, active viewer in org-2; prolific buyer (16 orders) |\n| **Products** | `p004`, `p024`, `p035` | Earthquake Pills (⚠️ inactive), Consumable Toner, Globex Ionizer |\n| **Tickets** | — | **None** linked to this order or user |\n| **Sessions** | — | **None** for this user |\n| **pipe-07** | — | Partially failed; refunded o088 & o091, **not o099** |\n| **Other pipelines** | — | No pipeline ran in session; none touched o099 |\n\n**Root cause note:** Order o099 is marked `refunded` but **no pipeline** (including pipe-07) is responsible for the refund. The refund likely occurred through a different mechanism not captured in the pipeline fixtures.",
+  "stop_reason": "end_turn",
+  "api_errors": [],
+  "dry_run": false,
+  "writable_prefixes_resolved": [
+    "/tmp/"
+  ],
+  "skills_loaded": [],
+  "skill_load_calls": [],
+  "artifact_files_copied": []
+}

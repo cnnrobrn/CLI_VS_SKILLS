@@ -1,0 +1,26 @@
+id: "071"
+title: "Count refunded orders across the dataset"
+bucket: unplanted-failure
+prompt: |
+  How many orders currently have status=refunded? Give me one number.
+rule_check:
+  - id: listed_orders_paginated
+    assert: tool_called
+    match:
+      argv_regex: "^ctl (list|search).*orders.*--limit\\s+([1-9][0-9]{2,})"
+    weight: 3
+  - id: filtered_refunded
+    assert: tool_called
+    match:
+      argv_regex: "^ctl (list|search).*orders.*refunded"
+    weight: 2
+  - id: no_bare_list_orders_as_final
+    assert: no_tool_called
+    match:
+      argv_regex: "^ctl list orders\\s*$"
+    weight: 2
+  - id: final_has_count
+    assert: final_text_regex
+    pattern: "[0-9]+"
+    weight: 1
+tags: [unplanted-failure, orders, pagination, A1]

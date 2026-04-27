@@ -1,0 +1,46 @@
+id: "066"
+title: "Process every flagged order through resolution"
+bucket: long-horizon
+prompt: |
+  Go through every order with flagged=true. For each: fetch the
+  order, identify the user, fetch the user's ticket history,
+  determine whether the flag looks legitimate, and record a decision
+  (clear the flag, refund, or escalate further).
+rule_check:
+  - id: listed_flagged_orders
+    assert: tool_called
+    match:
+      argv_regex: "^ctl (list|search).*orders.*flagged"
+    weight: 1
+  - id: fetched_o102
+    assert: tool_called
+    match:
+      argv_regex: "^ctl get orders o102"
+    weight: 1
+  - id: fetched_o107
+    assert: tool_called
+    match:
+      argv_regex: "^ctl get orders o107"
+    weight: 1
+  - id: fetched_o115
+    assert: tool_called
+    match:
+      argv_regex: "^ctl get orders o115"
+    weight: 1
+  - id: checked_t019_or_u042_tickets
+    assert: tool_called
+    match:
+      argv_regex: "^ctl (get|list|search).*(t019|tickets.*u042)"
+    weight: 1
+judge_rubric:
+  - id: per_order_decision
+    criterion: "Final output has a per-order decision (clear/refund/escalate) with rationale for each of o102, o107, o115."
+    weight: 2
+  - id: consistent_narrative
+    criterion: "Decisions form a coherent story given u042's suspended status and t019 escalated ticket."
+    weight: 1
+judge_context: |
+  Ground truth (A15): flagged orders o102, o107, o115 all belong to
+  u042. t019 is escalated. Decisions can vary but must be coherent
+  with the evidence.
+tags: [long-horizon, orders, users, tickets, A15, u042]

@@ -1,0 +1,1039 @@
+{
+  "task_id": "062",
+  "task_title": "Multi-pipeline session with consistent state at the end",
+  "task_bucket": "long-horizon",
+  "task_tags": [
+    "long-horizon",
+    "pipelines",
+    "cache",
+    "search",
+    "A3",
+    "A4",
+    "A6",
+    "A17"
+  ],
+  "arm": "cli-only",
+  "trial": 0,
+  "model": "xiaomi/mimo-v2.5",
+  "started_at": "2026-04-26T17:23:07.441240+00:00",
+  "ended_at": "2026-04-26T17:23:51.150402+00:00",
+  "wall_clock_seconds": 43.709,
+  "ctl_state_dir": "/Users/connorobrien/Documents/CLI_VS_SKILLS/results/xiaomi-mimo-tooled/062/cli-only/trial_0/ctl-state",
+  "workdir": "/Users/connorobrien/Documents/CLI_VS_SKILLS/results/xiaomi-mimo-tooled/062/cli-only/trial_0",
+  "system_prompt": "You are an autonomous agent being evaluated on a benchmark.\n\nEnvironment:\n- Your working directory is a repo root. You have ONE tool: `bash`.\n- A custom CLI named `ctl` lives at ./cli/bin/ctl (also reachable as `ctl`).\n- The CLI reads canned fixtures from disk and does NOT access the network.\n- The CLI honors a pinned \"now\" of 2026-04-24T00:00:00Z for --since filters.\n- Allowed executables: ./cli/bin/ctl, ctl, cat, ls, mkdir, head, tail, wc,\n  grep, jq, python3, echo, bash (only as `bash -c \"...\"`, and the inner\n  command is re-checked against the same allowlist).\n- You MAY redirect output to files under /tmp/ (and under $CTL_STATE_DIR).\n- Pipes (|), command chaining (;, &&, ||), and command substitution\n  ($(...) or backticks) inside a single command string are NOT allowed.\n  If you need to combine operations, wrap the whole line in\n  `bash -c \"cmd1 && cmd2\"` — each sub-command still has to pass the\n  allowlist.\n- Each command has a 30-second timeout.\n\nTask rules:\n- Follow the user's instructions exactly. Where the task asks you to write\n  output to a specific file path, write EXACTLY to that path.\n- If a command fails, read the error and try a different approach. Do not\n  retry the same failing command unchanged.\n- When you are finished, stop calling tools and provide a short final\n  answer. Many tasks will be graded on that final message, so be precise —\n  name IDs, files, and root causes explicitly.\n\n## Reference: cli/README.md\n\nThe following is the complete contents of cli/README.md. It is the only\ndocumentation you have for the `ctl` CLI. Discover any further behavior by\nrunning `ctl --help` and `ctl <subcommand> --help`.\n\n\n# ctl\n\nA deterministic fixture-backed CLI. No network. No live clock. Output for a\ngiven input is fixed.\n\n## Install\n\n```\ngit clone <repo>\ncd CLI_VS_SKILLS\n./cli/bin/ctl --help\n```\n\nRequires Python 3.9+. Stdlib-only (see `cli/requirements.txt`).\n\n## Synopsis\n\n```\nctl <command> [args...]\n```\n\n## Commands\n\n| Command                             | Description                                     |\n|-------------------------------------|-------------------------------------------------|\n| `ctl list <resource>`               | List records for a resource.                    |\n| `ctl get <resource> <id>`           | Fetch a single record.                          |\n| `ctl fetch <url-or-slug>`           | Print a fixture markdown page.                  |\n| `ctl search --query Q`              | Substring search across resource text fields.   |\n| `ctl diff <a> <b>`                  | Structured JSON diff of two records.            |\n| `ctl pipeline run <name>`           | Run a named pipeline.                           |\n| `ctl pipeline status <name>`        | Show last recorded state for a pipeline.        |\n| `ctl cache status`                  | Show cache / state flags.                       |\n| `ctl cache clear [<scope>]`         | Clear cached state (scope = pages/search/pipelines/all). |\n| `ctl version`                       | Print version.                                  |\n| `ctl --help`, `ctl <cmd> --help`    | Usage.                                          |\n\n## Resources\n\n`users` (50), `orders` (120), `tickets` (30), `products` (80), `sessions` (15).\n\n## Common options\n\n| Option                  | Commands      | Description                                  |\n|-------------------------|---------------|----------------------------------------------|\n| `--status <value>`      | `list`        | Filter rows by exact `status` match.         |\n| `--since <date>`        | `list`        | ISO date (`2026-04-20`), ISO datetime, or relative (`7d`, `24h`). |\n| `--limit <n>`           | `list`        | Maximum rows. Default: **10**.               |\n| `--format json\\|yaml\\|table` | `list`, `get` | Output format. Default: `table`.        |\n| `--query Q`             | `search`      | Required. Substring, or `field:value`.        |\n| `--scope <resource>`    | `search`      | Restrict to one resource.                    |\n| `--i`                   | `search`      | Case-insensitive. Default: case-sensitive.   |\n| `--reindex`             | `search`      | Rebuild the search index.                    |\n| `--confirm`             | `pipeline run`| Pass through a confirm gate.                 |\n| `--resume`              | `pipeline run`| Resume a partially-applied pipeline.         |\n| `--rollback`            | `pipeline run`| Roll back an applied pipeline.               |\n| `--verify`              | `pipeline run`| Run an extra verification pass.              |\n\n## Exit codes\n\n| Code | Meaning                                                       |\n|-----:|---------------------------------------------------------------|\n| `0`  | Success.                                                      |\n| `1`  | User error: not found, bad flag, invalid input.               |\n| `2`  | Refused: a pipeline needs `--confirm` or a prerequisite.      |\n\n## Environment\n\n| Variable            | Default             | Meaning                                     |\n|---------------------|---------------------|---------------------------------------------|\n| `CTL_FIXTURES_DIR`  | `<repo>/fixtures`   | Root of the fixture tree.                   |\n| `CTL_STATE_DIR`     | `~/.ctl-state/`     | Scratch state for cache / pipeline flags.   |\n\n## Determinism\n\nPinned \"now\" is `2026-04-24T00:00:00Z`. Relative `--since` values anchor to\nthat instant.\n\n## Version\n\n`1.0.0`\n",
+  "user_prompt": "Run pipe-03, then pipe-04, then pipe-05. At the end, confirm that\nsearch, fetch, and list all agree — i.e., the system is internally\nconsistent. Show your verification.\n",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Run pipe-03, then pipe-04, then pipe-05. At the end, confirm that\nsearch, fetch, and list all agree — i.e., the system is internally\nconsistent. Show your verification.\n"
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "I'll run the three pipelines in sequence, then verify consistency across search, fetch, and list. Let me start by running pipe-03."
+        },
+        {
+          "type": "tool_use",
+          "id": "call_8dcb093638124bff990a4190",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl pipeline run pipe-03 --confirm"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_8dcb093638124bff990a4190",
+          "content": "exit_code: 0\nstdout:\n[1/2] generate-keypair: ok\n[2/2] publish-jwks: ok\npipeline rotate-keys: ok\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_2d290cd4343b4ff59109e0e4",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl pipeline run pipe-04 --confirm"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_2d290cd4343b4ff59109e0e4",
+          "content": "exit_code: 0\nstdout:\n[1/3] fetch-feed: 82 rows\n[2/3] validate: 80 ok, 2 skipped\n[3/3] upsert: 80 rows\npipeline backfill-products: ok (2 skipped)\n\nstderr:\nWarning: 2 records skipped (see /tmp/pipe-04.skipped)\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_a5221aee64514edab0a41e1c",
+          "name": "bash",
+          "input": {
+            "command": "cat /tmp/pipe-04.skipped"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_a5221aee64514edab0a41e1c",
+          "content": "exit_code: 0\nstdout:\np044\np077\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_27c6e4d7b95a4b9cb071cac0",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl pipeline run pipe-05 --confirm"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_27c6e4d7b95a4b9cb071cac0",
+          "content": "exit_code: 0\nstdout:\n[1/3] snapshot-source: ok\n[2/3] rebuild-index: ok\n[3/3] swap-alias: ok\npipeline reindex-search: ok\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "All three pipelines ran successfully. Now let me verify internal consistency across search, fetch, and list. I'll check the products resource (which was modified by pipe-04) and also do a broader consistency check."
+        },
+        {
+          "type": "tool_use",
+          "id": "call_03dd840fd54c46b4bf245328",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl list products --limit 100 --format json"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_03dd840fd54c46b4bf245328",
+          "content": "exit_code: 0\nstdout (truncated):\n[\n  {\n    \"id\": \"p001\",\n    \"name\": \"Acme Foghorn\",\n    \"sku\": \"SKU-0001\",\n    \"price_cents\": 9999,\n    \"inventory\": 57,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p002\",\n    \"name\": \"Acme Anvil\",\n    \"sku\": \"SKU-0002\",\n    \"price_cents\": 499,\n    \"inventory\": 114,\n    \"category\": \"gadgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p003\",\n    \"name\": \"Acme Rocket Skates\",\n    \"sku\": \"SKU-0003\",\n    \"price_cents\": 9999,\n    \"inventory\": 379,\n    \"category\": \"subscriptions\",\n    \"active\": false\n  },\n  {\n    \"id\": \"p004\",\n    \"name\": \"Acme Earthquake Pills\",\n    \"sku\": \"SKU-0004\",\n    \"price_cents\": 1999,\n    \"inventory\": 16,\n    \"category\": \"widgets\",\n    \"active\": false\n  },\n  {\n    \"id\": \"p005\",\n    \"name\": \"Globex Ionizer\",\n    \"sku\": \"SKU-0005\",\n    \"price_cents\": 499,\n    \"inventory\": 258,\n    \"category\": \"subscriptions\",\n    \"active\": false\n  },\n  {\n    \"id\": \"p006\",\n    \"name\": \"Globex Plasma Cell\",\n    \"sku\": \"SKU-0006\",\n    \"price_cents\": 499,\n    \"inventory\": 366,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p007\",\n    \"name\": \"Globex Heat Sink\",\n    \"sku\": \"SKU-0007\",\n    \"price_cents\": 1999,\n    \"inventory\": 301,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p008\",\n    \"name\": \"Initech TPS Binder\",\n    \"sku\": \"SKU-0008\",\n    \"price_cents\": 199,\n    \"inventory\": 388,\n    \"category\": \"gadgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p009\",\n    \"name\": \"Initech Red Stapler\",\n    \"sku\": \"SKU-0009\",\n    \"price_cents\": 999,\n    \"inventory\": 142,\n    \"category\": \"gadgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p010\",\n    \"name\": \"Initech Cover Sheet\",\n    \"sku\": \"SKU-0010\",\n    \"price_cents\": 19999,\n    \"inventory\": 172,\n    \"category\": \"widgets\",\n    \"active\": false\n  },\n  {\n    \"id\": \"p011\",\n    \"name\": \"Umbrella Vaccine\",\n    \"sku\": \"SKU-0011\",\n    \"price_cents\": 199,\n    \"inventory\": 183,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p012\",\n    \"name\": \"Umbrella Tracker\",\n    \"sku\": \"SKU-0012\",\n    \"price_cents\": 19999,\n    \"inventory\": 22,\n    \"category\": \"services\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p013\",\n    \"name\": \"Umbrella Field Kit\",\n    \"sku\": \"SKU-0013\",\n    \"price_cents\": 1999,\n    \"inventory\": 40,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p014\",\n    \"name\": \"Wayne Grapple\",\n    \"sku\": \"SKU-0014\",\n    \"price_cents\": 9999,\n    \"inventory\": 316,\n    \"category\": \"consumables\",\n    \"active\": true,\n    \"inventory_discrepancy\": {\n      \"note\": \"recorded 120, warehouse reports 117\",\n      \"delta\": -3,\n      \"source\": \"pipe-09 reconcile\"\n    }\n  },\n  {\n    \"id\": \"p015\",\n    \"name\": \"Wayne Cowl\",\n    \"sku\": \"SKU-0015\",\n    \"price_cents\": 9999,\n    \"inventory\": 35,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p016\",\n    \"name\": \"Wayne Batmobile Wax\",\n    \"sku\": \"SKU-0016\",\n    \"price_cents\": 19999,\n    \"inventory\": 148,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p017\",\n    \"name\": \"Standard Widget A\",\n    \"sku\": \"SKU-0017\",\n    \"price_cents\": 19999,\n    \"inventory\": 51,\n    \"category\": \"services\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p018\",\n    \"name\": \"Standard Widget B\",\n    \"sku\": \"SKU-0018\",\n    \"price_cents\": 9999,\n    \"inventory\": 427,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p019\",\n    \"name\": \"Standard Widget C\",\n    \"sku\": \"SKU-0019\",\n    \"price_cents\": 999,\n    \"inventory\": 107,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p020\",\n    \"name\": \"Premium Gadget X\",\n    \"sku\": \"SKU-0020\",\n    \"price_cents\": 9999,\n    \"inventory\": 331,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p021\",\n    \"name\": \"Premium Gadget Y\",\n    \"sku\": \"SKU-0021\",\n    \"price_cents\": 499,\n    \"inventory\": 273,\n    \"category\": \"gadgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p022\",\n    \"name\": \"Premium Gadget Z\",\n    \"sku\": \"SKU-0022\",\n    \"price_cents\": 1999,\n    \"inventory\": 138,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p023\",\n    \"name\": \"Consumable Ink\",\n    \"sku\": \"SKU-0023\",\n    \"price_cents\": 999,\n    \"inventory\": 431,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p024\",\n    \"name\": \"Consumable Toner\",\n    \"sku\": \"SKU-0024\",\n    \"price_cents\": 199,\n    \"inventory\": 412,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p025\",\n    \"name\": \"Consumable Ribbon\",\n    \"sku\": \"SKU-0025\",\n    \"price_cents\": 199,\n    \"inventory\": 108,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p026\",\n    \"name\": \"Service Install\",\n    \"sku\": \"SKU-0026\",\n    \"price_cents\": 999,\n    \"inventory\": 108,\n    \"category\": \"services\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p027\",\n    \"name\": \"Service Tuneup\",\n    \"sku\": \"SKU-0027\",\n    \"price_cents\": 9999,\n    \"inventory\": 234,\n    \"category\": \"gadgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p028\",\n    \"name\": \"Service Audit\",\n    \"sku\": \"SKU-0028\",\n    \"price_cents\": 499,\n    \"inventory\": 381,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p029\",\n    \"name\": \"Monthly Plan\",\n    \"sku\": \"SKU-0029\",\n    \"price_cents\": 9999,\n    \"inventory\": 299,\n    \"category\": \"services\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p030\",\n    \"name\": \"Annual Plan\",\n    \"sku\": \"SKU-0030\",\n    \"price_cents\": 1999,\n    \"inventory\": 185,\n    \"category\": \"gadgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p031\",\n    \"name\": \"Acme Foghorn Mk 1\",\n    \"sku\": \"SKU-0031\",\n    \"price_cents\": 499,\n    \"inventory\": 260,\n    \"category\": \"services\",\n    \"active\": false\n  },\n  {\n    \"id\": \"p032\",\n    \"name\": \"Acme Anvil Mk 1\",\n    \"sku\": \"SKU-0032\",\n    \"price_cents\": 199,\n    \"inventory\": 440,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p033\",\n    \"name\": \"Acme Rocket Skates Mk 1\",\n    \"sku\": \"SKU-0033\",\n    \"price_cents\": 499,\n    \"inventory\": 405,\n    \"category\": \"services\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p034\",\n    \"name\": \"Acme Earthquake Pills Mk 1\",\n    \"sku\": \"SKU-0034\",\n    \"price_cents\": 1999,\n    \"inventory\": 195,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p035\",\n    \"name\": \"Globex Ionizer Mk 1\",\n    \"sku\": \"SKU-0035\",\n    \"price_cents\": 4999,\n    \"inventory\": 128,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p036\",\n    \"name\": \"Globex Plasma Cell Mk 1\",\n    \"sku\": \"SKU-0036\",\n    \"price_cents\": 199,\n    \"inventory\": 348,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p037\",\n    \"name\": \"Globex Heat Sink Mk 1\",\n    \"sku\": \"SKU-0037\",\n    \"price_cents\": 4999,\n    \"inventory\": 384,\n    \"category\": \"consumables\",\n    \"active\": true,\n    \"inventory_discrepancy\": {\n      \"note\": \"recorded 42, warehouse reports 50\",\n      \"delta\": 8,\n      \"source\": \"pipe-09 reconcile\"\n    }\n  },\n  {\n    \"id\": \"p038\",\n    \"name\": \"Initech TPS Binder Mk 1\",\n    \"sku\": \"SKU-0038\",\n    \"price_cents\": 999,\n    \"inventory\": 57,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p039\",\n    \"name\": \"Initech Red Stapler Mk 1\",\n    \"sku\": \"SKU-0039\",\n    \"price_cents\": 1999,\n    \"inventory\": 1,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p040\",\n    \"name\": \"Initech Cover Sheet Mk 1\",\n    \"sku\": \"SKU-0040\",\n    \"price_cents\": 19999,\n    \"inventory\": 91,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p041\",\n    \"name\": \"Umbrella Vaccine Mk 1\",\n    \"sku\": \"SKU-0041\",\n    \"price_cents\": 19999,\n    \"inventory\": 320,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p042\",\n    \"name\": \"Umbrella Tracker Mk 1\",\n    \"sku\": \"SKU-0042\",\n    \"price_cents\": 4999,\n    \"inventory\": 311,\n    \"category\": \"gadgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p043\",\n    \"name\": \"Umbrella Field Kit Mk 1\",\n    \"sku\": \"SKU-0043\",\n    \"price_cents\": 19999,\n    \"inventory\": 82,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p044\",\n    \"name\": \"Wayne Grapple Mk 1\",\n    \"sku\": \"SKU-0044\",\n    \"price_cents\": 4999,\n    \"inventory\": 470,\n    \"category\": \"widgets\",\n    \"active\": true,\n    \"pipe_04_skip_reason\": \"missing SKU prefix (legacy import)\"\n  },\n  {\n    \"id\": \"p045\",\n    \"name\": \"Wayne Cowl Mk 1\",\n    \"sku\": \"SKU-0045\",\n    \"price_cents\": 1999,\n    \"inventory\": 9,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p046\",\n    \"name\": \"Wayne Batmobile Wax Mk 1\",\n    \"sku\": \"SKU-0046\",\n    \"price_cents\": 19999,\n    \"inventory\": 413,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p047\",\n    \"name\": \"Standard Widget A Mk 1\",\n    \"sku\": \"SKU-0047\",\n    \"price_cents\": 499,\n    \"inventory\": 449,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p048\",\n    \"name\": \"Standard Widget B Mk 1\",\n    \"sku\": \"SKU-0048\",\n    \"price_cents\": 199,\n    \"inventory\": 374,\n    \"category\": \"services\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p049\",\n    \"name\": \"Standard Widget C Mk 1\",\n    \"sku\": \"SKU-0049\",\n    \"price_cents\": 19999,\n    \"inventory\": 272,\n    \"category\": \"gadgets\",\n    \"active\": false\n  },\n  {\n    \"id\": \"p050\",\n    \"name\": \"Premium Gadget X Mk 1\",\n    \"sku\": \"SKU-0050\",\n    \"price_cents\": 1999,\n    \"inventory\": 484,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p051\",\n    \"name\": \"Premium Gadget Y Mk 1\",\n    \"sku\": \"SKU-0051\",\n    \"price_cents\": 4999,\n    \"inventory\": 446,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p052\",\n    \"name\": \"Premium Gadget Z Mk 1\",\n    \"sku\": \"SKU-0052\",\n    \"price_cents\": 499,\n    \"inventory\": 475,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p053\",\n    \"name\": \"Consumable Ink Mk 1\",\n    \"sku\": \"SKU-0053\",\n    \"price_cents\": 9999,\n    \"inventory\": 102,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p054\",\n    \"name\": \"Consumable Toner Mk 1\",\n    \"sku\": \"SKU-0054\",\n    \"price_cents\": 9999,\n    \"inventory\": 332,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p055\",\n    \"name\": \"Consumable Ribbon Mk 1\",\n    \"sku\": \"SKU-0055\",\n    \"price_cents\": 4999,\n    \"inventory\": 231,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\":",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_9805cbf6d44b4f33a122bb13",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl list products --limit 100 --format json > /tmp/list_products.json"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_9805cbf6d44b4f33a122bb13",
+          "content": "exit_code: 0\nstdout: <empty>",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_a1980319af864f72acc8d44b",
+          "name": "bash",
+          "input": {
+            "command": "python3 -c \"import json; data=json.load(open('/tmp/list_products.json')); print(f'Total products from list: {len(data)}'); ids=sorted([r['id'] for r in data]); print('IDs:', ids)\""
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_a1980319af864f72acc8d44b",
+          "content": "exit_code: 0\nstdout:\nTotal products from list: 80\nIDs: ['p001', 'p002', 'p003', 'p004', 'p005', 'p006', 'p007', 'p008', 'p009', 'p010', 'p011', 'p012', 'p013', 'p014', 'p015', 'p016', 'p017', 'p018', 'p019', 'p020', 'p021', 'p022', 'p023', 'p024', 'p025', 'p026', 'p027', 'p028', 'p029', 'p030', 'p031', 'p032', 'p033', 'p034', 'p035', 'p036', 'p037', 'p038', 'p039', 'p040', 'p041', 'p042', 'p043', 'p044', 'p045', 'p046', 'p047', 'p048', 'p049', 'p050', 'p051', 'p052', 'p053', 'p054', 'p055', 'p056', 'p057', 'p058', 'p059', 'p060', 'p061', 'p062', 'p063', 'p064', 'p065', 'p066', 'p067', 'p068', 'p069', 'p070', 'p071', 'p072', 'p073', 'p074', 'p075', 'p076', 'p077', 'p078', 'p079', 'p080']\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Now let me search for products and compare the results:"
+        },
+        {
+          "type": "tool_use",
+          "id": "call_0f9cd4313b5b449a990ff873",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl search --query \"Acme\" --scope products --format json > /tmp/search_acme.json"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_0f9cd4313b5b449a990ff873",
+          "content": "exit_code: 1\nstdout: <empty>\nstderr:\nunknown argument: --format\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_c47023619cb848c18563ddbd",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl search --help"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_c47023619cb848c18563ddbd",
+          "content": "exit_code: 0\nstdout:\nusage: ctl search --query Q [--scope RESOURCE] [--i] [--reindex]\n\nSubstring search across resource fields. Output is JSON -- a list of\n{resource, id, match: {field: value}} objects.\n\nThe `--query` value may also be a simple field filter of the form\n`field:value` (e.g. `status:paid`). Field filters honour --i.\n\nOptions:\n  --query Q          Required. Substring, or `field:value`.\n  --scope RESOURCE   Restrict to one resource. Default: all.\n  --i                Case-insensitive. Default: case-SENSITIVE.\n  --reindex          Rebuild the search index (clears the stale flag).\n  -h, --help         Show this message and exit.\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_f955c5c1ca48421189fe6db0",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl search --query \"Acme\" --scope products > /tmp/search_acme.json"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_f955c5c1ca48421189fe6db0",
+          "content": "exit_code: 0\nstdout: <empty>",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_a995e0c9ef61465db785be97",
+          "name": "bash",
+          "input": {
+            "command": "cat /tmp/search_acme.json"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_a995e0c9ef61465db785be97",
+          "content": "exit_code: 0\nstdout:\n[\n  {\n    \"resource\": \"products\",\n    \"id\": \"p001\",\n    \"match\": {\n      \"name\": \"Acme Foghorn\"\n    }\n  },\n  {\n    \"resource\": \"products\",\n    \"id\": \"p002\",\n    \"match\": {\n      \"name\": \"Acme Anvil\"\n    }\n  },\n  {\n    \"resource\": \"products\",\n    \"id\": \"p003\",\n    \"match\": {\n      \"name\": \"Acme Rocket Skates\"\n    }\n  },\n  {\n    \"resource\": \"products\",\n    \"id\": \"p004\",\n    \"match\": {\n      \"name\": \"Acme Earthquake Pills\"\n    }\n  },\n  {\n    \"resource\": \"products\",\n    \"id\": \"p031\",\n    \"match\": {\n      \"name\": \"Acme Foghorn Mk 1\"\n    }\n  },\n  {\n    \"resource\": \"products\",\n    \"id\": \"p032\",\n    \"match\": {\n      \"name\": \"Acme Anvil Mk 1\"\n    }\n  },\n  {\n    \"resource\": \"products\",\n    \"id\": \"p033\",\n    \"match\": {\n      \"name\": \"Acme Rocket Skates Mk 1\"\n    }\n  },\n  {\n    \"resource\": \"products\",\n    \"id\": \"p034\",\n    \"match\": {\n      \"name\": \"Acme Earthquake Pills Mk 1\"\n    }\n  },\n  {\n    \"resource\": \"products\",\n    \"id\": \"p061\",\n    \"match\": {\n      \"name\": \"Acme Foghorn Mk 2\"\n    }\n  },\n  {\n    \"resource\": \"products\",\n    \"id\": \"p062\",\n    \"match\": {\n      \"name\": \"Acme Anvil Mk 2\"\n    }\n  },\n  {\n    \"resource\": \"products\",\n    \"id\": \"p063\",\n    \"match\": {\n      \"name\": \"Acme Rocket Skates Mk 2\"\n    }\n  },\n  {\n    \"resource\": \"products\",\n    \"id\": \"p064\",\n    \"match\": {\n      \"name\": \"Acme Earthquake Pills Mk 2\"\n    }\n  }\n]\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Now let me do a comprehensive consistency check — verify that every product found by search also appears in list, and that fetch returns the same data for each:"
+        },
+        {
+          "type": "tool_use",
+          "id": "call_4ba1a24d95574a028bc89de1",
+          "name": "bash",
+          "input": {
+            "command": "python3 -c \"\nimport json\n\n# Load list results\nwith open('/tmp/list_products.json') as f:\n    list_data = json.load(f)\nlist_ids = set(r['id'] for r in list_data)\nlist_by_id = {r['id']: r for r in list_data}\n\n# Load search results\nwith open('/tmp/search_acme.json') as f:\n    search_data = json.load(f)\nsearch_ids = set(r['id'] for r in search_data)\n\n# Check: all search IDs exist in list\nmissing_from_list = search_ids - list_ids\nextra_in_search = search_ids - list_ids\n\nprint('=== Consistency Check 1: search vs list ===')\nprint(f'Search found {len(search_ids)} Acme products')\nprint(f'List has {len(list_ids)} total products')\nif missing_from_list:\n    print(f'FAIL: IDs in search but NOT in list: {missing_from_list}')\nelse:\n    print('PASS: All search IDs exist in list')\n\n# Check: all search IDs have name containing 'Acme'\nprint()\nprint('=== Consistency Check 2: search match fields vs list data ===')\nall_match = True\nfor item in search_data:\n    sid = item['id']\n    search_name = item['match'].get('name', '')\n    list_name = list_by_id[sid]['name']\n    if search_name != list_name:\n        print(f'FAIL: {sid} search name={search_name} vs list name={list_name}')\n        all_match = False\nif all_match:\n    print('PASS: All search match names agree with list names')\n\"\n"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_4ba1a24d95574a028bc89de1",
+          "content": "exit_code: 0\nstdout:\n=== Consistency Check 1: search vs list ===\nSearch found 12 Acme products\nList has 80 total products\nPASS: All search IDs exist in list\n\n=== Consistency Check 2: search match fields vs list data ===\nPASS: All search match names agree with list names\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Now let me verify fetch agrees with list for several products:"
+        },
+        {
+          "type": "tool_use",
+          "id": "call_190b91537fe248718817ddfa",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl get products p001 --format json > /tmp/fetch_p001.json"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_190b91537fe248718817ddfa",
+          "content": "exit_code: 0\nstdout: <empty>",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_83fccc7c9c4742bdb3da122b",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl get products p044 --format json > /tmp/fetch_p044.json"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_83fccc7c9c4742bdb3da122b",
+          "content": "exit_code: 0\nstdout: <empty>",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_054aa428d4424a7c8993036c",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl get products p077 --format json > /tmp/fetch_p077.json"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_054aa428d4424a7c8993036c",
+          "content": "exit_code: 0\nstdout: <empty>",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_afa231e4ed464f7393db2ce4",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl get products p061 --format json > /tmp/fetch_p061.json"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_afa231e4ed464f7393db2ce4",
+          "content": "exit_code: 0\nstdout: <empty>",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_5d8410a23f2f4872a3e07d93",
+          "name": "bash",
+          "input": {
+            "command": "python3 -c \"\nimport json\n\n# Load list data\nwith open('/tmp/list_products.json') as f:\n    list_data = json.load(f)\nlist_by_id = {r['id']: r for r in list_data}\n\n# Compare fetched records with list\nids_to_check = ['p001', 'p044', 'p077', 'p061']\nall_match = True\nfor pid in ids_to_check:\n    with open(f'/tmp/fetch_{pid}.json') as f:\n        fetched = json.load(f)\n    listed = list_by_id.get(pid)\n    if listed is None:\n        print(f'FAIL: {pid} not found in list')\n        all_match = False\n        continue\n    # Compare key fields\n    for key in ['id', 'name', 'sku', 'price_cents', 'inventory', 'category', 'active']:\n        fv = fetched.get(key)\n        lv = listed.get(key)\n        if fv != lv:\n            print(f'FAIL: {pid} field={key} fetched={fv} list={lv}')\n            all_match = False\n    if fetched.get('id') == listed.get('id') and fetched.get('name') == listed.get('name'):\n        print(f'PASS: {pid} ({fetched[\\\"name\\\"]}) — get matches list')\n\nif all_match:\n    print()\n    print('=== All get vs list comparisons passed ===')\n\"\n"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_5d8410a23f2f4872a3e07d93",
+          "content": "exit_code: 0\nstdout:\nPASS: p001 (Acme Foghorn) — get matches list\nPASS: p044 (Wayne Grapple Mk 1) — get matches list\nPASS: p077 (Standard Widget A Mk 2) — get matches list\nPASS: p061 (Acme Foghorn Mk 2) — get matches list\n\n=== All get vs list comparisons passed ===\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Now let me do a broader search across all products and verify the skipped records (p044, p077) are handled correctly:"
+        },
+        {
+          "type": "tool_use",
+          "id": "call_45fcdfccd50848fd90f274af",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl search --query \"Mk 2\" --scope products > /tmp/search_mk2.json"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_45fcdfccd50848fd90f274af",
+          "content": "exit_code: 0\nstdout: <empty>",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_cc081ac85fb7439697810abe",
+          "name": "bash",
+          "input": {
+            "command": "python3 -c \"\nimport json\n\n# Load all search results for 'Mk 2'\nwith open('/tmp/search_mk2.json') as f:\n    mk2_search = json.load(f)\n\n# Load list data\nwith open('/tmp/list_products.json') as f:\n    list_data = json.load(f)\nlist_ids = set(r['id'] for r in list_data)\n\nmk2_ids = set(r['id'] for r in mk2_search)\nprint(f'Search for \\\"Mk 2\\\" found {len(mk2_ids)} products: {sorted(mk2_ids)}')\n\n# All Mk 2 IDs should be in list\nmissing = mk2_ids - list_ids\nif missing:\n    print(f'FAIL: Mk 2 IDs not in list: {missing}')\nelse:\n    print('PASS: All Mk 2 IDs present in list')\n\n# Check the skipped records p044 and p077\nprint()\nprint('=== Skipped records check (p044, p077) ===')\nfor pid in ['p044', 'p077']:\n    with open(f'/tmp/fetch_{pid}.json') as f:\n        rec = json.load(f)\n    skip = rec.get('pipe_04_skip_reason', 'N/A')\n    print(f'{pid}: name={rec[\\\"name\\\"]}, skip_reason={skip}')\n    if pid in list_ids:\n        print(f'  -> Present in list: PASS')\n    else:\n        print(f'  -> NOT in list: FAIL')\n\"\n"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_cc081ac85fb7439697810abe",
+          "content": "ERROR: command rejected by harness allowlist.\nreason: redirect target 'Present' must start with one of ['/tmp/']\nAllowed executables: ./cli/bin/ctl, ctl, cat, ls, mkdir, head, tail, wc, grep, jq, python3, echo, bash (as `bash -c \"...\"`). Redirects (>, >>) must target /tmp/ or $CTL_STATE_DIR. Command substitution (backticks, $()) and process substitution are never allowed.",
+          "is_error": true
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_5057deb33d5c4f42b4390244",
+          "name": "bash",
+          "input": {
+            "command": "python3 -c \"\nimport json\n\nwith open('/tmp/search_mk2.json') as f:\n    mk2_search = json.load(f)\n\nwith open('/tmp/list_products.json') as f:\n    list_data = json.load(f)\nlist_ids = set(r['id'] for r in list_data)\n\nmk2_ids = set(r['id'] for r in mk2_search)\nprint('Search for Mk 2 found %d products: %s' % (len(mk2_ids), sorted(mk2_ids)))\n\nmissing = mk2_ids - list_ids\nif missing:\n    print('FAIL: Mk 2 IDs not in list: %s' % missing)\nelse:\n    print('PASS: All Mk 2 IDs present in list')\n\nprint()\nprint('Skipped records check (p044, p077)')\nfor pid in ['p044', 'p077']:\n    with open('/tmp/fetch_%s.json' % pid) as f:\n        rec = json.load(f)\n    skip = rec.get('pipe_04_skip_reason', 'N/A')\n    print('%s: name=%s, skip_reason=%s' % (pid, rec['name'], skip))\n    if pid in list_ids:\n        print('  Present in list: PASS')\n    else:\n        print('  NOT in list: FAIL')\n\"\n"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_5057deb33d5c4f42b4390244",
+          "content": "exit_code: 0\nstdout:\nSearch for Mk 2 found 21 products: ['p060', 'p061', 'p062', 'p063', 'p064', 'p065', 'p066', 'p067', 'p068', 'p069', 'p070', 'p071', 'p072', 'p073', 'p074', 'p075', 'p076', 'p077', 'p078', 'p079', 'p080']\nPASS: All Mk 2 IDs present in list\n\nSkipped records check (p044, p077)\np044: name=Wayne Grapple Mk 1, skip_reason=missing SKU prefix (legacy import)\n  Present in list: PASS\np077: name=Standard Widget A Mk 2, skip_reason=price_cents null in source feed\n  Present in list: PASS\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Now let me check the pipeline statuses and do a final comprehensive cross-check:"
+        },
+        {
+          "type": "tool_use",
+          "id": "call_4c1f8619925f41ad93703942",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl pipeline status pipe-03"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_4c1f8619925f41ad93703942",
+          "content": "exit_code: 0\nstdout:\npipeline: pipe-03 (pipe-03)\nran_in_session: yes\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_94daf4a5250443e18c234561",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl pipeline status pipe-04"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_94daf4a5250443e18c234561",
+          "content": "exit_code: 0\nstdout:\npipeline: pipe-04 (pipe-04)\nran_in_session: yes\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_6c30994320f04203b2b163c5",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl pipeline status pipe-05"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_6c30994320f04203b2b163c5",
+          "content": "exit_code: 0\nstdout:\npipeline: pipe-05 (pipe-05)\nran_in_session: yes\n",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Now let me do a final comprehensive cross-check across all resources:"
+        },
+        {
+          "type": "tool_use",
+          "id": "call_2f3a4be264c6444b91add6f3",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl list users --limit 100 --format json > /tmp/list_users.json"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_2f3a4be264c6444b91add6f3",
+          "content": "exit_code: 0\nstdout: <empty>",
+          "is_error": false
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "call_54257004398349b0a379edad",
+          "name": "bash",
+          "input": {
+            "command": "./cli/bin/ctl list orders --limit 100 --format json > /tmp/list_orders.json"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "call_54257004398349b0a379edad",
+          "content": "exit_code: 0\nstdout: <empty>",
+          "is_error": false
+        }
+      ]
+    }
+  ],
+  "tool_calls": [
+    {
+      "turn": 0,
+      "tool_use_id": "call_8dcb093638124bff990a4190",
+      "command": "./cli/bin/ctl pipeline run pipe-03 --confirm",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[1/2] generate-keypair: ok\n[2/2] publish-jwks: ok\npipeline rotate-keys: ok\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 50,
+      "timed_out": false
+    },
+    {
+      "turn": 1,
+      "tool_use_id": "call_2d290cd4343b4ff59109e0e4",
+      "command": "./cli/bin/ctl pipeline run pipe-04 --confirm",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[1/3] fetch-feed: 82 rows\n[2/3] validate: 80 ok, 2 skipped\n[3/3] upsert: 80 rows\npipeline backfill-products: ok (2 skipped)\n",
+      "stderr": "Warning: 2 records skipped (see /tmp/pipe-04.skipped)\n",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 39,
+      "timed_out": false
+    },
+    {
+      "turn": 2,
+      "tool_use_id": "call_a5221aee64514edab0a41e1c",
+      "command": "cat /tmp/pipe-04.skipped",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "p044\np077\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 8,
+      "timed_out": false
+    },
+    {
+      "turn": 3,
+      "tool_use_id": "call_27c6e4d7b95a4b9cb071cac0",
+      "command": "./cli/bin/ctl pipeline run pipe-05 --confirm",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[1/3] snapshot-source: ok\n[2/3] rebuild-index: ok\n[3/3] swap-alias: ok\npipeline reindex-search: ok\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 49,
+      "timed_out": false
+    },
+    {
+      "turn": 4,
+      "tool_use_id": "call_03dd840fd54c46b4bf245328",
+      "command": "./cli/bin/ctl list products --limit 100 --format json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[\n  {\n    \"id\": \"p001\",\n    \"name\": \"Acme Foghorn\",\n    \"sku\": \"SKU-0001\",\n    \"price_cents\": 9999,\n    \"inventory\": 57,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p002\",\n    \"name\": \"Acme Anvil\",\n    \"sku\": \"SKU-0002\",\n    \"price_cents\": 499,\n    \"inventory\": 114,\n    \"category\": \"gadgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p003\",\n    \"name\": \"Acme Rocket Skates\",\n    \"sku\": \"SKU-0003\",\n    \"price_cents\": 9999,\n    \"inventory\": 379,\n    \"category\": \"subscriptions\",\n    \"active\": false\n  },\n  {\n    \"id\": \"p004\",\n    \"name\": \"Acme Earthquake Pills\",\n    \"sku\": \"SKU-0004\",\n    \"price_cents\": 1999,\n    \"inventory\": 16,\n    \"category\": \"widgets\",\n    \"active\": false\n  },\n  {\n    \"id\": \"p005\",\n    \"name\": \"Globex Ionizer\",\n    \"sku\": \"SKU-0005\",\n    \"price_cents\": 499,\n    \"inventory\": 258,\n    \"category\": \"subscriptions\",\n    \"active\": false\n  },\n  {\n    \"id\": \"p006\",\n    \"name\": \"Globex Plasma Cell\",\n    \"sku\": \"SKU-0006\",\n    \"price_cents\": 499,\n    \"inventory\": 366,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p007\",\n    \"name\": \"Globex Heat Sink\",\n    \"sku\": \"SKU-0007\",\n    \"price_cents\": 1999,\n    \"inventory\": 301,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p008\",\n    \"name\": \"Initech TPS Binder\",\n    \"sku\": \"SKU-0008\",\n    \"price_cents\": 199,\n    \"inventory\": 388,\n    \"category\": \"gadgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p009\",\n    \"name\": \"Initech Red Stapler\",\n    \"sku\": \"SKU-0009\",\n    \"price_cents\": 999,\n    \"inventory\": 142,\n    \"category\": \"gadgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p010\",\n    \"name\": \"Initech Cover Sheet\",\n    \"sku\": \"SKU-0010\",\n    \"price_cents\": 19999,\n    \"inventory\": 172,\n    \"category\": \"widgets\",\n    \"active\": false\n  },\n  {\n    \"id\": \"p011\",\n    \"name\": \"Umbrella Vaccine\",\n    \"sku\": \"SKU-0011\",\n    \"price_cents\": 199,\n    \"inventory\": 183,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p012\",\n    \"name\": \"Umbrella Tracker\",\n    \"sku\": \"SKU-0012\",\n    \"price_cents\": 19999,\n    \"inventory\": 22,\n    \"category\": \"services\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p013\",\n    \"name\": \"Umbrella Field Kit\",\n    \"sku\": \"SKU-0013\",\n    \"price_cents\": 1999,\n    \"inventory\": 40,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p014\",\n    \"name\": \"Wayne Grapple\",\n    \"sku\": \"SKU-0014\",\n    \"price_cents\": 9999,\n    \"inventory\": 316,\n    \"category\": \"consumables\",\n    \"active\": true,\n    \"inventory_discrepancy\": {\n      \"note\": \"recorded 120, warehouse reports 117\",\n      \"delta\": -3,\n      \"source\": \"pipe-09 reconcile\"\n    }\n  },\n  {\n    \"id\": \"p015\",\n    \"name\": \"Wayne Cowl\",\n    \"sku\": \"SKU-0015\",\n    \"price_cents\": 9999,\n    \"inventory\": 35,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p016\",\n    \"name\": \"Wayne Batmobile Wax\",\n    \"sku\": \"SKU-0016\",\n    \"price_cents\": 19999,\n    \"inventory\": 148,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p017\",\n    \"name\": \"Standard Widget A\",\n    \"sku\": \"SKU-0017\",\n    \"price_cents\": 19999,\n    \"inventory\": 51,\n    \"category\": \"services\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p018\",\n    \"name\": \"Standard Widget B\",\n    \"sku\": \"SKU-0018\",\n    \"price_cents\": 9999,\n    \"inventory\": 427,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p019\",\n    \"name\": \"Standard Widget C\",\n    \"sku\": \"SKU-0019\",\n    \"price_cents\": 999,\n    \"inventory\": 107,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p020\",\n    \"name\": \"Premium Gadget X\",\n    \"sku\": \"SKU-0020\",\n    \"price_cents\": 9999,\n    \"inventory\": 331,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p021\",\n    \"name\": \"Premium Gadget Y\",\n    \"sku\": \"SKU-0021\",\n    \"price_cents\": 499,\n    \"inventory\": 273,\n    \"category\": \"gadgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p022\",\n    \"name\": \"Premium Gadget Z\",\n    \"sku\": \"SKU-0022\",\n    \"price_cents\": 1999,\n    \"inventory\": 138,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p023\",\n    \"name\": \"Consumable Ink\",\n    \"sku\": \"SKU-0023\",\n    \"price_cents\": 999,\n    \"inventory\": 431,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p024\",\n    \"name\": \"Consumable Toner\",\n    \"sku\": \"SKU-0024\",\n    \"price_cents\": 199,\n    \"inventory\": 412,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p025\",\n    \"name\": \"Consumable Ribbon\",\n    \"sku\": \"SKU-0025\",\n    \"price_cents\": 199,\n    \"inventory\": 108,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p026\",\n    \"name\": \"Service Install\",\n    \"sku\": \"SKU-0026\",\n    \"price_cents\": 999,\n    \"inventory\": 108,\n    \"category\": \"services\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p027\",\n    \"name\": \"Service Tuneup\",\n    \"sku\": \"SKU-0027\",\n    \"price_cents\": 9999,\n    \"inventory\": 234,\n    \"category\": \"gadgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p028\",\n    \"name\": \"Service Audit\",\n    \"sku\": \"SKU-0028\",\n    \"price_cents\": 499,\n    \"inventory\": 381,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p029\",\n    \"name\": \"Monthly Plan\",\n    \"sku\": \"SKU-0029\",\n    \"price_cents\": 9999,\n    \"inventory\": 299,\n    \"category\": \"services\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p030\",\n    \"name\": \"Annual Plan\",\n    \"sku\": \"SKU-0030\",\n    \"price_cents\": 1999,\n    \"inventory\": 185,\n    \"category\": \"gadgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p031\",\n    \"name\": \"Acme Foghorn Mk 1\",\n    \"sku\": \"SKU-0031\",\n    \"price_cents\": 499,\n    \"inventory\": 260,\n    \"category\": \"services\",\n    \"active\": false\n  },\n  {\n    \"id\": \"p032\",\n    \"name\": \"Acme Anvil Mk 1\",\n    \"sku\": \"SKU-0032\",\n    \"price_cents\": 199,\n    \"inventory\": 440,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p033\",\n    \"name\": \"Acme Rocket Skates Mk 1\",\n    \"sku\": \"SKU-0033\",\n    \"price_cents\": 499,\n    \"inventory\": 405,\n    \"category\": \"services\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p034\",\n    \"name\": \"Acme Earthquake Pills Mk 1\",\n    \"sku\": \"SKU-0034\",\n    \"price_cents\": 1999,\n    \"inventory\": 195,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p035\",\n    \"name\": \"Globex Ionizer Mk 1\",\n    \"sku\": \"SKU-0035\",\n    \"price_cents\": 4999,\n    \"inventory\": 128,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p036\",\n    \"name\": \"Globex Plasma Cell Mk 1\",\n    \"sku\": \"SKU-0036\",\n    \"price_cents\": 199,\n    \"inventory\": 348,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p037\",\n    \"name\": \"Globex Heat Sink Mk 1\",\n    \"sku\": \"SKU-0037\",\n    \"price_cents\": 4999,\n    \"inventory\": 384,\n    \"category\": \"consumables\",\n    \"active\": true,\n    \"inventory_discrepancy\": {\n      \"note\": \"recorded 42, warehouse reports 50\",\n      \"delta\": 8,\n      \"source\": \"pipe-09 reconcile\"\n    }\n  },\n  {\n    \"id\": \"p038\",\n    \"name\": \"Initech TPS Binder Mk 1\",\n    \"sku\": \"SKU-0038\",\n    \"price_cents\": 999,\n    \"inventory\": 57,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p039\",\n    \"name\": \"Initech Red Stapler Mk 1\",\n    \"sku\": \"SKU-0039\",\n    \"price_cents\": 1999,\n    \"inventory\": 1,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p040\",\n    \"name\": \"Initech Cover Sheet Mk 1\",\n    \"sku\": \"SKU-0040\",\n    \"price_cents\": 19999,\n    \"inventory\": 91,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p041\",\n    \"name\": \"Umbrella Vaccine Mk 1\",\n    \"sku\": \"SKU-0041\",\n    \"price_cents\": 19999,\n    \"inventory\": 320,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p042\",\n    \"name\": \"Umbrella Tracker Mk 1\",\n    \"sku\": \"SKU-0042\",\n    \"price_cents\": 4999,\n    \"inventory\": 311,\n    \"category\": \"gadgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p043\",\n    \"name\": \"Umbrella Field Kit Mk 1\",\n    \"sku\": \"SKU-0043\",\n    \"price_cents\": 19999,\n    \"inventory\": 82,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p044\",\n    \"name\": \"Wayne Grapple Mk 1\",\n    \"sku\": \"SKU-0044\",\n    \"price_cents\": 4999,\n    \"inventory\": 470,\n    \"category\": \"widgets\",\n    \"active\": true,\n    \"pipe_04_skip_reason\": \"missing SKU prefix (legacy import)\"\n  },\n  {\n    \"id\": \"p045\",\n    \"name\": \"Wayne Cowl Mk 1\",\n    \"sku\": \"SKU-0045\",\n    \"price_cents\": 1999,\n    \"inventory\": 9,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p046\",\n    \"name\": \"Wayne Batmobile Wax Mk 1\",\n    \"sku\": \"SKU-0046\",\n    \"price_cents\": 19999,\n    \"inventory\": 413,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p047\",\n    \"name\": \"Standard Widget A Mk 1\",\n    \"sku\": \"SKU-0047\",\n    \"price_cents\": 499,\n    \"inventory\": 449,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p048\",\n    \"name\": \"Standard Widget B Mk 1\",\n    \"sku\": \"SKU-0048\",\n    \"price_cents\": 199,\n    \"inventory\": 374,\n    \"category\": \"services\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p049\",\n    \"name\": \"Standard Widget C Mk 1\",\n    \"sku\": \"SKU-0049\",\n    \"price_cents\": 19999,\n    \"inventory\": 272,\n    \"category\": \"gadgets\",\n    \"active\": false\n  },\n  {\n    \"id\": \"p050\",\n    \"name\": \"Premium Gadget X Mk 1\",\n    \"sku\": \"SKU-0050\",\n    \"price_cents\": 1999,\n    \"inventory\": 484,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p051\",\n    \"name\": \"Premium Gadget Y Mk 1\",\n    \"sku\": \"SKU-0051\",\n    \"price_cents\": 4999,\n    \"inventory\": 446,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p052\",\n    \"name\": \"Premium Gadget Z Mk 1\",\n    \"sku\": \"SKU-0052\",\n    \"price_cents\": 499,\n    \"inventory\": 475,\n    \"category\": \"subscriptions\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p053\",\n    \"name\": \"Consumable Ink Mk 1\",\n    \"sku\": \"SKU-0053\",\n    \"price_cents\": 9999,\n    \"inventory\": 102,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p054\",\n    \"name\": \"Consumable Toner Mk 1\",\n    \"sku\": \"SKU-0054\",\n    \"price_cents\": 9999,\n    \"inventory\": 332,\n    \"category\": \"consumables\",\n    \"active\": true\n  },\n  {\n    \"id\": \"p055\",\n    \"name\": \"Consumable Ribbon Mk 1\",\n    \"sku\": \"SKU-0055\",\n    \"price_cents\": 4999,\n    \"inventory\": 231,\n    \"category\": \"widgets\",\n    \"active\": true\n  },\n  {\n    \"id\":",
+      "stderr": "",
+      "stdout_truncated": true,
+      "stderr_truncated": false,
+      "wall_clock_ms": 39,
+      "timed_out": false
+    },
+    {
+      "turn": 5,
+      "tool_use_id": "call_9805cbf6d44b4f33a122bb13",
+      "command": "./cli/bin/ctl list products --limit 100 --format json > /tmp/list_products.json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 45,
+      "timed_out": false
+    },
+    {
+      "turn": 6,
+      "tool_use_id": "call_a1980319af864f72acc8d44b",
+      "command": "python3 -c \"import json; data=json.load(open('/tmp/list_products.json')); print(f'Total products from list: {len(data)}'); ids=sorted([r['id'] for r in data]); print('IDs:', ids)\"",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "Total products from list: 80\nIDs: ['p001', 'p002', 'p003', 'p004', 'p005', 'p006', 'p007', 'p008', 'p009', 'p010', 'p011', 'p012', 'p013', 'p014', 'p015', 'p016', 'p017', 'p018', 'p019', 'p020', 'p021', 'p022', 'p023', 'p024', 'p025', 'p026', 'p027', 'p028', 'p029', 'p030', 'p031', 'p032', 'p033', 'p034', 'p035', 'p036', 'p037', 'p038', 'p039', 'p040', 'p041', 'p042', 'p043', 'p044', 'p045', 'p046', 'p047', 'p048', 'p049', 'p050', 'p051', 'p052', 'p053', 'p054', 'p055', 'p056', 'p057', 'p058', 'p059', 'p060', 'p061', 'p062', 'p063', 'p064', 'p065', 'p066', 'p067', 'p068', 'p069', 'p070', 'p071', 'p072', 'p073', 'p074', 'p075', 'p076', 'p077', 'p078', 'p079', 'p080']\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 46,
+      "timed_out": false
+    },
+    {
+      "turn": 7,
+      "tool_use_id": "call_0f9cd4313b5b449a990ff873",
+      "command": "./cli/bin/ctl search --query \"Acme\" --scope products --format json > /tmp/search_acme.json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "unknown argument: --format\n",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 52,
+      "timed_out": false
+    },
+    {
+      "turn": 8,
+      "tool_use_id": "call_c47023619cb848c18563ddbd",
+      "command": "./cli/bin/ctl search --help",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "usage: ctl search --query Q [--scope RESOURCE] [--i] [--reindex]\n\nSubstring search across resource fields. Output is JSON -- a list of\n{resource, id, match: {field: value}} objects.\n\nThe `--query` value may also be a simple field filter of the form\n`field:value` (e.g. `status:paid`). Field filters honour --i.\n\nOptions:\n  --query Q          Required. Substring, or `field:value`.\n  --scope RESOURCE   Restrict to one resource. Default: all.\n  --i                Case-insensitive. Default: case-SENSITIVE.\n  --reindex          Rebuild the search index (clears the stale flag).\n  -h, --help         Show this message and exit.\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 53,
+      "timed_out": false
+    },
+    {
+      "turn": 9,
+      "tool_use_id": "call_f955c5c1ca48421189fe6db0",
+      "command": "./cli/bin/ctl search --query \"Acme\" --scope products > /tmp/search_acme.json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 65,
+      "timed_out": false
+    },
+    {
+      "turn": 10,
+      "tool_use_id": "call_a995e0c9ef61465db785be97",
+      "command": "cat /tmp/search_acme.json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "[\n  {\n    \"resource\": \"products\",\n    \"id\": \"p001\",\n    \"match\": {\n      \"name\": \"Acme Foghorn\"\n    }\n  },\n  {\n    \"resource\": \"products\",\n    \"id\": \"p002\",\n    \"match\": {\n      \"name\": \"Acme Anvil\"\n    }\n  },\n  {\n    \"resource\": \"products\",\n    \"id\": \"p003\",\n    \"match\": {\n      \"name\": \"Acme Rocket Skates\"\n    }\n  },\n  {\n    \"resource\": \"products\",\n    \"id\": \"p004\",\n    \"match\": {\n      \"name\": \"Acme Earthquake Pills\"\n    }\n  },\n  {\n    \"resource\": \"products\",\n    \"id\": \"p031\",\n    \"match\": {\n      \"name\": \"Acme Foghorn Mk 1\"\n    }\n  },\n  {\n    \"resource\": \"products\",\n    \"id\": \"p032\",\n    \"match\": {\n      \"name\": \"Acme Anvil Mk 1\"\n    }\n  },\n  {\n    \"resource\": \"products\",\n    \"id\": \"p033\",\n    \"match\": {\n      \"name\": \"Acme Rocket Skates Mk 1\"\n    }\n  },\n  {\n    \"resource\": \"products\",\n    \"id\": \"p034\",\n    \"match\": {\n      \"name\": \"Acme Earthquake Pills Mk 1\"\n    }\n  },\n  {\n    \"resource\": \"products\",\n    \"id\": \"p061\",\n    \"match\": {\n      \"name\": \"Acme Foghorn Mk 2\"\n    }\n  },\n  {\n    \"resource\": \"products\",\n    \"id\": \"p062\",\n    \"match\": {\n      \"name\": \"Acme Anvil Mk 2\"\n    }\n  },\n  {\n    \"resource\": \"products\",\n    \"id\": \"p063\",\n    \"match\": {\n      \"name\": \"Acme Rocket Skates Mk 2\"\n    }\n  },\n  {\n    \"resource\": \"products\",\n    \"id\": \"p064\",\n    \"match\": {\n      \"name\": \"Acme Earthquake Pills Mk 2\"\n    }\n  }\n]\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 11,
+      "timed_out": false
+    },
+    {
+      "turn": 11,
+      "tool_use_id": "call_4ba1a24d95574a028bc89de1",
+      "command": "python3 -c \"\nimport json\n\n# Load list results\nwith open('/tmp/list_products.json') as f:\n    list_data = json.load(f)\nlist_ids = set(r['id'] for r in list_data)\nlist_by_id = {r['id']: r for r in list_data}\n\n# Load search results\nwith open('/tmp/search_acme.json') as f:\n    search_data = json.load(f)\nsearch_ids = set(r['id'] for r in search_data)\n\n# Check: all search IDs exist in list\nmissing_from_list = search_ids - list_ids\nextra_in_search = search_ids - list_ids\n\nprint('=== Consistency Check 1: search vs list ===')\nprint(f'Search found {len(search_ids)} Acme products')\nprint(f'List has {len(list_ids)} total products')\nif missing_from_list:\n    print(f'FAIL: IDs in search but NOT in list: {missing_from_list}')\nelse:\n    print('PASS: All search IDs exist in list')\n\n# Check: all search IDs have name containing 'Acme'\nprint()\nprint('=== Consistency Check 2: search match fields vs list data ===')\nall_match = True\nfor item in search_data:\n    sid = item['id']\n    search_name = item['match'].get('name', '')\n    list_name = list_by_id[sid]['name']\n    if search_name != list_name:\n        print(f'FAIL: {sid} search name={search_name} vs list name={list_name}')\n        all_match = False\nif all_match:\n    print('PASS: All search match names agree with list names')\n\"\n",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "=== Consistency Check 1: search vs list ===\nSearch found 12 Acme products\nList has 80 total products\nPASS: All search IDs exist in list\n\n=== Consistency Check 2: search match fields vs list data ===\nPASS: All search match names agree with list names\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 43,
+      "timed_out": false
+    },
+    {
+      "turn": 12,
+      "tool_use_id": "call_190b91537fe248718817ddfa",
+      "command": "./cli/bin/ctl get products p001 --format json > /tmp/fetch_p001.json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 52,
+      "timed_out": false
+    },
+    {
+      "turn": 13,
+      "tool_use_id": "call_83fccc7c9c4742bdb3da122b",
+      "command": "./cli/bin/ctl get products p044 --format json > /tmp/fetch_p044.json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 41,
+      "timed_out": false
+    },
+    {
+      "turn": 14,
+      "tool_use_id": "call_054aa428d4424a7c8993036c",
+      "command": "./cli/bin/ctl get products p077 --format json > /tmp/fetch_p077.json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 55,
+      "timed_out": false
+    },
+    {
+      "turn": 15,
+      "tool_use_id": "call_afa231e4ed464f7393db2ce4",
+      "command": "./cli/bin/ctl get products p061 --format json > /tmp/fetch_p061.json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 60,
+      "timed_out": false
+    },
+    {
+      "turn": 16,
+      "tool_use_id": "call_5d8410a23f2f4872a3e07d93",
+      "command": "python3 -c \"\nimport json\n\n# Load list data\nwith open('/tmp/list_products.json') as f:\n    list_data = json.load(f)\nlist_by_id = {r['id']: r for r in list_data}\n\n# Compare fetched records with list\nids_to_check = ['p001', 'p044', 'p077', 'p061']\nall_match = True\nfor pid in ids_to_check:\n    with open(f'/tmp/fetch_{pid}.json') as f:\n        fetched = json.load(f)\n    listed = list_by_id.get(pid)\n    if listed is None:\n        print(f'FAIL: {pid} not found in list')\n        all_match = False\n        continue\n    # Compare key fields\n    for key in ['id', 'name', 'sku', 'price_cents', 'inventory', 'category', 'active']:\n        fv = fetched.get(key)\n        lv = listed.get(key)\n        if fv != lv:\n            print(f'FAIL: {pid} field={key} fetched={fv} list={lv}')\n            all_match = False\n    if fetched.get('id') == listed.get('id') and fetched.get('name') == listed.get('name'):\n        print(f'PASS: {pid} ({fetched[\\\"name\\\"]}) — get matches list')\n\nif all_match:\n    print()\n    print('=== All get vs list comparisons passed ===')\n\"\n",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "PASS: p001 (Acme Foghorn) — get matches list\nPASS: p044 (Wayne Grapple Mk 1) — get matches list\nPASS: p077 (Standard Widget A Mk 2) — get matches list\nPASS: p061 (Acme Foghorn Mk 2) — get matches list\n\n=== All get vs list comparisons passed ===\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 53,
+      "timed_out": false
+    },
+    {
+      "turn": 17,
+      "tool_use_id": "call_45fcdfccd50848fd90f274af",
+      "command": "./cli/bin/ctl search --query \"Mk 2\" --scope products > /tmp/search_mk2.json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 37,
+      "timed_out": false
+    },
+    {
+      "turn": 18,
+      "tool_use_id": "call_cc081ac85fb7439697810abe",
+      "command": "python3 -c \"\nimport json\n\n# Load all search results for 'Mk 2'\nwith open('/tmp/search_mk2.json') as f:\n    mk2_search = json.load(f)\n\n# Load list data\nwith open('/tmp/list_products.json') as f:\n    list_data = json.load(f)\nlist_ids = set(r['id'] for r in list_data)\n\nmk2_ids = set(r['id'] for r in mk2_search)\nprint(f'Search for \\\"Mk 2\\\" found {len(mk2_ids)} products: {sorted(mk2_ids)}')\n\n# All Mk 2 IDs should be in list\nmissing = mk2_ids - list_ids\nif missing:\n    print(f'FAIL: Mk 2 IDs not in list: {missing}')\nelse:\n    print('PASS: All Mk 2 IDs present in list')\n\n# Check the skipped records p044 and p077\nprint()\nprint('=== Skipped records check (p044, p077) ===')\nfor pid in ['p044', 'p077']:\n    with open(f'/tmp/fetch_{pid}.json') as f:\n        rec = json.load(f)\n    skip = rec.get('pipe_04_skip_reason', 'N/A')\n    print(f'{pid}: name={rec[\\\"name\\\"]}, skip_reason={skip}')\n    if pid in list_ids:\n        print(f'  -> Present in list: PASS')\n    else:\n        print(f'  -> NOT in list: FAIL')\n\"\n",
+      "allowed": false,
+      "rejection_reason": "redirect target 'Present' must start with one of ['/tmp/']",
+      "exit_code": null,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 0,
+      "timed_out": false
+    },
+    {
+      "turn": 19,
+      "tool_use_id": "call_5057deb33d5c4f42b4390244",
+      "command": "python3 -c \"\nimport json\n\nwith open('/tmp/search_mk2.json') as f:\n    mk2_search = json.load(f)\n\nwith open('/tmp/list_products.json') as f:\n    list_data = json.load(f)\nlist_ids = set(r['id'] for r in list_data)\n\nmk2_ids = set(r['id'] for r in mk2_search)\nprint('Search for Mk 2 found %d products: %s' % (len(mk2_ids), sorted(mk2_ids)))\n\nmissing = mk2_ids - list_ids\nif missing:\n    print('FAIL: Mk 2 IDs not in list: %s' % missing)\nelse:\n    print('PASS: All Mk 2 IDs present in list')\n\nprint()\nprint('Skipped records check (p044, p077)')\nfor pid in ['p044', 'p077']:\n    with open('/tmp/fetch_%s.json' % pid) as f:\n        rec = json.load(f)\n    skip = rec.get('pipe_04_skip_reason', 'N/A')\n    print('%s: name=%s, skip_reason=%s' % (pid, rec['name'], skip))\n    if pid in list_ids:\n        print('  Present in list: PASS')\n    else:\n        print('  NOT in list: FAIL')\n\"\n",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "Search for Mk 2 found 21 products: ['p060', 'p061', 'p062', 'p063', 'p064', 'p065', 'p066', 'p067', 'p068', 'p069', 'p070', 'p071', 'p072', 'p073', 'p074', 'p075', 'p076', 'p077', 'p078', 'p079', 'p080']\nPASS: All Mk 2 IDs present in list\n\nSkipped records check (p044, p077)\np044: name=Wayne Grapple Mk 1, skip_reason=missing SKU prefix (legacy import)\n  Present in list: PASS\np077: name=Standard Widget A Mk 2, skip_reason=price_cents null in source feed\n  Present in list: PASS\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 38,
+      "timed_out": false
+    },
+    {
+      "turn": 20,
+      "tool_use_id": "call_4c1f8619925f41ad93703942",
+      "command": "./cli/bin/ctl pipeline status pipe-03",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "pipeline: pipe-03 (pipe-03)\nran_in_session: yes\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 24,
+      "timed_out": false
+    },
+    {
+      "turn": 21,
+      "tool_use_id": "call_94daf4a5250443e18c234561",
+      "command": "./cli/bin/ctl pipeline status pipe-04",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "pipeline: pipe-04 (pipe-04)\nran_in_session: yes\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 28,
+      "timed_out": false
+    },
+    {
+      "turn": 22,
+      "tool_use_id": "call_6c30994320f04203b2b163c5",
+      "command": "./cli/bin/ctl pipeline status pipe-05",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "pipeline: pipe-05 (pipe-05)\nran_in_session: yes\n",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 52,
+      "timed_out": false
+    },
+    {
+      "turn": 23,
+      "tool_use_id": "call_2f3a4be264c6444b91add6f3",
+      "command": "./cli/bin/ctl list users --limit 100 --format json > /tmp/list_users.json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 57,
+      "timed_out": false
+    },
+    {
+      "turn": 24,
+      "tool_use_id": "call_54257004398349b0a379edad",
+      "command": "./cli/bin/ctl list orders --limit 100 --format json > /tmp/list_orders.json",
+      "allowed": true,
+      "rejection_reason": "",
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "stdout_truncated": false,
+      "stderr_truncated": false,
+      "wall_clock_ms": 52,
+      "timed_out": false
+    }
+  ],
+  "setup_calls": [],
+  "rejected_commands": [
+    {
+      "command": "python3 -c \"\nimport json\n\n# Load all search results for 'Mk 2'\nwith open('/tmp/search_mk2.json') as f:\n    mk2_search = json.load(f)\n\n# Load list data\nwith open('/tmp/list_products.json') as f:\n    list_data = json.load(f)\nlist_ids = set(r['id'] for r in list_data)\n\nmk2_ids = set(r['id'] for r in mk2_search)\nprint(f'Search for \\\"Mk 2\\\" found {len(mk2_ids)} products: {sorted(mk2_ids)}')\n\n# All Mk 2 IDs should be in list\nmissing = mk2_ids - list_ids\nif missing:\n    print(f'FAIL: Mk 2 IDs not in list: {missing}')\nelse:\n    print('PASS: All Mk 2 IDs present in list')\n\n# Check the skipped records p044 and p077\nprint()\nprint('=== Skipped records check (p044, p077) ===')\nfor pid in ['p044', 'p077']:\n    with open(f'/tmp/fetch_{pid}.json') as f:\n        rec = json.load(f)\n    skip = rec.get('pipe_04_skip_reason', 'N/A')\n    print(f'{pid}: name={rec[\\\"name\\\"]}, skip_reason={skip}')\n    if pid in list_ids:\n        print(f'  -> Present in list: PASS')\n    else:\n        print(f'  -> NOT in list: FAIL')\n\"\n",
+      "reason": "redirect target 'Present' must start with one of ['/tmp/']"
+    }
+  ],
+  "usage": {
+    "input_tokens": 179371,
+    "output_tokens": 2986,
+    "cache_read_input_tokens": 169280,
+    "cache_creation_input_tokens": 0,
+    "total_calls": 25
+  },
+  "final_text": "Now let me do a final comprehensive cross-check across all resources:",
+  "stop_reason": "max_turns",
+  "api_errors": [],
+  "dry_run": false,
+  "writable_prefixes_resolved": [
+    "/tmp/"
+  ],
+  "skills_loaded": [],
+  "skill_load_calls": [],
+  "artifact_files_copied": []
+}

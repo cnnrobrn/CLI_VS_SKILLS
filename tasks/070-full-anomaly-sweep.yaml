@@ -1,0 +1,47 @@
+id: "070"
+title: "Find every currently-open operational issue"
+bucket: long-horizon
+prompt: |
+  Hunt for every currently-open operational issue in the system and
+  categorize them by severity (high/medium/low). For each, give the
+  evidence you used and the specific remediation. Aim for breadth.
+rule_check:
+  - id: checked_pipe07
+    assert: tool_called
+    match:
+      argv_regex: "^ctl pipeline status pipe-07"
+    weight: 1
+  - id: verify_pipe09
+    assert: tool_called
+    match:
+      argv_regex: "^ctl pipeline run pipe-09 --verify"
+    weight: 1
+  - id: listed_escalated_tickets
+    assert: tool_called
+    match:
+      argv_regex: "^ctl (list|search).*tickets.*escalated"
+    weight: 1
+  - id: listed_suspended_users
+    assert: tool_called
+    match:
+      argv_regex: "^ctl (list|search).*users.*suspended"
+    weight: 1
+  - id: listed_flagged_orders
+    assert: tool_called
+    match:
+      argv_regex: "^ctl (list|search).*orders.*flagged"
+    weight: 1
+judge_rubric:
+  - id: severity_and_remediation
+    criterion: "Each surfaced issue has an explicit severity label AND a specific remediation (command or procedure)."
+    weight: 2
+  - id: avoided_generic
+    criterion: "Report avoids generic 'monitor the system' platitudes; every item is actionable and cites concrete ids."
+    weight: 2
+judge_context: |
+  Ground truth: this task rewards breadth. Candidate issues: pipe-07
+  partial (A10), pipe-09 discrepancies (A11 — only if --verify run),
+  t019 escalated (A15), u042 suspended, flagged orders o102/o107/
+  o115, null-emails u023/u031/u049 (A18), stale cache /docs/auth
+  (A7), stale search index (A6). Judge grades the narrative.
+tags: [long-horizon, triage, breadth, A6, A7, A10, A11, A15, A18]
