@@ -21,9 +21,9 @@ Three OpenRouter models, single trial per task, 100 tasks per arm:
 
 | Model | cli-only | cli-skills | Δ (skills − only) |
 |-------|---------:|-----------:|------------------:|
-| xiaomi/mimo-v2.5 | 0.576 [0.510, 0.642] | 0.555 [0.486, 0.624] | **−0.021** |
-| qwen/qwen3.6-plus | 0.314 [0.249, 0.383] | 0.349 [0.281, 0.420] | **+0.036** |
-| z-ai/glm-5.1 | 0.423 [0.351, 0.495] | 0.440 [0.367, 0.514] | **+0.018** |
+| xiaomi/mimo-v2.5 | **0.576** [0.510, 0.642] | **0.555** [0.486, 0.624] | **−0.021** |
+| qwen/qwen3.6-plus | **0.314** [0.249, 0.383] | **0.349** [0.281, 0.420] | **+0.036** |
+| z-ai/glm-5.1 | **0.423** [0.351, 0.495] | **0.440** [0.367, 0.514] | **+0.018** |
 
 Brackets are 95 % bootstrap CIs over the per-task means. Two of three deltas are positive but well within CI overlap at this trial count.
 
